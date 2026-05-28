@@ -601,8 +601,7 @@
         <div class="form-group"><label class="form-label">Prix demandé (CHF)</label><input type="text" class="form-input" placeholder="ex: 22 500"></div>
         <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" placeholder="ton@email.ch"></div>
       </div>
-      <a href="https://buy.stripe.com/test_00w7sLgqh4jE1qC1Xv5gc00" target="_blank" class="form-submit" style="margin-top:16px;display:block;text-align:center;text-decoration:none;">Commander mon rapport EasyCarCheck →</a>
-      <div class="form-footer-row">
+<button type="button" onclick="submitToStripe()" class="form-submit" style="margin-top:16px;display:block;text-align:center;width:100%;cursor:pointer;">Commander mon rapport EasyCarCheck →</button>      <div class="form-footer-row">
         <span class="form-security">🔒 Paiement sécurisé · TWINT accepté</span>
         <span class="form-price-tag">9.- CHF</span>
       </div>
@@ -712,7 +711,29 @@ function setLang(lang) {
   const titles = { fr: 'EasyCarCheck.ch — Analyse IA · Suisse', de: 'EasyCarCheck.ch — KI-Analyse · Schweiz', it: 'EasyCarCheck.ch — Analisi IA · Svizzera', en: 'EasyCarCheck.ch — AI Analysis · Switzerland' };
   document.title = titles[lang];
 }
-</script>
+function submitToStripe() {
+  const annonce = document.querySelector('input[type="url"]') ? document.querySelector('input[type="url"]').value : '';
+  const vin = document.getElementById('vin-input') ? document.getElementById('vin-input').value : '';
+  const email = document.querySelector('input[type="email"]') ? document.querySelector('input[type="email"]').value : '';
+  const marque = document.querySelectorAll('.form-input')[2] ? document.querySelectorAll('.form-input')[2].value : '';
+  const modele = document.querySelectorAll('.form-input')[3] ? document.querySelectorAll('.form-input')[3].value : '';
+  const annee = document.querySelectorAll('.form-input')[4] ? document.querySelectorAll('.form-input')[4].value : '';
+  const km = document.querySelectorAll('.form-input')[5] ? document.querySelectorAll('.form-input')[5].value : '';
+  const prix = document.querySelectorAll('.form-input')[6] ? document.querySelectorAll('.form-input')[6].value : '';
+  if (!email) { alert('Merci d\'entrer votre email pour recevoir le rapport.'); return; }
+  if (!annonce && !vin) { alert('Merci d\'entrer un lien d\'annonce ou un numéro VIN.'); return; }
+  const params = new URLSearchParams({
+    prefilled_email: email,
+    'metadata[annonce]': annonce,
+    'metadata[vin]': vin,
+    'metadata[marque]': marque,
+    'metadata[modele]': modele,
+    'metadata[annee]': annee,
+    'metadata[km]': km,
+    'metadata[prix]': prix
+  });
+  window.location.href = 'https://buy.stripe.com/test_00w7sLgqh4jE1qC1Xv5gc00?' + params.toString();
+}</script>
 <script>
 function validateVIN(input) {
   var vin = input.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "");
