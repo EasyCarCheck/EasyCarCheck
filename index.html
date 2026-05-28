@@ -711,29 +711,41 @@ function setLang(lang) {
   const titles = { fr: 'EasyCarCheck.ch — Analyse IA · Suisse', de: 'EasyCarCheck.ch — KI-Analyse · Schweiz', it: 'EasyCarCheck.ch — Analisi IA · Svizzera', en: 'EasyCarCheck.ch — AI Analysis · Switzerland' };
   document.title = titles[lang];
 }
-function submitToStripe() {
+async function submitToStripe() {
   const annonce = document.querySelector('input[type="url"]') ? document.querySelector('input[type="url"]').value : '';
   const vin = document.getElementById('vin-input') ? document.getElementById('vin-input').value : '';
-const email = document.getElementById('form-email') ? document.getElementById('form-email').value : '';
-  const marque = document.querySelectorAll('.form-input')[2] ? document.querySelectorAll('.form-input')[2].value : '';
-  const modele = document.querySelectorAll('.form-input')[3] ? document.querySelectorAll('.form-input')[3].value : '';
-  const annee = document.querySelectorAll('.form-input')[4] ? document.querySelectorAll('.form-input')[4].value : '';
-  const km = document.querySelectorAll('.form-input')[5] ? document.querySelectorAll('.form-input')[5].value : '';
-  const prix = document.querySelectorAll('.form-input')[6] ? document.querySelectorAll('.form-input')[6].value : '';
+  const email = document.getElementById('form-email') ? document.getElementById('form-email').value : '';
+  const inputs = document.querySelectorAll('.form-input');
+  const marque = inputs[2] ? inputs[2].value : '';
+  const modele = inputs[3] ? inputs[3].value : '';
+  const annee = inputs[4] ? inputs[4].value : '';
+  const km = inputs[5] ? inputs[5].value : '';
+  const prix = inputs[6] ? inputs[6].value : '';
   if (!email) { alert('Merci d\'entrer votre email pour recevoir le rapport.'); return; }
   if (!annonce && !vin) { alert('Merci d\'entrer un lien d\'annonce ou un numéro VIN.'); return; }
-  const params = new URLSearchParams({
-    prefilled_email: email,
-    'metadata[annonce]': annonce,
-    'metadata[vin]': vin,
-    'metadata[marque]': marque,
-    'metadata[modele]': modele,
-    'metadata[annee]': annee,
-    'metadata[km]': km,
-    'metadata[prix]': prix
-  });
-  window.location.href = 'https://buy.stripe.com/test_00w7sLgqh4jE1qC1Xv5gc00?' + params.toString();
-}</script>
+  const btn = document.querySelector('.form-submit');
+  btn.textContent = 'Chargement...';
+  btn.disabled = true;
+  try {
+    const response = await fetch('/.netlify/functions/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, annonce, vin, marque, modele, annee, km, prix })
+    });
+    const data = await response.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert('Erreur lors de la création du paiement. Veuillez réessayer.');
+      btn.textContent = 'Commander mon rapport EasyCarCheck →';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    alert('Erreur de connexion. Veuillez réessayer.');
+    btn.textContent = 'Commander mon rapport EasyCarCheck →';
+    btn.disabled = false;
+  }
+}
 <script>
 function validateVIN(input) {
   var vin = input.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "");
