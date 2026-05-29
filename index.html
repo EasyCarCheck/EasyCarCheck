@@ -590,15 +590,15 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Marque</label><input type="text" class="form-input" placeholder="ex: BMW, VW, Audi..."></div>
-        <div class="form-group"><label class="form-label">Modèle</label><input type="text" class="form-input" placeholder="ex: M5, Golf R, A4..."></div>
+        <div class="form-group"><label class="form-label">Marque</label><input type="text" class="form-input" id="form-marque" placeholder="ex: BMW, VW, Audi..."></div>
+        <div class="form-group"><label class="form-label">Modèle</label><input type="text" class="form-input" id="form-modele" placeholder="ex: M5, Golf R, A4..."></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Année</label><input type="text" class="form-input" placeholder="ex: 2018"></div>
-        <div class="form-group"><label class="form-label">Kilométrage</label><input type="text" class="form-input" placeholder="ex: 138 000 km"></div>
+        <div class="form-group"><label class="form-label">Année</label><input type="text" class="form-input" id="form-annee" placeholder="ex: 2018"></div>
+        <div class="form-group"><label class="form-label">Kilométrage</label><input type="text" class="form-input" id="form-km" placeholder="ex: 138 000 km"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Prix demandé (CHF)</label><input type="text" class="form-input" placeholder="ex: 22 500"></div>
+        <div class="form-group"><label class="form-label">Prix demandé (CHF)</label><input type="text" class="form-input" id="form-prix" placeholder="ex: 22 500"></div>
         <div class="form-group"><label class="form-label">Email</label><input type="email" id="form-email" class="form-input" placeholder="ton@email.ch"></div>
       </div>
 <button type="button" onclick="submitToStripe()" class="form-submit" style="margin-top:16px;display:block;text-align:center;width:100%;cursor:pointer;">Commander mon rapport EasyCarCheck →</button>      <div class="form-footer-row">
@@ -715,12 +715,12 @@ async function submitToStripe() {
   const annonce = document.querySelector('input[type="url"]') ? document.querySelector('input[type="url"]').value : '';
   const vin = document.getElementById('vin-input') ? document.getElementById('vin-input').value : '';
   const email = document.getElementById('form-email') ? document.getElementById('form-email').value : '';
-  const inputs = document.querySelectorAll('.form-input');
-  const marque = inputs[2] ? inputs[2].value : '';
-  const modele = inputs[3] ? inputs[3].value : '';
-  const annee = inputs[4] ? inputs[4].value : '';
-  const km = inputs[5] ? inputs[5].value : '';
-  const prix = inputs[6] ? inputs[6].value : '';
+  const inputs = [];
+  const marque = document.getElementById('form-marque') ? document.getElementById('form-marque').value : '';
+  const modele = document.getElementById('form-modele') ? document.getElementById('form-modele').value : '';
+  const annee = document.getElementById('form-annee') ? document.getElementById('form-annee').value : '';
+  const km = document.getElementById('form-km') ? document.getElementById('form-km').value : '';
+  const prix = document.getElementById('form-prix') ? document.getElementById('form-prix').value : '';
   if (!email) { alert('Merci d\'entrer votre email pour recevoir le rapport.'); return; }
   if (!annonce && !vin) { alert('Merci d\'entrer un lien d\'annonce ou un numéro VIN.'); return; }
   const btn = document.querySelector('.form-submit');
