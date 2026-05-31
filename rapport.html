@@ -14,24 +14,13 @@
     --bg: #f7f9fc; --border: #e2e8f0;
     --text: #0f1e30; --text-mid: #3a5270; --text-light: #8aa0b8;
   }
-  html, body { width: 210mm; margin: 0; padding: 0; background: #fff; font-family: 'DM Sans', sans-serif; font-size: 16px; line-height: 1.7; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { width: 210mm; margin: 0; padding: 0; background: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-  /* Chaque page = 297mm fixe, jamais coupée */
-  .page {
-    width: 210mm;
-    height: 297mm;
-    overflow: hidden;
-    page-break-after: always;
-    display: flex;
-    flex-direction: column;
-    background: #fff;
-  }
+  .page { width: 210mm; height: 297mm; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; background: #fff; }
   .page:last-child { page-break-after: avoid; }
 
-  /* ── COUVERTURE ── */
-  .cover {
-    background: linear-gradient(160deg, #0a1f42 0%, #1a3d6e 60%, #0f2850 100%);
-  }
+  /* COUVERTURE */
+  .cover { background: linear-gradient(160deg, #0a1f42 0%, #1a3d6e 60%, #0f2850 100%); }
   .cov-top { padding: 36px 44px 0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
   .cov-logo { display: flex; align-items: center; gap: 14px; }
   .cov-circle { width: 54px; height: 54px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
@@ -42,153 +31,147 @@
   .cov-num { font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 2px; text-transform: uppercase; }
   .cov-body { flex: 1; padding: 32px 44px; display: flex; flex-direction: column; justify-content: space-between; }
   .cov-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(90,180,232,0.15); border: 1px solid rgba(90,180,232,0.35); color: var(--sky); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 7px 18px; border-radius: 2px; width: fit-content; margin-bottom: 10px; }
-  .cov-vehicle { font-family: 'Bebas Neue', sans-serif; font-size: 84px; letter-spacing: 2px; color: #fff; line-height: 0.9; margin-bottom: 24px; }
+  .cov-vehicle { font-family: 'Bebas Neue', sans-serif; font-size: 84px; letter-spacing: 2px; color: #fff; line-height: 0.9; margin-bottom: 22px; }
   .cov-vehicle span { color: var(--sky); }
-  .cov-specs { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 22px; }
+  .cov-specs { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
   .cov-spec { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 14px 18px; }
   .cov-spec-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
   .cov-spec-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: #fff; line-height: 1; }
   .cov-spec-val.sky { color: var(--sky); }
-  .cov-verdict { display: flex; align-items: center; gap: 20px; background: rgba(184,134,10,0.15); border: 2px solid rgba(184,134,10,0.45); border-radius: 10px; padding: 20px 28px; margin-bottom: 22px; }
-  .cov-v-icon { width: 56px; height: 56px; background: rgba(184,134,10,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; }
+  .cov-verdict { display: flex; align-items: center; gap: 20px; background: rgba(184,134,10,0.15); border: 2px solid rgba(184,134,10,0.45); border-radius: 10px; padding: 18px 26px; margin-bottom: 20px; }
+  .cov-v-icon { width: 52px; height: 52px; background: rgba(184,134,10,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
   .cov-v-main { flex: 1; }
-  .cov-v-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
-  .cov-v-val { font-family: 'Bebas Neue', sans-serif; font-size: 46px; letter-spacing: 3px; color: #f0c040; line-height: 1; }
-  .cov-v-sub { font-size: 15px; color: rgba(255,255,255,0.8); margin-top: 4px; }
+  .cov-v-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
+  .cov-v-val { font-family: 'Bebas Neue', sans-serif; font-size: 44px; letter-spacing: 3px; color: #f0c040; line-height: 1; }
+  .cov-v-sub { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 3px; }
   .cov-v-sub strong { color: #f0c040; }
   .cov-v-eco { text-align: right; flex-shrink: 0; }
-  .cov-v-eco-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 4px; }
-  .cov-v-eco-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #f0c040; }
+  .cov-v-eco-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 3px; }
+  .cov-v-eco-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: #f0c040; }
   .cov-scores { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
-  .cs { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09); border-radius: 8px; padding: 18px 12px; text-align: center; position: relative; overflow: hidden; }
+  .cs { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09); border-radius: 8px; padding: 16px 12px; text-align: center; position: relative; overflow: hidden; }
   .cs::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; }
   .cs-g::before { background: #1a7a3c; } .cs-s::before { background: var(--sky); }
   .cs-a::before { background: #b8860a; } .cs-n::before { background: rgba(90,180,232,0.5); }
-  .cs-num { font-family: 'Bebas Neue', sans-serif; font-size: 68px; line-height: 1; color: #fff; letter-spacing: -2px; }
-  .cs-den { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: rgba(255,255,255,0.3); }
-  .cs-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.5); margin-top: 6px; font-weight: 600; }
-  .cs-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+  .cs-num { font-family: 'Bebas Neue', sans-serif; font-size: 64px; line-height: 1; color: #fff; letter-spacing: -2px; }
+  .cs-den { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: rgba(255,255,255,0.3); }
+  .cs-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.5); margin-top: 5px; font-weight: 600; }
+  .cs-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden; }
   .cs-fill { height: 100%; border-radius: 2px; }
-  .cov-foot { padding: 18px 44px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; flex-shrink: 0; }
+  .cov-foot { padding: 16px 44px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; flex-shrink: 0; }
   .cov-foot span { font-size: 11px; color: rgba(255,255,255,0.3); }
 
-  /* ── HEADER PAGES INTÉRIEURES ── */
-  .ph { background: var(--navy); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  /* HEADER PAGES */
+  .ph { background: var(--navy); padding: 14px 30px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
   .ph-logo { display: flex; align-items: center; gap: 10px; }
-  .ph-circle { width: 36px; height: 36px; background: rgba(255,255,255,0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; position: relative; }
-  .ph-badge { position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px; background: #1a7a3c; border-radius: 50%; border: 1.5px solid var(--navy); display: flex; align-items: center; justify-content: center; font-size: 7px; color: #fff; font-weight: 700; }
-  .ph-easy { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 2px; color: rgba(255,255,255,0.5); }
-  .ph-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: #fff; }
+  .ph-circle { width: 34px; height: 34px; background: rgba(255,255,255,0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; position: relative; }
+  .ph-badge { position: absolute; bottom: -1px; right: -1px; width: 13px; height: 13px; background: #1a7a3c; border-radius: 50%; border: 1.5px solid var(--navy); display: flex; align-items: center; justify-content: center; font-size: 7px; color: #fff; font-weight: 700; }
+  .ph-easy { font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 2px; color: rgba(255,255,255,0.5); }
+  .ph-name { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: #fff; }
   .ph-name span { color: var(--sky); }
   .ph-r { text-align: right; }
-  .ph-vehicle { font-size: 13px; font-weight: 700; color: #fff; }
-  .ph-meta { font-size: 11px; color: rgba(255,255,255,0.5); }
+  .ph-vehicle { font-size: 12px; font-weight: 700; color: #fff; }
+  .ph-meta { font-size: 10px; color: rgba(255,255,255,0.5); }
 
-  /* ── CONTENU ── */
-  .pc { padding: 36px 36px 24px; flex: 1; overflow: hidden; }
+  /* CONTENU */
+  .pc { padding: 24px 30px 16px; flex: 1; display: flex; flex-direction: column; gap: 0; overflow: hidden; }
 
-  /* Section title */
-  .sec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .sec-num { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--border); line-height: 1; }
-  .sec-icon { font-size: 22px; }
-  .sec-title { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px; color: var(--navy); line-height: 1; }
-  .sec-line { height: 2px; background: linear-gradient(90deg, var(--navy) 0%, transparent 60%); margin-bottom: 20px; }
+  /* Section */
+  .sec { flex: 1; display: flex; flex-direction: column; }
+  .sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .sec-num { font-family: 'Bebas Neue', sans-serif; font-size: 38px; color: var(--border); line-height: 1; }
+  .sec-icon { font-size: 20px; }
+  .sec-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; color: var(--navy); line-height: 1; }
+  .sec-line { height: 2px; background: linear-gradient(90deg, var(--navy) 0%, transparent 60%); margin-bottom: 16px; }
+  .sep { height: 1px; background: var(--border); margin: 18px 0; flex-shrink: 0; }
 
-  /* Score badge */
-  .score-wrap { display: flex; align-items: flex-start; gap: 22px; margin-bottom: 18px; }
-  .sbadge { display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-radius: 4px; flex-shrink: 0; min-width: 230px; }
+  /* Score */
+  .score-wrap { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 14px; }
+  .sbadge { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 4px; flex-shrink: 0; min-width: 210px; }
   .sb-g { background: var(--green-light); border-left: 5px solid var(--green); }
   .sb-s { background: #eef6fc; border-left: 5px solid var(--sky); }
   .sb-a { background: var(--amber-light); border-left: 5px solid var(--amber); }
-  .sb-num { font-family: 'Bebas Neue', sans-serif; font-size: 86px; line-height: 1; letter-spacing: -2px; }
-  .sb-den { font-family: 'Bebas Neue', sans-serif; font-size: 32px; opacity: 0.4; }
+  .sb-num { font-family: 'Bebas Neue', sans-serif; font-size: 62px; line-height: 1; letter-spacing: -2px; }
+  .sb-den { font-family: 'Bebas Neue', sans-serif; font-size: 22px; opacity: 0.4; }
   .sb-g .sb-num, .sb-g .sb-den { color: var(--green); }
   .sb-s .sb-num, .sb-s .sb-den { color: var(--sky); }
   .sb-a .sb-num, .sb-a .sb-den { color: var(--amber); }
-  .sb-text strong { display: block; font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-  .sb-text span { font-size: 15px; color: var(--text-mid); }
-  .score-right { flex: 1; padding-top: 8px; }
+  .sb-text strong { display: block; font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .sb-text span { font-size: 13px; color: var(--text-mid); }
+  .score-right { flex: 1; padding-top: 6px; }
 
   /* Barre */
-  .bar-wrap { margin-bottom: 16px; }
-  .bar-track { height: 9px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .bar-wrap { margin-bottom: 12px; }
+  .bar-track { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 4px; }
   .bar-g { background: var(--green); } .bar-s { background: var(--sky); } .bar-a { background: var(--amber); }
-  .bar-labs { display: flex; justify-content: space-between; margin-top: 5px; }
-  .bar-lab { font-size: 11px; color: var(--text-light); }
+  .bar-labs { display: flex; justify-content: space-between; margin-top: 4px; }
+  .bar-lab { font-size: 10px; color: var(--text-light); }
 
   /* Info grid */
-  .igrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 18px; }
-  .iitem { background: var(--bg); padding: 11px 15px; }
+  .igrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 14px; }
+  .iitem { background: var(--bg); padding: 10px 13px; }
   .iitem.hl { background: #e8f0f8; border-left: 4px solid var(--navy); }
-  .ilbl { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin-bottom: 3px; }
-  .ival { font-size: 17px; font-weight: 600; color: var(--navy); }
+  .ilbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin-bottom: 2px; }
+  .ival { font-size: 14px; font-weight: 600; color: var(--navy); }
 
   /* Alerte */
-  .alert { padding: 14px 18px; border-radius: 3px; margin-bottom: 18px; border-left: 4px solid; }
+  .alert { padding: 12px 16px; border-radius: 3px; margin-bottom: 14px; border-left: 4px solid; }
   .al-g { background: var(--green-light); border-color: var(--green); }
   .al-a { background: var(--amber-light); border-color: var(--amber); }
   .al-s { background: #eef6fc; border-color: var(--sky); }
-  .alert-title { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .alert-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
   .al-g .alert-title { color: var(--green); }
   .al-a .alert-title { color: var(--amber); }
   .al-s .alert-title { color: var(--navy); }
-  .alert p { font-size: 15px; color: var(--text-mid); line-height: 1.6; }
+  .alert p { font-size: 13px; color: var(--text-mid); line-height: 1.6; }
 
   /* Check list */
-  .clist { display: flex; flex-direction: column; gap: 16px; margin-bottom: 18px; }
-  .ci { display: flex; gap: 14px; align-items: flex-start; font-size: 15px; color: var(--text-mid); line-height: 1.55; }
-  .ci-ico { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .clist { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .ci { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text-mid); line-height: 1.5; }
+  .ci-ico { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
   .ci-ok   { background: var(--green-light); color: var(--green); }
   .ci-warn { background: var(--amber-light); color: var(--amber); }
   .ci-bad  { background: var(--red-light);   color: var(--red); }
   .ci-info { background: #e8f0f8; color: var(--navy); }
 
   /* Tableau */
-  .ctable { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-  .ctable th { background: var(--navy); color: #fff; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 11px 15px; text-align: left; }
-  .ctable td { padding: 13px 16px; font-size: 15px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
+  .ctable { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+  .ctable th { background: var(--navy); color: #fff; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 10px 13px; text-align: left; }
+  .ctable td { padding: 9px 13px; font-size: 13px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
   .ctable tr:nth-child(even) td { background: var(--bg); }
   .ctable .tot td { background: #e8f0f8; font-weight: 700; color: var(--navy); border-top: 2px solid var(--navy); }
   .camount { font-weight: 700; color: var(--navy); }
 
   /* Canton */
-  .canton { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 18px 24px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
-  .canton-lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); margin-bottom: 4px; }
-  .canton-name { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--navy); }
-  .canton-sub { font-size: 12px; color: var(--text-light); margin-top: 3px; }
-  .canton-amt { font-family: 'Bebas Neue', sans-serif; font-size: 42px; color: var(--navy); text-align: right; }
+  .canton { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 16px 22px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .canton-lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); margin-bottom: 3px; }
+  .canton-name { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--navy); }
+  .canton-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+  .canton-amt { font-family: 'Bebas Neue', sans-serif; font-size: 38px; color: var(--navy); text-align: right; }
   .canton-per { font-size: 12px; color: var(--text-light); text-align: right; }
 
-  /* Verdict final */
-  .verdict { padding: 24px 28px; border-radius: 4px; margin-bottom: 18px; }
+  /* Verdict */
+  .verdict { padding: 20px 24px; border-radius: 4px; margin-bottom: 14px; }
   .v-neg { background: var(--amber-light); border: 2px solid var(--amber); }
-  .v-ach { background: var(--green-light); border: 2px solid var(--green); }
-  .v-evi { background: var(--red-light);   border: 2px solid var(--red); }
-  .v-head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-  .v-icon { font-size: 36px; }
+  .v-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .v-icon { font-size: 32px; }
   .v-lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); }
-  .v-val { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 2px; line-height: 1; }
-  .v-neg .v-val { color: var(--amber); }
-  .v-ach .v-val { color: var(--green); }
-  .v-evi .v-val { color: var(--red); }
-  .v-price { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--navy); margin-bottom: 12px; }
-  .v-sum { font-size: 15px; color: var(--text-mid); line-height: 1.7; }
+  .v-val { font-family: 'Bebas Neue', sans-serif; font-size: 40px; letter-spacing: 2px; line-height: 1; color: var(--amber); }
+  .v-price { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--navy); margin-bottom: 8px; }
+  .v-sum { font-size: 13px; color: var(--text-mid); line-height: 1.7; }
 
   /* Chips */
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-  .chip { background: #e8f0f8; color: var(--navy); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 2px; border: 1px solid #c8d8ec; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+  .chip { background: #e8f0f8; color: var(--navy); font-size: 12px; font-weight: 600; padding: 5px 13px; border-radius: 2px; border: 1px solid #c8d8ec; }
 
-  /* Footer navy */
-  .pf { background: var(--navy); padding: 11px 32px; display: flex; justify-content: space-between; flex-shrink: 0; }
+  /* Footer */
+  .pf { background: var(--navy); padding: 10px 30px; display: flex; justify-content: space-between; flex-shrink: 0; }
   .pf span { font-size: 11px; color: rgba(255,255,255,0.4); }
 
   /* Disclaimer */
-  .disclaimer { background: var(--bg); border-radius: 4px; padding: 16px 20px; margin-top: 14px; }
-  .disclaimer p { font-size: 12px; color: var(--text-light); line-height: 1.6; text-align: center; }
-
-  /* Séparateur */
-  .sep { height: 1px; background: var(--border); margin: 22px 0; }
+  .disclaimer { background: var(--bg); border-radius: 4px; padding: 14px 18px; margin-top: 12px; }
+  .disclaimer p { font-size: 11.5px; color: var(--text-light); line-height: 1.6; text-align: center; }
 </style>
 <script>
 function getParam(n){const p=new URLSearchParams(window.location.search);return p.get(n)||'';}
@@ -249,181 +232,193 @@ window.onload=fillReport;
   </div>
 </div>
 
-<!-- PAGE 2 : SCORE PRIX -->
+<!-- PAGE 2 : PRIX + FIABILITÉ -->
 <div class="page">
   <div class="ph">
     <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
     <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
   </div>
   <div class="pc">
-    <div class="sec-head"><div class="sec-num">01</div><div class="sec-icon">💰</div><div class="sec-title">Score prix vs marché suisse</div></div>
-    <div class="sec-line"></div>
-    <div class="score-wrap">
-      <div class="sbadge sb-g"><div style="display:flex;flex-direction:column;align-items:center;"><div class="sb-num">8</div><div class="sb-den">/10</div></div><div class="sb-text"><strong>Score prix</strong><span>Correct pour le marché suisse</span></div></div>
-      <div class="score-right">
-        <div class="bar-wrap"><div class="bar-track"><div class="bar-fill bar-g" style="width:80%"></div></div><div class="bar-labs"><span class="bar-lab">Surévalué</span><span class="bar-lab">Correct</span><span class="bar-lab">Bonne affaire</span></div></div>
-        <div class="igrid">
-          <div class="iitem hl"><div class="ilbl">Prix demandé</div><div class="ival">24 500 CHF</div></div>
-          <div class="iitem hl"><div class="ilbl">Fourchette marché CH</div><div class="ival">22 500 – 27 000 CHF</div></div>
-          <div class="iitem"><div class="ilbl">Impact options</div><div class="ival">+1 200 – 1 500 CHF</div></div>
-          <div class="iitem"><div class="ilbl">Couleur</div><div class="ival">Noir métallisé — neutre</div></div>
-          <div class="iitem"><div class="ilbl">Nb propriétaires</div><div class="ival">2 — légère décote</div></div>
-          <div class="iitem"><div class="ilbl">Provenance</div><div class="ival">Suisse ✓</div></div>
+    <!-- PRIX -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">01</div><div class="sec-icon">💰</div><div class="sec-title">Score prix vs marché suisse</div></div>
+      <div class="sec-line"></div>
+      <div class="score-wrap">
+        <div class="sbadge sb-g"><div style="display:flex;flex-direction:column;align-items:center;"><div class="sb-num">8</div><div class="sb-den">/10</div></div><div class="sb-text"><strong>Score prix</strong><span>Correct pour le marché suisse</span></div></div>
+        <div class="score-right">
+          <div class="bar-wrap"><div class="bar-track"><div class="bar-fill bar-g" style="width:80%"></div></div><div class="bar-labs"><span class="bar-lab">Surévalué</span><span class="bar-lab">Correct</span><span class="bar-lab">Bonne affaire</span></div></div>
+          <div class="igrid">
+            <div class="iitem hl"><div class="ilbl">Prix demandé</div><div class="ival">24 500 CHF</div></div>
+            <div class="iitem hl"><div class="ilbl">Fourchette marché CH</div><div class="ival">22 500 – 27 000 CHF</div></div>
+            <div class="iitem"><div class="ilbl">Impact options</div><div class="ival">+1 200 – 1 500 CHF</div></div>
+            <div class="iitem"><div class="ilbl">Couleur</div><div class="ival">Noir métallisé — neutre</div></div>
+            <div class="iitem"><div class="ilbl">Nb propriétaires</div><div class="ival">2 — légère décote</div></div>
+            <div class="iitem"><div class="ilbl">Provenance</div><div class="ival">Suisse ✓</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="alert al-g"><div class="alert-title">✓ Prix correct</div><p>Le prix de 24 500 CHF est dans la fourchette basse du marché pour ce modèle/année/km. Les options présentes justifient ce tarif. Une légère négociation reste possible.</p></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- FIABILITÉ -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">02</div><div class="sec-icon">🔧</div><div class="sec-title">Score fiabilité</div></div>
+      <div class="sec-line"></div>
+      <div class="score-wrap">
+        <div class="sbadge sb-s"><div style="display:flex;flex-direction:column;align-items:center;"><div class="sb-num">8</div><div class="sb-den">/10</div></div><div class="sb-text"><strong>Score fiabilité</strong><span>Bonne réputation générale</span></div></div>
+        <div class="score-right"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill bar-s" style="width:80%"></div></div><div class="bar-labs"><span class="bar-lab">Faible</span><span class="bar-lab">Moyenne</span><span class="bar-lab">Excellente</span></div></div></div>
+      </div>
+      <div class="clist">
+        <div class="ci"><div class="ci-ico ci-ok">✓</div><span><strong>Moteur B47 (diesel 4 cyl.)</strong> — Excellent rapport couple/puissance, reconnu pour sa longévité si bien entretenu.</span></div>
+        <div class="ci"><div class="ci-ico ci-ok">✓</div><span><strong>Boîte ZF 8HP</strong> — Une des meilleures boîtes automatiques du marché. Très fiable si les vidanges ont été faites.</span></div>
+        <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Turbocompresseur</strong> — Surveiller les bruits anormaux à froid. Remplacement ~1 800–2 500 CHF en Suisse.</span></div>
+        <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Vanne EGR</strong> — Problème connu sur les diesels BMW. Nettoyage préventif recommandé (~300 CHF).</span></div>
+        <div class="ci"><div class="ci-ico ci-info">i</div><span><strong>Kilométrage</strong> — 85 000 km légèrement au-dessus de la moyenne (~15 000 km/an). Reste dans la norme pour un diesel bien entretenu.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 2 / 5</span></div>
+</div>
+
+<!-- PAGE 3 : COÛTS + ADBLUE -->
+<div class="page">
+  <div class="ph">
+    <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
+    <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
+  </div>
+  <div class="pc">
+    <!-- COÛTS -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">03</div><div class="sec-icon">🏥</div><div class="sec-title">Coûts d'entretien garage suisse</div></div>
+      <div class="sec-line"></div>
+      <div class="score-wrap">
+        <div class="sbadge sb-a"><div style="display:flex;flex-direction:column;align-items:center;"><div class="sb-num">7</div><div class="sb-den">/10</div></div><div class="sb-text"><strong>Score entretien</strong><span>Coûts modérés pour ce segment</span></div></div>
+        <div class="score-right"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill bar-a" style="width:70%"></div></div><div class="bar-labs"><span class="bar-lab">Élevés</span><span class="bar-lab">Modérés</span><span class="bar-lab">Faibles</span></div></div></div>
+      </div>
+      <table class="ctable">
+        <thead><tr><th>Prestation</th><th>Fréquence</th><th>Coût estimé CHF</th></tr></thead>
+        <tbody>
+          <tr><td>Révision annuelle (huile + filtres)</td><td>Annuelle</td><td class="camount">600 – 900</td></tr>
+          <tr><td>Plaquettes de frein (AV)</td><td>Tous les 40-50k km</td><td class="camount">350 – 500</td></tr>
+          <tr><td>Pneus (4 pneus été)</td><td>Tous les 40-60k km</td><td class="camount">800 – 1 400</td></tr>
+          <tr><td>Filtre à particules (DPF)</td><td>Si bouché</td><td class="camount">600 – 1 200</td></tr>
+          <tr><td>Vanne EGR (nettoyage préventif)</td><td>Recommandé</td><td class="camount">250 – 400</td></tr>
+          <tr><td>Batterie 12V</td><td>Tous les 5-7 ans</td><td class="camount">200 – 350</td></tr>
+        </tbody>
+        <tfoot>
+          <tr class="tot"><td colspan="2"><strong>Budget entretien estimé — Année 1</strong></td><td class="camount">1 200 – 1 500 CHF</td></tr>
+          <tr class="tot"><td colspan="2"><strong>Coût total possession — 3 ans</strong><br><span style="font-size:11px;font-weight:400;color:var(--text-mid)">Achat : 24 500 · Entretien : ~4 500 · MFK : ~150 CHF</span></td><td class="camount">~29 150 – 32 000</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- ADBLUE -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">04</div><div class="sec-icon">🟦</div><div class="sec-title">AdBlue & émissions</div></div>
+      <div class="sec-line"></div>
+      <div class="alert al-s"><div class="alert-title">ℹ️ Diesel Euro 6 — AdBlue avec warning automatique</div><p>La BMW 320d G20 (2019) est équipée d'un système AdBlue avec <strong>avertissement automatique au tableau de bord</strong> à environ 2 400 km avant épuisement. Le moteur peut refuser de redémarrer si le réservoir est vide.</p></div>
+      <div class="igrid">
+        <div class="iitem"><div class="ilbl">Capacité réservoir AdBlue</div><div class="ival">~15 litres</div></div>
+        <div class="iitem"><div class="ilbl">Intervalle remplissage</div><div class="ival">~10 000 – 12 000 km</div></div>
+        <div class="iitem hl"><div class="ilbl">Coût remplissage Suisse</div><div class="ival">15 – 25 CHF</div></div>
+        <div class="iitem"><div class="ilbl">Émissions CO2</div><div class="ival">142 g/km (NEDC)</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 3 / 5</span></div>
+</div>
+
+<!-- PAGE 4 : FREE SERVICE + RED FLAGS -->
+<div class="page">
+  <div class="ph">
+    <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
+    <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
+  </div>
+  <div class="pc">
+    <!-- FREE SERVICE -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">05</div><div class="sec-icon">🛠️</div><div class="sec-title">Free Service & garanties</div></div>
+      <div class="sec-line"></div>
+      <div class="clist">
+        <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>BMW Free Service</strong> — Probablement expiré ou en fin de période. À vérifier avec le vendeur et dans le carnet d'entretien.</span></div>
+        <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Garantie constructeur</strong> — Standard 3 ans expirée (BMW). Vérifier si une extension a été souscrite.</span></div>
+        <div class="ci"><div class="ci-ico ci-ok">✓</div><span><strong>Dernière MFK</strong> — Mars 2024 (~14 mois). Prochaine en 2027. Aucune dépense à prévoir à court terme.</span></div>
+        <div class="ci"><div class="ci-ico ci-info">i</div><span><strong>Prochaine révision</strong> — Dans environ 15 000 km ou 12 mois selon les intervalles BMW.</span></div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- RED FLAGS -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">06</div><div class="sec-icon">⚠️</div><div class="sec-title">Red flags & checklist visite</div></div>
+      <div class="sec-line"></div>
+      <div class="clist" style="margin-bottom:14px">
+        <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Système d'injection</strong> — Vérifier la pression et l'état des injecteurs (bruit de claquement au ralenti).</span></div>
+        <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Turbocompresseur</strong> — Inspecter visuellement les durites. Surveiller la fumée bleue au démarrage.</span></div>
+        <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Boîte ZF 8HP</strong> — Demander l'historique des vidanges. Passages saccadés = signe de problème.</span></div>
+        <div class="ci"><div class="ci-ico ci-bad">✗</div><span><strong>DPF (filtre à particules)</strong> — Diesel urbain à risque d'encrassement. Demander un diagnostic OBD et vérifier l'historique.</span></div>
+        <div class="ci"><div class="ci-ico ci-info">i</div><span><strong>Historique d'accidents</strong> — Vérifier l'alignement des panneaux, les soudures et les épaisseurs de peinture.</span></div>
+      </div>
+      <div class="alert al-a">
+        <div class="alert-title">⚠️ Checklist 5 points avant achat</div>
+        <div class="clist" style="margin-top:8px;margin-bottom:0">
+          <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">1</div><span>Vérifier le niveau AdBlue et les voyants au tableau de bord</span></div>
+          <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">2</div><span>Demander le carnet d'entretien complet (vidanges, distribution)</span></div>
+          <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">3</div><span>Test conduite : accélération franche, freinages, passages boîte</span></div>
+          <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">4</div><span>Inspecter la carrosserie (épaissimètre peinture recommandé)</span></div>
+          <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">5</div><span>Demander un diagnostic OBD (codes d'erreurs présents/passés)</span></div>
         </div>
       </div>
     </div>
-    <div class="alert al-g"><div class="alert-title">✓ Prix correct</div><p>Le prix de 24 500 CHF est dans la fourchette basse du marché pour ce modèle/année/km. Les options présentes justifient ce tarif. Une légère négociation reste possible.</p></div>
   </div>
-  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 2 / 6</span></div>
+  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 4 / 5</span></div>
 </div>
 
-<!-- PAGE 3 : SCORE FIABILITÉ -->
+<!-- PAGE 5 : TAXE + VERDICT -->
 <div class="page">
   <div class="ph">
     <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
     <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
   </div>
   <div class="pc">
-    <div class="sec-head"><div class="sec-num">02</div><div class="sec-icon">🔧</div><div class="sec-title">Score fiabilité</div></div>
-    <div class="sec-line"></div>
-    <div class="score-wrap">
-      <div class="sbadge sb-s"><div style="display:flex;flex-direction:column;align-items:center;"><div class="sb-num">8</div><div class="sb-den">/10</div></div><div class="sb-text"><strong>Score fiabilité</strong><span>Bonne réputation générale</span></div></div>
-      <div class="score-right"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill bar-s" style="width:80%"></div></div><div class="bar-labs"><span class="bar-lab">Faible</span><span class="bar-lab">Moyenne</span><span class="bar-lab">Excellente</span></div></div></div>
+    <!-- TAXE -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">07</div><div class="sec-icon">🗺️</div><div class="sec-title">Taxe cantonale estimée</div></div>
+      <div class="sec-line"></div>
+      <div class="canton">
+        <div><div class="canton-lbl">Canton</div><div class="canton-name">🇨🇭 Genève (GE)</div><div class="canton-sub">Basé sur CO2 (142 g/km) · Barème 2025</div></div>
+        <div><div class="canton-amt">~298 CHF</div><div class="canton-per">par année</div></div>
+      </div>
+      <div class="alert al-s"><div class="alert-title">ℹ️ Vérifiez le montant exact</div><p>Estimation uniquement. Calculateur officiel : <strong>ge.ch/impot-vehicules</strong></p></div>
     </div>
-    <div class="clist">
-      <div class="ci"><div class="ci-ico ci-ok">✓</div><span><strong>Moteur B47 (diesel 4 cyl.)</strong> — Excellent rapport couple/puissance, reconnu pour sa longévité si bien entretenu.</span></div>
-      <div class="ci"><div class="ci-ico ci-ok">✓</div><span><strong>Boîte ZF 8HP</strong> — Une des meilleures boîtes automatiques du marché. Très fiable si les vidanges ont été faites.</span></div>
-      <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Turbocompresseur</strong> — Surveiller les bruits anormaux à froid. Remplacement ~1 800–2 500 CHF en Suisse.</span></div>
-      <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Vanne EGR</strong> — Problème connu sur les diesels BMW. Nettoyage préventif recommandé (~300 CHF).</span></div>
-      <div class="ci"><div class="ci-ico ci-info">i</div><span><strong>Kilométrage</strong> — 85 000 km légèrement au-dessus de la moyenne (~15 000 km/an). Reste dans la norme pour un diesel bien entretenu.</span></div>
-    </div>
-  </div>
-  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 3 / 6</span></div>
-</div>
 
-<!-- PAGE 4 : COÛTS D'ENTRETIEN -->
-<div class="page">
-  <div class="ph">
-    <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
-    <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
-  </div>
-  <div class="pc">
-    <div class="sec-head"><div class="sec-num">03</div><div class="sec-icon">🏥</div><div class="sec-title">Coûts d'entretien garage suisse</div></div>
-    <div class="sec-line"></div>
-    <div class="score-wrap">
-      <div class="sbadge sb-a"><div style="display:flex;flex-direction:column;align-items:center;"><div class="sb-num">7</div><div class="sb-den">/10</div></div><div class="sb-text"><strong>Score entretien</strong><span>Coûts modérés pour ce segment</span></div></div>
-      <div class="score-right"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill bar-a" style="width:70%"></div></div><div class="bar-labs"><span class="bar-lab">Élevés</span><span class="bar-lab">Modérés</span><span class="bar-lab">Faibles</span></div></div></div>
-    </div>
-    <table class="ctable">
-      <thead><tr><th>Prestation</th><th>Fréquence</th><th>Coût estimé CHF</th></tr></thead>
-      <tbody>
-        <tr><td>Révision annuelle (huile + filtres)</td><td>Annuelle</td><td class="camount">600 – 900</td></tr>
-        <tr><td>Plaquettes de frein (AV)</td><td>Tous les 40-50k km</td><td class="camount">350 – 500</td></tr>
-        <tr><td>Pneus (4 pneus été)</td><td>Tous les 40-60k km</td><td class="camount">800 – 1 400</td></tr>
-        <tr><td>Filtre à particules (DPF)</td><td>Si bouché</td><td class="camount">600 – 1 200</td></tr>
-        <tr><td>Vanne EGR (nettoyage préventif)</td><td>Recommandé</td><td class="camount">250 – 400</td></tr>
-        <tr><td>Batterie 12V</td><td>Tous les 5-7 ans</td><td class="camount">200 – 350</td></tr>
-      </tbody>
-      <tfoot>
-        <tr class="tot"><td colspan="2"><strong>Budget entretien estimé — Année 1</strong></td><td class="camount">1 200 – 1 500 CHF</td></tr>
-        <tr class="tot"><td colspan="2"><strong>Coût total possession — 3 ans</strong><br><span style="font-size:12px;font-weight:400;color:var(--text-mid)">Achat : 24 500 · Entretien : ~4 500 · MFK : ~150 CHF</span></td><td class="camount">~29 150 – 32 000</td></tr>
-      </tfoot>
-    </table>
-  </div>
-  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 4 / 6</span></div>
-</div>
-
-<!-- PAGE 5 : ADBLUE + FREE SERVICE -->
-<div class="page">
-  <div class="ph">
-    <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
-    <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
-  </div>
-  <div class="pc">
-    <div class="sec-head"><div class="sec-num">04</div><div class="sec-icon">🟦</div><div class="sec-title">AdBlue & émissions</div></div>
-    <div class="sec-line"></div>
-    <div class="alert al-s"><div class="alert-title">ℹ️ Diesel Euro 6 — AdBlue avec warning automatique</div><p>La BMW 320d G20 (2019) est équipée d'un système AdBlue avec <strong>avertissement automatique au tableau de bord</strong> à environ 2 400 km avant épuisement. Le moteur peut refuser de redémarrer si le réservoir est vide.</p></div>
-    <div class="igrid">
-      <div class="iitem"><div class="ilbl">Capacité réservoir AdBlue</div><div class="ival">~15 litres</div></div>
-      <div class="iitem"><div class="ilbl">Intervalle remplissage</div><div class="ival">~10 000 – 12 000 km</div></div>
-      <div class="iitem hl"><div class="ilbl">Coût remplissage Suisse</div><div class="ival">15 – 25 CHF</div></div>
-      <div class="iitem"><div class="ilbl">Émissions CO2</div><div class="ival">142 g/km (NEDC)</div></div>
-    </div>
     <div class="sep"></div>
-    <div class="sec-head"><div class="sec-num">05</div><div class="sec-icon">🛠️</div><div class="sec-title">Free Service & garanties</div></div>
-    <div class="sec-line"></div>
-    <div class="clist">
-      <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>BMW Free Service</strong> — Probablement expiré ou en fin de période. À vérifier avec le vendeur et dans le carnet d'entretien.</span></div>
-      <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Garantie constructeur</strong> — Standard 3 ans expirée (BMW). Vérifier si une extension a été souscrite.</span></div>
-      <div class="ci"><div class="ci-ico ci-ok">✓</div><span><strong>Dernière MFK</strong> — Mars 2024 (~14 mois). Prochaine en 2027. Aucune dépense à prévoir à court terme.</span></div>
-      <div class="ci"><div class="ci-ico ci-info">i</div><span><strong>Prochaine révision</strong> — Dans environ 15 000 km ou 12 mois selon les intervalles BMW.</span></div>
-    </div>
-  </div>
-  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 5 / 7</span></div>
-</div>
 
-<!-- PAGE 6 : RED FLAGS + TAXE -->
-<div class="page">
-  <div class="ph">
-    <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
-    <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
-  </div>
-  <div class="pc">
-    <div class="sec-head"><div class="sec-num">06</div><div class="sec-icon">⚠️</div><div class="sec-title">Red flags & checklist visite</div></div>
-    <div class="sec-line"></div>
-    <div class="clist" style="margin-bottom:18px">
-      <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Système d'injection</strong> — Vérifier la pression et l'état des injecteurs (bruit de claquement au ralenti).</span></div>
-      <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Turbocompresseur</strong> — Inspecter visuellement les durites. Surveiller la fumée bleue au démarrage.</span></div>
-      <div class="ci"><div class="ci-ico ci-warn">!</div><span><strong>Boîte ZF 8HP</strong> — Demander l'historique des vidanges. Passages saccadés = signe de problème.</span></div>
-      <div class="ci"><div class="ci-ico ci-bad">✗</div><span><strong>DPF (filtre à particules)</strong> — Diesel urbain à risque d'encrassement. Demander un diagnostic OBD et vérifier l'historique d'utilisation.</span></div>
-      <div class="ci"><div class="ci-ico ci-info">i</div><span><strong>Historique d'accidents</strong> — Vérifier l'alignement des panneaux de carrosserie, les soudures et les épaisseurs de peinture.</span></div>
-    </div>
-    <div class="alert al-a">
-      <div class="alert-title">⚠️ Checklist 5 points avant achat</div>
-      <div class="clist" style="margin-top:10px;margin-bottom:0">
-        <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">1</div><span>Vérifier le niveau AdBlue et les voyants au tableau de bord</span></div>
-        <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">2</div><span>Demander le carnet d'entretien complet (vidanges, distribution)</span></div>
-        <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">3</div><span>Test conduite : accélération franche, freinages, passages boîte</span></div>
-        <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">4</div><span>Inspecter la carrosserie (épaissimètre peinture recommandé)</span></div>
-        <div class="ci"><div class="ci-ico ci-info" style="background:#fff3cd">5</div><span>Demander un diagnostic OBD (codes d'erreurs présents/passés)</span></div>
+    <!-- VERDICT -->
+    <div class="sec">
+      <div class="sec-head"><div class="sec-num">08</div><div class="sec-icon">🏆</div><div class="sec-title">Verdict EasyCarCheck</div></div>
+      <div class="sec-line"></div>
+      <div class="verdict v-neg">
+        <div class="v-head"><div class="v-icon">🟡</div><div><div class="v-lbl">Verdict EasyCarCheck</div><div class="v-val">NÉGOCIER</div></div></div>
+        <div class="v-price">Proposer 23 000 – 24 000 CHF</div>
+        <div class="v-sum">Ce véhicule représente une opportunité correcte sur le marché suisse. Le prix est dans la fourchette basse mais quelques points de vigilance (DPF, EGR) justifient une négociation de 500 à 1 500 CHF. Si le carnet d'entretien est complet et l'essai concluant, c'est un bon achat.</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:8px;font-weight:600;">Options déclarées</div>
+        <div class="chips"><div class="chip">🗺️ GPS/Navigation</div><div class="chip">🌡️ Sièges chauffants</div><div class="chip">📷 Caméra recul</div><div class="chip">💡 Xenon/LED</div><div class="chip">⚡ Régulateur adaptatif</div></div>
+      </div>
+      <div class="disclaimer">
+        <p>Ce rapport est un outil d'aide à la décision basé sur les données fournies et les caractéristiques connues du modèle. Il ne remplace pas une inspection physique par un professionnel. EasyCarCheck décline toute responsabilité quant aux décisions d'achat prises sur la base de ce rapport.</p>
+        <p style="margin-top:5px;font-weight:600;">EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · 🇨🇭 Suisse</p>
       </div>
     </div>
-    <div class="sep"></div>
-    <div class="sec-head"><div class="sec-num">07</div><div class="sec-icon">🗺️</div><div class="sec-title">Taxe cantonale estimée</div></div>
-    <div class="sec-line"></div>
-    <div class="canton">
-      <div><div class="canton-lbl">Canton</div><div class="canton-name">🇨🇭 Genève (GE)</div><div class="canton-sub">Basé sur CO2 (142 g/km) · Barème 2025</div></div>
-      <div><div class="canton-amt">~298 CHF</div><div class="canton-per">par année</div></div>
-    </div>
-    <div class="alert al-s"><div class="alert-title">ℹ️ Vérifiez le montant exact</div><p>Estimation uniquement. Calculateur officiel : <strong>ge.ch/impot-vehicules</strong></p></div>
   </div>
-  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 6 / 7</span></div>
-</div>
-
-<!-- PAGE 7 : VERDICT FINAL -->
-<div class="page">
-  <div class="ph">
-    <div class="ph-logo"><div class="ph-circle">🚗<div class="ph-badge">✓</div></div><div style="display:flex;align-items:baseline;gap:4px;"><span class="ph-easy">EASY</span><span class="ph-name"><span>CAR</span>CHECK</span></div></div>
-    <div class="ph-r"><div class="ph-vehicle">BMW 320d — 2019</div><div class="ph-meta">85 000 km · 24 500 CHF · Rapport #001</div></div>
-  </div>
-  <div class="pc">
-    <div class="sec-head"><div class="sec-num">08</div><div class="sec-icon">🏆</div><div class="sec-title">Verdict EasyCarCheck</div></div>
-    <div class="sec-line"></div>
-    <div class="verdict v-neg">
-      <div class="v-head"><div class="v-icon">🟡</div><div><div class="v-lbl">Verdict EasyCarCheck</div><div class="v-val">NÉGOCIER</div></div></div>
-      <div class="v-price">Proposer 23 000 – 24 000 CHF</div>
-      <div class="v-sum">Ce véhicule représente une opportunité correcte sur le marché suisse. Le prix est dans la fourchette basse mais quelques points de vigilance (DPF, EGR) justifient une négociation de 500 à 1 500 CHF. Si le carnet d'entretien est complet et l'essai concluant, c'est un bon achat.</div>
-    </div>
-    <div style="margin-bottom:18px">
-      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:10px;font-weight:600;">Options déclarées</div>
-      <div class="chips"><div class="chip">🗺️ GPS/Navigation</div><div class="chip">🌡️ Sièges chauffants</div><div class="chip">📷 Caméra recul</div><div class="chip">💡 Xenon/LED</div><div class="chip">⚡ Régulateur adaptatif</div></div>
-    </div>
-    <div class="disclaimer">
-      <p>Ce rapport est un outil d'aide à la décision basé sur les données fournies et les caractéristiques connues du modèle. Il ne remplace pas une inspection physique par un professionnel. EasyCarCheck décline toute responsabilité quant aux décisions d'achat prises sur la base de ce rapport.</p>
-      <p style="margin-top:6px;font-weight:600;">EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · 🇨🇭 Suisse</p>
-    </div>
-  </div>
-  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 7 / 7</span></div>
+  <div class="pf"><span>EasyCarCheck · easycarcheck.ch</span><span>Page 5 / 5</span></div>
 </div>
 
 </body>
