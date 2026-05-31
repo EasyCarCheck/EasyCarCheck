@@ -14,7 +14,7 @@
     --bg: #f7f9fc; --border: #e2e8f0;
     --text: #0f1e30; --text-mid: #3a5270; --text-light: #8aa0b8;
   }
-  html, body { width: 210mm; margin: 0; padding: 0; background: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.65; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { width: 210mm; margin: 0; padding: 0; background: #fff; font-family: 'DM Sans', sans-serif; font-size: 16px; line-height: 1.7; color: var(--text); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   /* Chaque page = 297mm fixe, jamais coupée */
   .page {
@@ -85,13 +85,13 @@
   .ph-meta { font-size: 11px; color: rgba(255,255,255,0.5); }
 
   /* ── CONTENU ── */
-  .pc { padding: 32px 32px 20px; flex: 1; overflow: hidden; }
+  .pc { padding: 36px 36px 24px; flex: 1; overflow: hidden; }
 
   /* Section title */
   .sec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .sec-num { font-family: 'Bebas Neue', sans-serif; font-size: 42px; color: var(--border); line-height: 1; }
+  .sec-num { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--border); line-height: 1; }
   .sec-icon { font-size: 22px; }
-  .sec-title { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; color: var(--navy); line-height: 1; }
+  .sec-title { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px; color: var(--navy); line-height: 1; }
   .sec-line { height: 2px; background: linear-gradient(90deg, var(--navy) 0%, transparent 60%); margin-bottom: 20px; }
 
   /* Score badge */
@@ -100,13 +100,13 @@
   .sb-g { background: var(--green-light); border-left: 5px solid var(--green); }
   .sb-s { background: #eef6fc; border-left: 5px solid var(--sky); }
   .sb-a { background: var(--amber-light); border-left: 5px solid var(--amber); }
-  .sb-num { font-family: 'Bebas Neue', sans-serif; font-size: 68px; line-height: 1; letter-spacing: -2px; }
-  .sb-den { font-family: 'Bebas Neue', sans-serif; font-size: 26px; opacity: 0.4; }
+  .sb-num { font-family: 'Bebas Neue', sans-serif; font-size: 86px; line-height: 1; letter-spacing: -2px; }
+  .sb-den { font-family: 'Bebas Neue', sans-serif; font-size: 32px; opacity: 0.4; }
   .sb-g .sb-num, .sb-g .sb-den { color: var(--green); }
   .sb-s .sb-num, .sb-s .sb-den { color: var(--sky); }
   .sb-a .sb-num, .sb-a .sb-den { color: var(--amber); }
-  .sb-text strong { display: block; font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-  .sb-text span { font-size: 13px; color: var(--text-mid); }
+  .sb-text strong { display: block; font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .sb-text span { font-size: 15px; color: var(--text-mid); }
   .score-right { flex: 1; padding-top: 8px; }
 
   /* Barre */
@@ -121,8 +121,8 @@
   .igrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 18px; }
   .iitem { background: var(--bg); padding: 11px 15px; }
   .iitem.hl { background: #e8f0f8; border-left: 4px solid var(--navy); }
-  .ilbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin-bottom: 3px; }
-  .ival { font-size: 15px; font-weight: 600; color: var(--navy); }
+  .ilbl { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin-bottom: 3px; }
+  .ival { font-size: 17px; font-weight: 600; color: var(--navy); }
 
   /* Alerte */
   .alert { padding: 14px 18px; border-radius: 3px; margin-bottom: 18px; border-left: 4px solid; }
@@ -133,11 +133,11 @@
   .al-g .alert-title { color: var(--green); }
   .al-a .alert-title { color: var(--amber); }
   .al-s .alert-title { color: var(--navy); }
-  .alert p { font-size: 13.5px; color: var(--text-mid); line-height: 1.6; }
+  .alert p { font-size: 15px; color: var(--text-mid); line-height: 1.6; }
 
   /* Check list */
-  .clist { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
-  .ci { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; color: var(--text-mid); line-height: 1.55; }
+  .clist { display: flex; flex-direction: column; gap: 16px; margin-bottom: 18px; }
+  .ci { display: flex; gap: 14px; align-items: flex-start; font-size: 15px; color: var(--text-mid); line-height: 1.55; }
   .ci-ico { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
   .ci-ok   { background: var(--green-light); color: var(--green); }
   .ci-warn { background: var(--amber-light); color: var(--amber); }
@@ -147,7 +147,7 @@
   /* Tableau */
   .ctable { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
   .ctable th { background: var(--navy); color: #fff; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 11px 15px; text-align: left; }
-  .ctable td { padding: 10px 15px; font-size: 13.5px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
+  .ctable td { padding: 13px 16px; font-size: 15px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
   .ctable tr:nth-child(even) td { background: var(--bg); }
   .ctable .tot td { background: #e8f0f8; font-weight: 700; color: var(--navy); border-top: 2px solid var(--navy); }
   .camount { font-weight: 700; color: var(--navy); }
@@ -168,12 +168,12 @@
   .v-head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
   .v-icon { font-size: 36px; }
   .v-lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); }
-  .v-val { font-family: 'Bebas Neue', sans-serif; font-size: 44px; letter-spacing: 2px; line-height: 1; }
+  .v-val { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 2px; line-height: 1; }
   .v-neg .v-val { color: var(--amber); }
   .v-ach .v-val { color: var(--green); }
   .v-evi .v-val { color: var(--red); }
   .v-price { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--navy); margin-bottom: 12px; }
-  .v-sum { font-size: 13.5px; color: var(--text-mid); line-height: 1.7; }
+  .v-sum { font-size: 15px; color: var(--text-mid); line-height: 1.7; }
 
   /* Chips */
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
