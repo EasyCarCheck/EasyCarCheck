@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -31,7 +32,7 @@
 
   /* NAV */
   nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--white); border-bottom: 2px solid var(--border); padding: 0 40px; height: 64px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 12px rgba(26,61,110,0.06); }
-  .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px; color: var(--navy); text-decoration: none; } font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px; color: var(--navy); text-decoration: none; display:flex; align-items:center; gap:10px; }
+  .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px; color: var(--navy); text-decoration: none; display:flex; align-items:center; gap:10px; }
   .nav-logo span { color: var(--sky); font-family: 'Bebas Neue', sans-serif; }
   .nav-right { display: flex; gap: 20px; align-items: center; }
   .nav-links { display: flex; gap: 24px; align-items: center; }
@@ -200,12 +201,14 @@
   .form-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); font-weight: 600; display: block; margin-bottom: 6px; }
   .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--white); border-radius: 3px; outline: none; transition: border-color 0.2s; }
   .form-input:focus { border-color: var(--navy); }
+  .form-select { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--white); border-radius: 3px; outline: none; transition: border-color 0.2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238aa0b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+  .form-select:focus { border-color: var(--navy); }
   .form-submit { width: 100%; padding: 13px; background: var(--navy); color: var(--white); font-size: 14px; font-weight: 600; border: none; cursor: pointer; border-radius: 3px; transition: background 0.2s; font-family: 'DM Sans', sans-serif; margin-top: 6px; }
   .form-submit:hover { background: var(--navy-dark); }
 
   /* FORM SECTION */
   .form-section { background: var(--navy); padding: 90px 40px; }
-  .form-inner { max-width: 800px; margin: 0 auto; text-align: center; }
+  .form-inner { max-width: 860px; margin: 0 auto; text-align: center; }
   .form-inner .section-label { color: var(--sky); }
   .form-inner .section-title { color: var(--white); }
   .form-inner .section-title span { color: var(--sky); }
@@ -213,9 +216,26 @@
   .form-box-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--navy); margin-bottom: 6px; }
   .form-box-sub { font-size: 13px; color: var(--text-light); margin-bottom: 24px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
   .form-footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px; }
   .form-security { font-size: 12px; color: var(--text-light); }
   .form-price-tag { background: var(--navy); color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; padding: 4px 16px; border-radius: 2px; }
+
+  /* FORM SECTION DIVIDER */
+  .form-section-divider { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--navy); background: var(--navy-light); border-left: 3px solid var(--navy); padding: 8px 14px; border-radius: 0 3px 3px 0; margin: 20px 0 14px; display: flex; align-items: center; gap: 8px; }
+
+  /* CHECKBOXES OPTIONS */
+  .options-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .option-checkbox { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 3px; cursor: pointer; transition: all 0.15s; font-size: 13px; color: var(--text-mid); background: var(--white); user-select: none; }
+  .option-checkbox:hover { border-color: var(--navy); color: var(--navy); }
+  .option-checkbox input[type="checkbox"] { accent-color: var(--navy); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+  .option-checkbox input:checked + span { color: var(--navy); font-weight: 600; }
+  .option-checkbox:has(input:checked) { border-color: var(--navy); background: var(--navy-light); }
+
+  /* PROVENANCE TOGGLE */
+  .provenance-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+  .prov-btn { flex: 1; padding: 10px; border: 1.5px solid var(--border); background: var(--white); border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; color: var(--text-mid); font-family: 'DM Sans', sans-serif; text-align: center; }
+  .prov-btn.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
 
   /* FOOTER */
   footer { background: var(--black); padding: 48px 40px 32px; }
@@ -243,9 +263,9 @@
     .section, .reviews-section, .contact-section { padding: 60px 20px; }
     .footer-top { flex-direction: column; }
     .footer-links { gap: 32px; }
-    .form-row { grid-template-columns: 1fr; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
     .form-box { padding: 24px 20px; }
-    .footer { padding: 40px 20px 24px; }
+    .options-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -253,7 +273,7 @@
 
 <!-- NAV -->
 <nav>
- <a href="#" class="nav-logo">🚗 EASY<span>CAR</span>CHECK</a>
+  <a href="#" class="nav-logo">🚗 EASY<span>CAR</span>CHECK</a>
   <div class="nav-right">
     <div class="nav-links">
       <a href="#comment">Comment ça marche</a>
@@ -283,7 +303,7 @@
       </h1>
       <p class="hero-sub">Colle le lien d'une annonce ou entre le numéro VIN. EasyCarCheck analyse <strong>le prix, la fiabilité, les coûts d'entretien</strong> et te donne un verdict clair en quelques minutes.</p>
       <div class="hero-actions">
-  <a href="#analyser" class="btn-primary">Analyser une annonce — 9 CHF</a>
+        <a href="#analyser" class="btn-primary">Analyser une annonce — 9 CHF</a>
         <a href="#comment" class="btn-secondary">Voir un exemple</a>
       </div>
       <div class="hero-trust">
@@ -324,7 +344,6 @@
     <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Concurrent IA local</div></div>
   </div>
 </div>
-
 
 <!-- IA SPÉCIALISÉE -->
 <div style="background:linear-gradient(135deg,#1a3d6e,#0f2548);padding:70px 40px;">
@@ -451,9 +470,11 @@
           <li>Section AdBlue (si concerné)</li>
           <li>Free Service restant</li>
           <li>Red flags du modèle</li>
+          <li>Taxe cantonale estimée</li>
           <li>Verdict : acheter / négocier / éviter</li>
+          <li>Rapport PDF professionnel</li>
         </ul>
-       <a href="#analyser" class="pricing-btn btn-white" style="display:block;text-align:center;text-decoration:none;">Commander mon rapport →</a>
+        <a href="#analyser" class="pricing-btn btn-white" style="display:block;text-align:center;text-decoration:none;">Commander mon rapport →</a>
       </div>
       <div class="pricing-card">
         <div class="pricing-label">Pack 5 Rapports</div>
@@ -508,7 +529,7 @@
       </div>
       <div class="faq-item">
         <div class="faq-question" onclick="toggleFaq(this)">Que contient exactement le rapport complet ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>Score prix vs marché suisse, score fiabilité du modèle, tableau des coûts garage Suisse, section AdBlue (si le modèle est concerné), free service restant, red flags connus du modèle, checklist avant achat, et verdict final : acheter / négocier / éviter.</p></div>
+        <div class="faq-answer"><p>Score prix vs marché suisse, score fiabilité du modèle, tableau des coûts garage Suisse, section AdBlue (si le modèle est concerné), free service restant, red flags connus du modèle, taxe cantonale estimée, checklist avant achat, et verdict final : acheter / négocier / éviter.</p></div>
       </div>
       <div class="faq-item">
         <div class="faq-question" onclick="toggleFaq(this)">Comment fonctionne le paiement ? <span class="faq-icon">+</span></div>
@@ -574,12 +595,18 @@
     <div class="section-title">Analyse ton<br><span>annonce.</span></div>
     <div class="form-box">
       <div class="form-box-title">Soumettre une annonce</div>
-      <div class="form-box-sub">Remplis le formulaire — tu reçois ton rapport en quelques minutes.</div>
+      <div class="form-box-sub">Remplis le formulaire — plus d'informations = analyse plus précise. Tu reçois ton rapport en quelques minutes.</div>
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:16px;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);font-weight:700">*</span> Champs obligatoires — tout le reste est optionnel mais améliore la précision du rapport.</div>
+
+      <!-- OPTION 1 : LIEN -->
       <div style="background:var(--navy-light);border-radius:4px;padding:16px 18px;margin-bottom:14px;">
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--navy);margin-bottom:12px;">Option 1 — Lien de l'annonce</div>
-        <div class="form-group" style="margin-bottom:0"><label class="form-label">Colle le lien de l'annonce</label><input type="url" class="form-input" placeholder="https://autoscout24.ch/..."></div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Colle le lien de l'annonce</label><input type="url" id="form-annonce" class="form-input" placeholder="https://autoscout24.ch/..."></div>
       </div>
+
       <div style="text-align:center;font-size:13px;color:var(--text-light);margin:8px 0;font-weight:600;letter-spacing:2px;">— OU —</div>
+
+      <!-- OPTION 2 : VIN -->
       <div style="background:var(--sky-light);border-radius:4px;padding:16px 18px;margin-bottom:14px;border:1px solid var(--border);">
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sky);margin-bottom:4px;">Option 2 — Numéro VIN</div>
         <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">📍 Où trouver le VIN ? Sur le permis de circulation, sur le pare-brise côté conducteur, ou sur le montant de la porte.</div>
@@ -589,20 +616,191 @@
           <div id="vin-status" style="font-size:12px;margin-top:6px;display:none;"></div>
         </div>
       </div>
+
+      <!-- SECTION 1 : INFOS DE BASE -->
+      <div class="form-section-divider">🚗 Informations de base</div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Marque</label><input type="text" class="form-input" id="form-marque" placeholder="ex: BMW, VW, Audi..."></div>
-        <div class="form-group"><label class="form-label">Modèle</label><input type="text" class="form-input" id="form-modele" placeholder="ex: M5, Golf R, A4..."></div>
+        <div class="form-group"><label class="form-label">Marque <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-marque" placeholder="ex: BMW, VW, Audi..." required></div>
+        <div class="form-group"><label class="form-label">Modèle <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-modele" placeholder="ex: M5, Golf R, A4..."></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Année</label><input type="text" class="form-input" id="form-annee" placeholder="ex: 2018"></div>
-        <div class="form-group"><label class="form-label">Kilométrage</label><input type="text" class="form-input" id="form-km" placeholder="ex: 138 000 km"></div>
+        <div class="form-group"><label class="form-label">Année <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-annee" placeholder="ex: 2018"></div>
+        <div class="form-group"><label class="form-label">Kilométrage <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-km" placeholder="ex: 138 000 km"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Prix demandé (CHF)</label><input type="text" class="form-input" id="form-prix" placeholder="ex: 22 500"></div>
-        <div class="form-group"><label class="form-label">Email</label><input type="email" id="form-email" class="form-input" placeholder="ton@email.ch"></div>
+        <div class="form-group"><label class="form-label">Prix demandé (CHF) <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-prix" placeholder="ex: 22 500"></div>
+        <div class="form-group"><label class="form-label">Canton d'immatriculation</label>
+          <select class="form-select" id="form-canton">
+            <option value="">— Sélectionner —</option>
+            <option>AG – Argovie</option><option>AI – Appenzell Rhodes-Intérieures</option><option>AR – Appenzell Rhodes-Extérieures</option>
+            <option>BE – Berne</option><option>BL – Bâle-Campagne</option><option>BS – Bâle-Ville</option>
+            <option>FR – Fribourg</option><option>GE – Genève</option><option>GL – Glaris</option>
+            <option>GR – Grisons</option><option>JU – Jura</option><option>LU – Lucerne</option>
+            <option>NE – Neuchâtel</option><option>NW – Nidwald</option><option>OW – Obwald</option>
+            <option>SG – Saint-Gall</option><option>SH – Schaffhouse</option><option>SO – Soleure</option>
+            <option>SZ – Schwytz</option><option>TG – Thurgovie</option><option>TI – Tessin</option>
+            <option>UR – Uri</option><option>VD – Vaud</option><option>VS – Valais</option>
+            <option>ZG – Zoug</option><option>ZH – Zurich</option>
+          </select>
+        </div>
       </div>
-<button type="button" onclick="submitToStripe()" class="form-submit" style="margin-top:16px;display:block;text-align:center;width:100%;cursor:pointer;">Commander mon rapport EasyCarCheck →</button>      <div class="form-footer-row">
-        <span class="form-security">🔒 Paiement sécurisé · TWINT accepté</span>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Carrosserie</label>
+          <select class="form-select" id="form-carrosserie">
+            <option value="">— Sélectionner —</option>
+            <option>Berline</option>
+            <option>Break / Touring</option>
+            <option>SUV / Crossover</option>
+            <option>Coupé</option>
+            <option>Cabriolet / Roadster</option>
+            <option>Monospace / Van</option>
+            <option>Utilitaire léger</option>
+            <option>Pick-up</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Puissance (ch)</label>
+          <input type="number" class="form-input" id="form-puissance" placeholder="ex: 290" min="30" max="2000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Couleur <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+          <input type="text" class="form-input" id="form-couleur" placeholder="ex: Noir métallisé, Blanc nacré...">
+        </div>
+        <div class="form-group"><label class="form-label">Nombre de propriétaires <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+          <select class="form-select" id="form-proprio">
+            <option value="">— Sélectionner —</option>
+            <option>1 propriétaire</option>
+            <option>2 propriétaires</option>
+            <option>3 propriétaires</option>
+            <option>4 propriétaires</option>
+            <option>5 propriétaires ou plus</option>
+            <option>Inconnu</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SECTION 2 : CARACTÉRISTIQUES TECHNIQUES -->
+      <div class="form-section-divider">⚙️ Caractéristiques techniques</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Carburant</label>
+          <select class="form-select" id="form-carburant">
+            <option value="">— Sélectionner —</option>
+            <option>Essence</option>
+            <option>Diesel</option>
+            <option>Hybride (mild)</option>
+            <option>Hybride rechargeable (PHEV)</option>
+            <option>Électrique</option>
+            <option>GPL / GNV</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Boîte de vitesses</label>
+          <select class="form-select" id="form-boite">
+            <option value="">— Sélectionner —</option>
+            <option>Manuelle</option>
+            <option>Automatique (convertisseur de couple)</option>
+            <option>Automatique double embrayage (DSG / S tronic / PDK)</option>
+            <option>CVT</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">CO2 (g/km) <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+          <input type="number" class="form-input" id="form-co2" placeholder="ex: 142" min="0" max="500">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Poids à vide (kg) <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+          <input type="number" class="form-input" id="form-poids" placeholder="ex: 1 450" min="500" max="5000">
+        </div>
+      </div>
+
+      <!-- SECTION 3 : PROVENANCE & MFK -->
+      <div class="form-section-divider">🇨🇭 Provenance & MFK</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Provenance du véhicule</label>
+          <div class="provenance-toggle">
+            <button type="button" class="prov-btn active" id="prov-ch" onclick="setProvenance('ch')">🇨🇭 Suisse</button>
+            <button type="button" class="prov-btn" id="prov-import" onclick="setProvenance('import')">✈️ Importé</button>
+          </div>
+          <div id="import-pays-wrapper" style="display:none">
+            <input type="text" class="form-input" id="form-pays-import" placeholder="Pays d'origine (ex: Allemagne, France...)">
+          </div>
+          <input type="hidden" id="form-provenance" value="Suisse">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date dernière MFK <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(contrôle technique)</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select class="form-select" id="form-mfk-mois"><option value="">Mois</option><option value="01">Janvier</option><option value="02">Février</option><option value="03">Mars</option><option value="04">Avril</option><option value="05">Mai</option><option value="06">Juin</option><option value="07">Juillet</option><option value="08">Août</option><option value="09">Septembre</option><option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option></select><select class="form-select" id="form-mfk-annee"><option value="">Année</option></select></div>
+        </div>
+      </div>
+
+      <!-- SECTION 4 : OPTIONS & ÉQUIPEMENTS -->
+      <div class="form-section-divider">🔧 Options & équipements <span style="font-size:10px;font-weight:400;color:var(--text-light);text-transform:none;letter-spacing:0">(cocher ce qui est présent)</span></div>
+      <div style="border:1.5px solid var(--border);border-radius:4px;overflow:hidden;">
+
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Confort &amp; intérieur</div>
+        <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
+          <label class="option-checkbox"><input type="checkbox" id="opt-sieges"><span>Sièges chauffants</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-sieges-vent"><span>Sièges ventilés</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-cuir"><span>Sièges en cuir</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-volant-chauf"><span>Volant chauffant</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-toit"><span>Toit ouvrant</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-toit-pano"><span>Toit panoramique</span></label>
+        </div>
+
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Technologie &amp; sécurité</div>
+        <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
+          <label class="option-checkbox"><input type="checkbox" id="opt-gps"><span>GPS / Navigation</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-carplay"><span>CarPlay / Android Auto</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-camera"><span>Caméra de recul</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-camera360"><span>Caméra 360°</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-pdc"><span>Radar stationnement</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-lane"><span>Lane assist</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-keyless"><span>Accès/démarrage sans clé</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-acc"><span>Régulateur adaptatif (ACC)</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-hud"><span>Head-up display</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-hifi"><span>Audio premium (B&amp;O, Harman...)</span></label>
+        </div>
+
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Éclairage &amp; extérieur</div>
+        <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
+          <label class="option-checkbox"><input type="checkbox" id="opt-xenon"><span>Phares Xenon / LED</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-matrix"><span>Phares Matrix / laser</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-jantes"><span>Jantes alliage</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-attelage"><span>Attelage remorque</span></label>
+        </div>
+
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Transmission &amp; garanties</div>
+        <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
+          <label class="option-checkbox"><input type="checkbox" id="opt-awd"><span>4x4 / AWD</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-freservice"><span>Free Service actif</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-garantie"><span>Garantie usine active</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-suspension"><span>Suspension pneumatique</span></label>
+        </div>
+
+        <div style="padding:14px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px;">Autres options non listées <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-light)">(optionnel)</span></div>
+          <textarea id="opt-autres" rows="2" class="form-input" placeholder="ex: Head-up display, pack M Sport, échappement sport, toit carbone, sièges massants..." style="resize:vertical;font-size:13px;"></textarea>
+          <div style="font-size:11px;color:var(--text-light);margin-top:4px;">L'IA prendra en compte ces options pour affiner l'analyse et l'estimation de valeur.</div>
+        </div>
+
+      </div>
+
+      <!-- EMAIL -->
+      <div class="form-section-divider">📧 Réception du rapport</div>
+      <div class="form-group">
+        <label class="form-label">Votre email *</label>
+        <input type="email" id="form-email" class="form-input" placeholder="ton@email.ch" style="max-width:400px;">
+        <div style="font-size:11px;color:var(--text-light);margin-top:5px;">Le rapport PDF sera envoyé à cette adresse dans les minutes suivant le paiement.</div>
+      </div>
+
+      <button type="button" onclick="submitToStripe()" class="form-submit" style="margin-top:16px;display:block;text-align:center;width:100%;cursor:pointer;font-size:15px;padding:16px;">
+        Commander mon rapport EasyCarCheck → 9 CHF
+      </button>
+      <div class="form-footer-row">
+        <span class="form-security">🔒 Paiement sécurisé · TWINT accepté · Stripe</span>
         <span class="form-price-tag">9.- CHF</span>
       </div>
     </div>
@@ -632,7 +830,7 @@
         </div>
         <div class="footer-col">
           <div class="footer-col-title">Légal</div>
-          <a href="#"><a href="/mentions-legales.html">Conditions d'utilisation</a></a>
+          <a href="/mentions-legales.html">Conditions d'utilisation</a>
           <a href="/mentions-legales.html">Confidentialité</a>
         </div>
         <div class="footer-col">
@@ -664,88 +862,118 @@ function toggleFaq(el) {
   if (!isOpen) { answer.classList.add('open'); icon.textContent = '−'; }
 }
 
-const translations = {
-  fr: {
-    nav_how: "Comment ça marche", nav_pricing: "Tarifs", nav_reviews: "Avis", nav_about: "Qui sommes-nous", nav_contact: "Contact", nav_cta: "Analyser une annonce →",
-    hero_badge: "🇨🇭 EasyCarCheck · Analyse IA",
-    hero_title_1: "Achetez en", hero_title_2: "tu achètes.", hero_title_3: "Avant de signer.",
-    hero_sub: "Colle le lien d'une annonce ou entre le numéro VIN. EasyCarCheck analyse <strong>le prix, la fiabilité, les coûts d'entretien</strong> et te donne un verdict clair en quelques minutes.",
-    hero_cta: "Analyser une annonce — 9 CHF", hero_secondary: "Voir un exemple",
-    trust_1: "Marché suisse uniquement", trust_2: "Résultat en quelques minutes", trust_3: "TWINT / Carte acceptés",
-    footer_copy: "© 2026 EasyCarCheck · Suisse · Tous droits réservés"
-  },
-  de: {
-    nav_how: "So funktioniert's", nav_pricing: "Preise", nav_reviews: "Bewertungen", nav_about: "Über uns", nav_contact: "Kontakt", nav_cta: "Inserat analysieren →",
-    hero_badge: "🇨🇭 EasyCarCheck · KI-Analyse",
-    hero_title_1: "Weiss, was", hero_title_2: "du kaufst.", hero_title_3: "Bevor du unterschreibst.",
-    hero_sub: "Füge den Link eines Inserats ein. EasyCarCheck analysiert <strong>Preis, Zuverlässigkeit und Unterhaltskosten</strong> und gibt dir in wenigen Minuten ein klares Urteil.",
-    hero_cta: "Inserat analysieren — 9 CHF", hero_secondary: "Beispiel ansehen",
-    trust_1: "Nur Schweizer Markt", trust_2: "Ergebnis in wenigen Minuten", trust_3: "TWINT / Karte akzeptiert",
-    footer_copy: "© 2026 EasyCarCheck · Schweiz · Alle Rechte vorbehalten"
-  },
-  it: {
-    nav_how: "Come funziona", nav_pricing: "Prezzi", nav_reviews: "Recensioni", nav_about: "Chi siamo", nav_contact: "Contatto", nav_cta: "Analizza un annuncio →",
-    hero_badge: "🇨🇭 EasyCarCheck · Analisi IA",
-    hero_title_1: "Sai cosa", hero_title_2: "compri.", hero_title_3: "Prima di firmare.",
-    hero_sub: "Incolla il link di un annuncio. EasyCarCheck analizza <strong>il prezzo, l'affidabilità, i costi di manutenzione</strong> e ti dà un verdetto chiaro in pochi minuti.",
-    hero_cta: "Analizza un annuncio — 9 CHF", hero_secondary: "Vedi un esempio",
-    trust_1: "Solo mercato svizzero", trust_2: "Risultato in pochi minuti", trust_3: "TWINT / Carta accettati",
-    footer_copy: "© 2026 EasyCarCheck · Svizzera · Tutti i diritti riservati"
-  },
-  en: {
-    nav_how: "How it works", nav_pricing: "Pricing", nav_reviews: "Reviews", nav_about: "About us", nav_contact: "Contact", nav_cta: "Analyse a listing →",
-    hero_badge: "🇨🇭 EasyCarCheck · AI Analysis",
-    hero_title_1: "Know what", hero_title_2: "you're buying.", hero_title_3: "Before you sign.",
-    hero_sub: "Paste a listing link. EasyCarCheck analyses <strong>price, reliability and maintenance costs</strong> and gives you a clear verdict in minutes.",
-    hero_cta: "Analyse a listing — CHF 9", hero_secondary: "See an example",
-    trust_1: "Swiss market only", trust_2: "Result in minutes", trust_3: "TWINT / Card accepted",
-    footer_copy: "© 2026 EasyCarCheck · Switzerland · All rights reserved"
+function setProvenance(val) {
+  document.getElementById('prov-ch').classList.toggle('active', val === 'ch');
+  document.getElementById('prov-import').classList.toggle('active', val === 'import');
+  document.getElementById('import-pays-wrapper').style.display = val === 'import' ? 'block' : 'none';
+  document.getElementById('form-provenance').value = val === 'ch' ? 'Suisse' : 'Importé';
+}
+
+function getOptions() {
+  const ids = {
+    'opt-sieges':'Sièges chauffants','opt-sieges-vent':'Sièges ventilés','opt-cuir':'Sièges cuir',
+    'opt-volant-chauf':'Volant chauffant','opt-toit':'Toit ouvrant','opt-toit-pano':'Toit panoramique',
+    'opt-gps':'GPS/Navigation','opt-carplay':'CarPlay/Android Auto','opt-camera':'Caméra recul',
+    'opt-camera360':'Caméra 360°','opt-pdc':'Radar stationnement','opt-lane':'Lane assist',
+    'opt-keyless':'Keyless','opt-acc':'Régulateur adaptatif','opt-hud':'Head-up display',
+    'opt-hifi':'Audio premium','opt-xenon':'Xenon/LED','opt-matrix':'Phares Matrix/laser',
+    'opt-jantes':'Jantes alliage','opt-attelage':'Attelage','opt-awd':'4x4/AWD',
+    'opt-freservice':'Free Service actif','opt-garantie':'Garantie usine','opt-suspension':'Suspension pneumatique'
+  };
+  const opts = [];
+  for (const [id, label] of Object.entries(ids)) {
+    const el = document.getElementById(id);
+    if (el && el.checked) opts.push(label);
   }
+  const autres = document.getElementById('opt-autres');
+  if (autres && autres.value.trim()) opts.push('Autres: ' + autres.value.trim());
+  return opts.join(', ');
+}
+
+const translations = {
+  fr: { nav_how: "Comment ça marche", nav_pricing: "Tarifs", nav_reviews: "Avis", nav_about: "Qui sommes-nous", nav_contact: "Contact", nav_cta: "Analyser une annonce →", footer_copy: "© 2026 EasyCarCheck · Suisse · Tous droits réservés" },
+  de: { nav_how: "So funktioniert's", nav_pricing: "Preise", nav_reviews: "Bewertungen", nav_about: "Über uns", nav_contact: "Kontakt", nav_cta: "Inserat analysieren →", footer_copy: "© 2026 EasyCarCheck · Schweiz · Alle Rechte vorbehalten" },
+  it: { nav_how: "Come funziona", nav_pricing: "Prezzi", nav_reviews: "Recensioni", nav_about: "Chi siamo", nav_contact: "Contatto", nav_cta: "Analizza un annuncio →", footer_copy: "© 2026 EasyCarCheck · Svizzera · Tutti i diritti riservati" },
+  en: { nav_how: "How it works", nav_pricing: "Pricing", nav_reviews: "Reviews", nav_about: "About us", nav_contact: "Contact", nav_cta: "Analyse a listing →", footer_copy: "© 2026 EasyCarCheck · Switzerland · All rights reserved" }
 };
 
 function setLang(lang) {
-  const t = translations[lang];
-  if (!t) return;
   document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.textContent === lang.toUpperCase()));
   document.documentElement.lang = lang;
   const titles = { fr: 'EasyCarCheck.ch — Analyse IA · Suisse', de: 'EasyCarCheck.ch — KI-Analyse · Schweiz', it: 'EasyCarCheck.ch — Analisi IA · Svizzera', en: 'EasyCarCheck.ch — AI Analysis · Switzerland' };
   document.title = titles[lang];
 }
+
 async function submitToStripe() {
-  const annonce = document.querySelector('input[type="url"]') ? document.querySelector('input[type="url"]').value : '';
+  const annonce = document.getElementById('form-annonce') ? document.getElementById('form-annonce').value : '';
   const vin = document.getElementById('vin-input') ? document.getElementById('vin-input').value : '';
   const email = document.getElementById('form-email') ? document.getElementById('form-email').value : '';
-  const inputs = [];
-  const marque = document.getElementById('form-marque') ? document.getElementById('form-marque').value : '';
-  const modele = document.getElementById('form-modele') ? document.getElementById('form-modele').value : '';
-  const annee = document.getElementById('form-annee') ? document.getElementById('form-annee').value : '';
-  const km = document.getElementById('form-km') ? document.getElementById('form-km').value : '';
-  const prix = document.getElementById('form-prix') ? document.getElementById('form-prix').value : '';
+  const marque = document.getElementById('form-marque').value;
+  const modele = document.getElementById('form-modele').value;
+  const annee = document.getElementById('form-annee').value;
+  const km = document.getElementById('form-km').value;
+  const prix = document.getElementById('form-prix').value;
+  const canton = document.getElementById('form-canton').value;
+  const carburant = document.getElementById('form-carburant').value;
+  const boite = document.getElementById('form-boite').value;
+  const co2 = document.getElementById('form-co2').value;
+  const poids = document.getElementById('form-poids').value;
+  const provenance = document.getElementById('form-provenance').value;
+  const paysImport = document.getElementById('form-pays-import').value;
+  const mfkMois = document.getElementById('form-mfk-mois').value; const mfkAnnee = document.getElementById('form-mfk-annee').value; const mfk = mfkMois && mfkAnnee ? mfkMois + '/' + mfkAnnee : '';
+  const carrosserie = document.getElementById('form-carrosserie').value;
+  const puissance = document.getElementById('form-puissance').value;
+  const couleur = document.getElementById('form-couleur').value;
+  const proprio = document.getElementById('form-proprio').value;
+  const options = getOptions();
+
   if (!email) { alert('Merci d\'entrer votre email pour recevoir le rapport.'); return; }
   if (!annonce && !vin) { alert('Merci d\'entrer un lien d\'annonce ou un numéro VIN.'); return; }
+  if (!marque || !modele) { alert('Merci d\'indiquer la marque et le modèle du véhicule.'); return; }
+  if (!annee) { alert('Merci d\'indiquer l\'année du véhicule.'); return; }
+  if (!km) { alert('Merci d\'indiquer le kilométrage du véhicule.'); return; }
+  if (!prix) { alert('Merci d\'indiquer le prix demandé.'); return; }
+
   const btn = document.querySelector('.form-submit');
   btn.textContent = 'Chargement...';
   btn.disabled = true;
+
   try {
     const response = await fetch('/.netlify/functions/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, annonce, vin, marque, modele, annee, km, prix })
+      body: JSON.stringify({
+        email, annonce, vin, marque, modele, annee, km, prix,
+        canton, carburant, boite, co2, poids,
+        provenance: provenance === 'Importé' && paysImport ? `Importé (${paysImport})` : provenance,
+        mfk, options
+      })
     });
     const data = await response.json();
     if (data.url) {
       window.location.href = data.url;
     } else {
       alert('Erreur lors de la création du paiement. Veuillez réessayer.');
-      btn.textContent = 'Commander mon rapport EasyCarCheck →';
+      btn.textContent = 'Commander mon rapport EasyCarCheck → 9 CHF';
       btn.disabled = false;
     }
   } catch (err) {
     alert('Erreur de connexion. Veuillez réessayer.');
-    btn.textContent = 'Commander mon rapport EasyCarCheck →';
+    btn.textContent = 'Commander mon rapport EasyCarCheck → 9 CHF';
     btn.disabled = false;
   }
 }
+
+(function(){
+  const sel = document.getElementById('form-mfk-annee');
+  if (!sel) return;
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= 1950; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
+  }
+})();
 
 function validateVIN(input) {
   var vin = input.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "");
@@ -754,10 +982,10 @@ function validateVIN(input) {
   if (vin.length === 0) { status.style.display = "none"; return; }
   status.style.display = "block";
   if (vin.length < 17) {
-    status.innerHTML = "<span style=\"color:var(--amber)\">⚠️ " + vin.length + "/17 caractères — VIN incomplet</span>";
+    status.innerHTML = "<span style='color:var(--amber)'>⚠️ " + vin.length + "/17 caractères — VIN incomplet</span>";
     input.style.borderColor = "var(--amber)";
   } else {
-    status.innerHTML = "<span style=\"color:var(--green)\">✅ VIN valide — 17 caractères</span>";
+    status.innerHTML = "<span style='color:var(--green)'>✅ VIN valide — 17 caractères</span>";
     input.style.borderColor = "var(--green)";
   }
 }
