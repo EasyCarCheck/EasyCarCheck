@@ -944,9 +944,9 @@ async function submitToStripe() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email, annonce, vin, marque, modele, annee, km, prix,
-        canton, carburant, boite, co2, poids,
-        provenance: provenance === 'Importé' && paysImport ? `Importé (${paysImport})` : provenance,
-        mfk, options
+       canton, carburant, boite, co2, poids,
+provenance: provenance === 'Importé' && paysImport ? `Importé (${paysImport})` : provenance,
+mfk, options, couleur, puissance, carrosserie, proprio
       })
     });
     const data = await response.json();
