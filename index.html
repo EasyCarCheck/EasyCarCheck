@@ -1,287 +1,219 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J83JMGY8HG"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-J83JMGY8HG');
-</script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-J83JMGY8HG');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EasyCarCheck.ch — Analyse IA de véhicules d'occasion en Suisse</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --navy: #1a3d6e; --navy-dark: #0f2548; --navy-light: #e8f0f8;
-    --sky: #5ab4e8; --sky-light: #eef6fc;
-    --black: #0f1e30; --white: #ffffff;
-    --bg: #eef2f7; --card: #ffffff; --card2: #f4f7fb;
-    --border: #d8e2ef; --text: #0f1e30; --text-mid: #3a5270; --text-light: #8aa0b8;
-    --green: #1a7a3c; --green-light: #edf7f2;
-    --teal: #0a7a6a; --teal-light: #e8f5f2;
-    --amber: #b8860a; --amber-light: #fdf8ec;
-    --red: #c0192a; --red-light: #fdf0f0;
-  }
-  html { scroll-behavior: smooth; }
-  body { background: var(--white); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 400; line-height: 1.6; overflow-x: hidden; }
-
-  /* NAV */
-  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--white); border-bottom: 2px solid var(--border); padding: 0 40px; height: 64px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 12px rgba(26,61,110,0.06); }
-  .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px; color: var(--navy); text-decoration: none; display:flex; align-items:center; gap:10px; }
-  .nav-logo span { color: var(--sky); font-family: 'Bebas Neue', sans-serif; }
-  .nav-right { display: flex; gap: 20px; align-items: center; }
-  .nav-links { display: flex; gap: 24px; align-items: center; }
-  .nav-links a { font-size: 13px; color: var(--text-light); text-decoration: none; transition: color 0.2s; font-weight: 500; }
-  .nav-links a:hover { color: var(--navy); }
-  .nav-cta { background: var(--navy); color: var(--white) !important; padding: 8px 20px; font-weight: 600; font-size: 13px; transition: background 0.2s; text-decoration: none; border-radius: 3px; }
-  .nav-cta:hover { background: var(--navy-dark) !important; }
-  .lang-switcher { display: flex; gap: 3px; align-items: center; border-left: 1px solid var(--border); padding-left: 16px; }
-  .lang-btn { background: none; border: none; font-size: 12px; font-weight: 600; letter-spacing: 1px; cursor: pointer; padding: 4px 8px; color: var(--text-light); border-radius: 2px; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
-  .lang-btn:hover { color: var(--navy); }
-  .lang-btn.active { background: var(--navy); color: var(--white); }
-
-  /* HERO */
-  .hero { padding: 120px 40px 80px; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; min-height: 100vh; }
-  .hero-left { animation: fadeUp 0.7s ease both; }
-  .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--navy-light); color: var(--navy); font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; border-radius: 2px; margin-bottom: 28px; border-left: 3px solid var(--navy); }
-  .hero-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(46px, 5.5vw, 76px); letter-spacing: 2px; line-height: 0.95; margin-bottom: 24px; color: var(--navy); }
-  .hero-title .accent { color: var(--sky); }
-  .hero-title .line2 { display: block; color: var(--text-light); font-size: 0.6em; letter-spacing: 3px; margin-top: 6px; }
-  .hero-sub { font-size: 16px; color: var(--text-mid); line-height: 1.7; margin-bottom: 36px; max-width: 440px; font-weight: 300; }
-  .hero-sub strong { color: var(--navy); font-weight: 600; }
-  .hero-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 40px; }
-  .btn-primary { background: var(--navy); color: var(--white); font-size: 14px; font-weight: 600; padding: 14px 32px; border: none; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; text-decoration: none; display: inline-block; border-radius: 3px; }
-  .btn-primary:hover { background: var(--navy-dark); transform: translateY(-1px); }
-  .btn-secondary { color: var(--navy); font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; transition: gap 0.2s; }
-  .btn-secondary:hover { gap: 12px; }
-  .btn-secondary::after { content: '→'; }
-  .hero-trust { display: flex; gap: 20px; flex-wrap: wrap; }
-  .trust-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-light); }
-  .trust-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
-
-  /* MOCKUP */
-  .hero-right { animation: fadeUp 0.7s 0.2s ease both; }
-  .mockup { background: var(--white); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 20px 60px rgba(26,61,110,0.12); overflow: hidden; }
-  .mockup-bar { background: var(--navy); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-  .mockup-logo { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 3px; color: #fff; }
-  .mockup-logo span { color: var(--sky); }
-  .mockup-tag { font-size: 10px; color: rgba(255,255,255,0.6); letter-spacing: 1.5px; text-transform: uppercase; }
-  .mockup-body { padding: 20px; }
-  .mockup-vehicle { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--navy); margin-bottom: 4px; }
-  .mockup-meta { font-size: 12px; color: var(--text-light); margin-bottom: 16px; }
-  .mockup-scores { display: grid; grid-template-columns: repeat(4,1fr); gap: 2px; margin-bottom: 12px; }
-  .mockup-score { background: var(--bg); padding: 10px 8px; text-align: center; border-radius: 2px; position: relative; overflow: hidden; }
-  .mockup-score::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-  .ms-g::after { background: var(--green); } .ms-r::after { background: var(--sky); } .ms-y::after { background: var(--amber); } .ms-b::after { background: var(--navy); }
-  .ms-num { font-family: 'Bebas Neue', sans-serif; font-size: 28px; line-height: 1; }
-  .ms-g .ms-num { color: var(--green); } .ms-r .ms-num { color: var(--sky); } .ms-y .ms-num { color: var(--amber); } .ms-b .ms-num { color: var(--navy); }
-  .ms-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-top: 2px; }
-  .mockup-verdict { background: var(--green-light); border-left: 3px solid var(--green); padding: 10px 12px; border-radius: 2px; margin-bottom: 12px; }
-  .mv-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); font-weight: 700; margin-bottom: 3px; }
-  .mv-text { font-size: 12px; color: #1a4a2a; font-weight: 500; line-height: 1.4; }
-  .mockup-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
-  .mockup-row:last-child { border-bottom: none; }
-  .mockup-row-label { color: var(--text-light); }
-  .mockup-row-val { font-weight: 600; color: var(--navy); }
-  .mockup-price-box { background: var(--navy-light); border: 1px solid var(--navy); padding: 12px 16px; border-radius: 3px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
-  .mpb-label { font-size: 11px; color: var(--navy); font-weight: 600; }
-  .mpb-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--navy); letter-spacing: 1px; }
-
-  /* STATS */
-  .stats-section { background: var(--bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 32px 40px; }
-  .stats-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
-  .stat-card { background: var(--white); border-radius: 4px; padding: 20px 22px; text-align: center; border: 1px solid var(--border); border-top: 3px solid var(--navy); box-shadow: 0 2px 8px rgba(26,61,110,0.05); }
-  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--navy); letter-spacing: 2px; line-height: 1; margin-bottom: 4px; }
-  .stat-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); }
-
-  /* SECTIONS */
-  .section { padding: 90px 40px; max-width: 1100px; margin: 0 auto; }
-  .section-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--navy); font-weight: 700; margin-bottom: 12px; }
-  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(32px, 4vw, 48px); letter-spacing: 2px; margin-bottom: 48px; line-height: 1.1; color: var(--navy); }
-  .section-title span { color: var(--sky); }
-
-  /* STEPS */
-  .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; }
-  .step { background: var(--bg); padding: 32px 28px; border-radius: 3px; border-top: 3px solid var(--border); }
-  .step.active { border-top-color: var(--navy); }
-  .step-num { font-family: 'Bebas Neue', sans-serif; font-size: 60px; color: var(--border); line-height: 1; margin-bottom: 14px; }
-  .step.active .step-num { color: var(--navy); opacity: 0.2; }
-  .step-icon { font-size: 26px; margin-bottom: 10px; }
-  .step-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; margin-bottom: 10px; color: var(--navy); }
-  .step-desc { font-size: 13.5px; color: var(--text-mid); line-height: 1.65; }
-  .step-tag { display: inline-block; background: var(--navy); color: #fff; font-size: 10px; padding: 3px 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; margin-top: 14px; border-radius: 2px; }
-
-  /* ABOUT */
-  .about-section { background: var(--bg); padding: 90px 40px; }
-  .about-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-  .about-visual { display: flex; flex-direction: column; gap: 12px; }
-  .about-card { background: var(--white); border-radius: 4px; padding: 22px 24px; border: 1px solid var(--border); border-left: 4px solid var(--navy); box-shadow: 0 2px 8px rgba(26,61,110,0.05); }
-  .about-card-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-  .about-card p { font-size: 13px; color: var(--text-mid); line-height: 1.6; }
-  .about-text .section-label { margin-bottom: 10px; }
-  .about-text .section-title { margin-bottom: 20px; }
-  .about-text p { font-size: 14px; color: var(--text-mid); line-height: 1.8; margin-bottom: 16px; }
-  .about-values { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
-  .about-value { display: flex; gap: 14px; align-items: flex-start; }
-  .about-value-icon { width: 36px; height: 36px; background: var(--navy-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-  .about-value-text { font-size: 13px; color: var(--text-mid); line-height: 1.6; }
-  .about-value-text strong { color: var(--navy); font-weight: 600; display: block; margin-bottom: 2px; }
-
-  /* PRICING */
-  .pricing-bg { background: var(--bg); padding: 90px 40px; border-top: 1px solid var(--border); }
-  .pricing-inner { max-width: 1100px; margin: 0 auto; }
-  .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; margin-top: 48px; }
-  .pricing-card { background: var(--white); padding: 32px 28px; border-radius: 3px; border: 1px solid var(--border); position: relative; }
-  .pricing-card.featured { background: var(--navy); border-color: var(--navy); }
-  .featured-badge { position: absolute; top: -1px; left: 50%; transform: translateX(-50%); background: var(--sky); color: var(--navy); font-size: 10px; padding: 4px 16px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; border-radius: 0 0 4px 4px; white-space: nowrap; }
-  .pricing-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); margin-bottom: 14px; font-weight: 600; }
-  .pricing-card.featured .pricing-label { color: rgba(255,255,255,0.6); }
-  .pricing-price { font-family: 'Bebas Neue', sans-serif; font-size: 56px; letter-spacing: 2px; line-height: 1; margin-bottom: 4px; color: var(--navy); }
-  .pricing-card.featured .pricing-price { color: var(--white); }
-  .pricing-price-sub { font-size: 12px; color: var(--text-light); margin-bottom: 22px; }
-  .pricing-card.featured .pricing-price-sub { color: rgba(255,255,255,0.5); }
-  .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 9px; margin-bottom: 26px; }
-  .pricing-features li { font-size: 13px; color: var(--text-mid); display: flex; gap: 10px; align-items: flex-start; line-height: 1.5; }
-  .pricing-card.featured .pricing-features li { color: rgba(255,255,255,0.8); }
-  .pricing-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
-  .pricing-card.featured .pricing-features li::before { color: #40e878; }
-  .pricing-btn { width: 100%; padding: 13px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid transparent; letter-spacing: 0.5px; border-radius: 3px; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
-  .btn-outline { background: transparent; border-color: var(--border); color: var(--navy); }
-  .btn-outline:hover { border-color: var(--navy); }
-  .btn-navy { background: var(--navy); color: #fff; border-color: var(--navy); }
-  .btn-navy:hover { background: var(--navy-dark); }
-  .btn-white { background: var(--white); color: var(--navy); }
-  .btn-white:hover { background: var(--bg); }
-  .pricing-note { text-align: center; font-size: 12px; color: var(--text-light); margin-top: 22px; }
-
-  /* REVIEWS */
-  .reviews-section { padding: 90px 40px; max-width: 1100px; margin: 0 auto; }
-  .reviews-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 48px; }
-  .review-card { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 24px; box-shadow: 0 2px 8px rgba(26,61,110,0.05); }
-  .review-stars { color: #f0c040; font-size: 16px; margin-bottom: 12px; letter-spacing: 2px; }
-  .review-text { font-size: 13.5px; color: var(--text-mid); line-height: 1.7; margin-bottom: 16px; font-style: italic; }
-  .review-author { display: flex; align-items: center; gap: 10px; }
-  .review-avatar { width: 36px; height: 36px; background: var(--navy-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--navy); flex-shrink: 0; }
-  .review-name { font-size: 13px; font-weight: 600; color: var(--navy); }
-  .review-vehicle { font-size: 11px; color: var(--text-light); }
-  .review-empty { background: var(--bg); border: 2px dashed var(--border); border-radius: 6px; padding: 48px 24px; text-align: center; }
-  .review-empty p { font-size: 13px; color: var(--text-light); line-height: 1.6; }
-  .review-empty strong { color: var(--navy); display: block; margin-bottom: 8px; font-size: 15px; }
-
-  /* FAQ */
-  .faq-section { background: var(--bg); padding: 90px 40px; border-top: 1px solid var(--border); }
-  .faq-inner { max-width: 800px; margin: 0 auto; }
-  .faq-list { display: flex; flex-direction: column; gap: 3px; margin-top: 48px; }
-  .faq-item { background: var(--white); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
-  .faq-question { padding: 18px 22px; font-size: 14px; font-weight: 600; color: var(--navy); cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
-  .faq-question:hover { background: var(--navy-light); }
-  .faq-icon { font-size: 18px; color: var(--sky); transition: transform 0.2s; font-weight: 300; }
-  .faq-answer { padding: 0 22px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s; }
-  .faq-answer.open { padding: 0 22px 18px; max-height: 300px; }
-  .faq-answer p { font-size: 13.5px; color: var(--text-mid); line-height: 1.7; border-top: 1px solid var(--border); padding-top: 14px; }
-
-  /* CONTACT */
-  .contact-section { padding: 90px 40px; max-width: 1100px; margin: 0 auto; }
-  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; margin-top: 48px; }
-  .contact-info { display: flex; flex-direction: column; gap: 20px; }
-  .contact-item { display: flex; gap: 16px; align-items: flex-start; }
-  .contact-icon { width: 44px; height: 44px; background: var(--navy-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-  .contact-item-title { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
-  .contact-item-text { font-size: 13px; color: var(--text-mid); line-height: 1.6; }
-  .contact-item-text a { color: var(--navy); text-decoration: none; font-weight: 600; }
-  .contact-item-text a:hover { color: var(--sky); }
-  .contact-form { background: var(--bg); border-radius: 6px; padding: 32px; border: 1px solid var(--border); }
-  .contact-form-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--navy); margin-bottom: 20px; }
-  .form-group { margin-bottom: 14px; }
-  .form-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); font-weight: 600; display: block; margin-bottom: 6px; }
-  .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--white); border-radius: 3px; outline: none; transition: border-color 0.2s; }
-  .form-input:focus { border-color: var(--navy); }
-  .form-select { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--white); border-radius: 3px; outline: none; transition: border-color 0.2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238aa0b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
-  .form-select:focus { border-color: var(--navy); }
-  .form-submit { width: 100%; padding: 13px; background: var(--navy); color: var(--white); font-size: 14px; font-weight: 600; border: none; cursor: pointer; border-radius: 3px; transition: background 0.2s; font-family: 'DM Sans', sans-serif; margin-top: 6px; }
-  .form-submit:hover { background: var(--navy-dark); }
-
-  /* FORM SECTION */
-  .form-section { background: var(--navy); padding: 90px 40px; }
-  .form-inner { max-width: 860px; margin: 0 auto; text-align: center; }
-  .form-inner .section-label { color: var(--sky); }
-  .form-inner .section-title { color: var(--white); }
-  .form-inner .section-title span { color: var(--sky); }
-  .form-box { background: var(--white); border-radius: 6px; padding: 40px; text-align: left; margin-top: 40px; }
-  .form-box-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--navy); margin-bottom: 6px; }
-  .form-box-sub { font-size: 13px; color: var(--text-light); margin-bottom: 24px; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  .form-footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px; }
-  .form-security { font-size: 12px; color: var(--text-light); }
-  .form-price-tag { background: var(--navy); color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; padding: 4px 16px; border-radius: 2px; }
-
-  /* FORM SECTION DIVIDER */
-  .form-section-divider { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--navy); background: var(--navy-light); border-left: 3px solid var(--navy); padding: 8px 14px; border-radius: 0 3px 3px 0; margin: 20px 0 14px; display: flex; align-items: center; gap: 8px; }
-
-  /* CHECKBOXES OPTIONS */
-  .options-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .option-checkbox { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 3px; cursor: pointer; transition: all 0.15s; font-size: 13px; color: var(--text-mid); background: var(--white); user-select: none; }
-  .option-checkbox:hover { border-color: var(--navy); color: var(--navy); }
-  .option-checkbox input[type="checkbox"] { accent-color: var(--navy); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
-  .option-checkbox input:checked + span { color: var(--navy); font-weight: 600; }
-  .option-checkbox:has(input:checked) { border-color: var(--navy); background: var(--navy-light); }
-
-  /* PROVENANCE TOGGLE */
-  .provenance-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
-  .prov-btn { flex: 1; padding: 10px; border: 1.5px solid var(--border); background: var(--white); border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; color: var(--text-mid); font-family: 'DM Sans', sans-serif; text-align: center; }
-  .prov-btn.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
-
-  /* FOOTER */
-  footer { background: var(--black); padding: 48px 40px 32px; }
-  .footer-inner { max-width: 1100px; margin: 0 auto; }
-  .footer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; flex-wrap: wrap; gap: 32px; }
-  .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 4px; color: var(--white); margin-bottom: 10px; }
-  .footer-logo span { color: var(--sky); }
-  .footer-tagline { font-size: 13px; color: rgba(255,255,255,0.4); max-width: 240px; line-height: 1.6; }
-  .footer-links { display: flex; gap: 48px; flex-wrap: wrap; }
-  .footer-col-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 12px; font-weight: 600; }
-  .footer-col a { display: block; font-size: 13px; color: rgba(255,255,255,0.6); text-decoration: none; margin-bottom: 8px; transition: color 0.2s; }
-  .footer-col a:hover { color: var(--white); }
-  .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-  .footer-bottom p { font-size: 12px; color: rgba(255,255,255,0.3); }
-
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-  @media (max-width: 768px) {
-    nav { padding: 0 20px; }
-    .nav-links { display: none; }
-    .hero { grid-template-columns: 1fr; padding: 100px 20px 60px; gap: 40px; min-height: auto; }
-    .hero-right { display: none; }
-    .stats-inner, .steps, .pricing-grid, .reviews-grid, .about-inner, .contact-grid { grid-template-columns: 1fr; }
-    .stats-section, .about-section, .pricing-bg, .faq-section, .form-section { padding: 60px 20px; }
-    .section, .reviews-section, .contact-section { padding: 60px 20px; }
-    .footer-top { flex-direction: column; }
-    .footer-links { gap: 32px; }
-    .form-row, .form-row-3 { grid-template-columns: 1fr; }
-    .form-box { padding: 24px 20px; }
-    .options-grid { grid-template-columns: 1fr 1fr; }
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1a3d6e;--navy-dark:#0f2548;--navy-light:#e8f0f8;--sky:#5ab4e8;--sky-light:#eef6fc;--black:#0f1e30;--white:#ffffff;--bg:#eef2f7;--card:#ffffff;--card2:#f4f7fb;--border:#d8e2ef;--text:#0f1e30;--text-mid:#3a5270;--text-light:#8aa0b8;--green:#1a7a3c;--green-light:#edf7f2;--teal:#0a7a6a;--teal-light:#e8f5f2;--amber:#b8860a;--amber-light:#fdf8ec;--red:#c0192a;--red-light:#fdf0f0}
+html{scroll-behavior:smooth}
+body{background:var(--white);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:400;line-height:1.6;overflow-x:hidden}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--white);border-bottom:2px solid var(--border);padding:0 40px;height:64px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(26,61,110,0.06)}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:4px;color:var(--navy);text-decoration:none;display:flex;align-items:center;gap:10px}
+.nav-logo span{color:var(--sky);font-family:'Bebas Neue',sans-serif}
+.nav-right{display:flex;gap:20px;align-items:center}
+.nav-links{display:flex;gap:24px;align-items:center}
+.nav-links a{font-size:13px;color:var(--text-light);text-decoration:none;transition:color 0.2s;font-weight:500}
+.nav-links a:hover{color:var(--navy)}
+.nav-cta{background:var(--navy);color:var(--white)!important;padding:8px 20px;font-weight:600;font-size:13px;transition:background 0.2s;text-decoration:none;border-radius:3px}
+.nav-cta:hover{background:var(--navy-dark)!important}
+.lang-switcher{display:flex;gap:3px;align-items:center;border-left:1px solid var(--border);padding-left:16px}
+.lang-btn{background:none;border:none;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;padding:4px 8px;color:var(--text-light);border-radius:2px;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.lang-btn:hover{color:var(--navy)}
+.lang-btn.active{background:var(--navy);color:var(--white)}
+.hero{padding:120px 40px 80px;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;min-height:100vh}
+.hero-left{animation:fadeUp 0.7s ease both}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--navy-light);color:var(--navy);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border-radius:2px;margin-bottom:28px;border-left:3px solid var(--navy)}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(46px,5.5vw,76px);letter-spacing:2px;line-height:0.95;margin-bottom:24px;color:var(--navy)}
+.hero-title .accent{color:var(--sky)}
+.hero-title .line2{display:block;color:var(--text-light);font-size:0.6em;letter-spacing:3px;margin-top:6px}
+.hero-sub{font-size:16px;color:var(--text-mid);line-height:1.7;margin-bottom:36px;max-width:440px;font-weight:300}
+.hero-sub strong{color:var(--navy);font-weight:600}
+.hero-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:40px}
+.btn-primary{background:var(--navy);color:var(--white);font-size:14px;font-weight:600;padding:14px 32px;border:none;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;text-decoration:none;display:inline-block;border-radius:3px}
+.btn-primary:hover{background:var(--navy-dark);transform:translateY(-1px)}
+.btn-secondary{color:var(--navy);font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;font-weight:500;transition:gap 0.2s}
+.btn-secondary:hover{gap:12px}
+.btn-secondary::after{content:'→'}
+.hero-trust{display:flex;gap:20px;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-light)}
+.trust-dot{width:6px;height:6px;background:var(--green);border-radius:50%;flex-shrink:0}
+.hero-right{animation:fadeUp 0.7s 0.2s ease both}
+.mockup{background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 20px 60px rgba(26,61,110,0.12);overflow:hidden}
+.mockup-bar{background:var(--navy);padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.mockup-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#fff}
+.mockup-logo span{color:var(--sky)}
+.mockup-tag{font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:1.5px;text-transform:uppercase}
+.mockup-body{padding:20px}
+.mockup-vehicle{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--navy);margin-bottom:4px}
+.mockup-meta{font-size:12px;color:var(--text-light);margin-bottom:16px}
+.mockup-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:12px}
+.mockup-score{background:var(--bg);padding:10px 8px;text-align:center;border-radius:2px;position:relative;overflow:hidden}
+.mockup-score::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ms-g::after{background:var(--green)}.ms-r::after{background:var(--sky)}.ms-y::after{background:var(--amber)}.ms-b::after{background:var(--navy)}
+.ms-num{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1}
+.ms-g .ms-num{color:var(--green)}.ms-r .ms-num{color:var(--sky)}.ms-y .ms-num{color:var(--amber)}.ms-b .ms-num{color:var(--navy)}
+.ms-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text-light);margin-top:2px}
+.mockup-verdict{background:var(--green-light);border-left:3px solid var(--green);padding:10px 12px;border-radius:2px;margin-bottom:12px}
+.mv-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:3px}
+.mv-text{font-size:12px;color:#1a4a2a;font-weight:500;line-height:1.4}
+.mockup-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.mockup-row:last-child{border-bottom:none}
+.mockup-row-label{color:var(--text-light)}
+.mockup-row-val{font-weight:600;color:var(--navy)}
+.mockup-price-box{background:var(--navy-light);border:1px solid var(--navy);padding:12px 16px;border-radius:3px;margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+.mpb-label{font-size:11px;color:var(--navy);font-weight:600}
+.mpb-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--navy);letter-spacing:1px}
+.stats-section{background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:32px 40px}
+.stats-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-card{background:var(--white);border-radius:4px;padding:20px 22px;text-align:center;border:1px solid var(--border);border-top:3px solid var(--navy);box-shadow:0 2px 8px rgba(26,61,110,0.05)}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:40px;color:var(--navy);letter-spacing:2px;line-height:1;margin-bottom:4px}
+.stat-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light)}
+.section{padding:90px 40px;max-width:1100px;margin:0 auto}
+.section-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--navy);font-weight:700;margin-bottom:12px}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,4vw,48px);letter-spacing:2px;margin-bottom:48px;line-height:1.1;color:var(--navy)}
+.section-title span{color:var(--sky)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.step{background:var(--bg);padding:32px 28px;border-radius:3px;border-top:3px solid var(--border)}
+.step.active{border-top-color:var(--navy)}
+.step-num{font-family:'Bebas Neue',sans-serif;font-size:60px;color:var(--border);line-height:1;margin-bottom:14px}
+.step.active .step-num{color:var(--navy);opacity:0.2}
+.step-icon{font-size:26px;margin-bottom:10px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:10px;color:var(--navy)}
+.step-desc{font-size:13.5px;color:var(--text-mid);line-height:1.65}
+.step-tag{display:inline-block;background:var(--navy);color:#fff;font-size:10px;padding:3px 10px;letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-top:14px;border-radius:2px}
+.about-section{background:var(--bg);padding:90px 40px}
+.about-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.about-visual{display:flex;flex-direction:column;gap:12px}
+.about-card{background:var(--white);border-radius:4px;padding:22px 24px;border:1px solid var(--border);border-left:4px solid var(--navy);box-shadow:0 2px 8px rgba(26,61,110,0.05)}
+.about-card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.about-card p{font-size:13px;color:var(--text-mid);line-height:1.6}
+.about-text .section-label{margin-bottom:10px}
+.about-text .section-title{margin-bottom:20px}
+.about-text p{font-size:14px;color:var(--text-mid);line-height:1.8;margin-bottom:16px}
+.about-values{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.about-value{display:flex;gap:14px;align-items:flex-start}
+.about-value-icon{width:36px;height:36px;background:var(--navy-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.about-value-text{font-size:13px;color:var(--text-mid);line-height:1.6}
+.about-value-text strong{color:var(--navy);font-weight:600;display:block;margin-bottom:2px}
+.pricing-bg{background:var(--bg);padding:90px 40px;border-top:1px solid var(--border)}
+.pricing-inner{max-width:1100px;margin:0 auto}
+.pricing-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-top:48px}
+.pricing-card{background:var(--white);padding:32px 28px;border-radius:3px;border:1px solid var(--border);position:relative}
+.pricing-card.featured{background:var(--navy);border-color:var(--navy)}
+.featured-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--sky);color:var(--navy);font-size:10px;padding:4px 16px;letter-spacing:2px;text-transform:uppercase;font-weight:700;border-radius:0 0 4px 4px;white-space:nowrap}
+.pricing-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:14px;font-weight:600}
+.pricing-card.featured .pricing-label{color:rgba(255,255,255,0.6)}
+.pricing-price{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:2px;line-height:1;margin-bottom:4px;color:var(--navy)}
+.pricing-card.featured .pricing-price{color:var(--white)}
+.pricing-price-sub{font-size:12px;color:var(--text-light);margin-bottom:22px}
+.pricing-card.featured .pricing-price-sub{color:rgba(255,255,255,0.5)}
+.pricing-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:26px}
+.pricing-features li{font-size:13px;color:var(--text-mid);display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.pricing-card.featured .pricing-features li{color:rgba(255,255,255,0.8)}
+.pricing-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
+.pricing-card.featured .pricing-features li::before{color:#40e878}
+.pricing-btn{width:100%;padding:13px;font-size:13px;font-weight:600;cursor:pointer;border:2px solid transparent;letter-spacing:0.5px;border-radius:3px;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--navy)}
+.btn-outline:hover{border-color:var(--navy)}
+.btn-white{background:var(--white);color:var(--navy)}
+.btn-white:hover{background:var(--bg)}
+.pricing-note{text-align:center;font-size:12px;color:var(--text-light);margin-top:22px}
+.reviews-section{padding:90px 40px;max-width:1100px;margin:0 auto}
+.review-empty{background:var(--bg);border:2px dashed var(--border);border-radius:6px;padding:48px 24px;text-align:center}
+.review-empty p{font-size:13px;color:var(--text-light);line-height:1.6}
+.review-empty strong{color:var(--navy);display:block;margin-bottom:8px;font-size:15px}
+.faq-section{background:var(--bg);padding:90px 40px;border-top:1px solid var(--border)}
+.faq-inner{max-width:800px;margin:0 auto}
+.faq-list{display:flex;flex-direction:column;gap:3px;margin-top:48px}
+.faq-item{background:var(--white);border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.faq-question{padding:18px 22px;font-size:14px;font-weight:600;color:var(--navy);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.faq-question:hover{background:var(--navy-light)}
+.faq-icon{font-size:18px;color:var(--sky);transition:transform 0.2s;font-weight:300}
+.faq-answer{padding:0 22px;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s}
+.faq-answer.open{padding:0 22px 18px;max-height:300px}
+.faq-answer p{font-size:13.5px;color:var(--text-mid);line-height:1.7;border-top:1px solid var(--border);padding-top:14px}
+.contact-section{padding:90px 40px;max-width:1100px;margin:0 auto}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;margin-top:48px}
+.contact-info{display:flex;flex-direction:column;gap:20px}
+.contact-item{display:flex;gap:16px;align-items:flex-start}
+.contact-icon{width:44px;height:44px;background:var(--navy-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.contact-item-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.contact-item-text{font-size:13px;color:var(--text-mid);line-height:1.6}
+.contact-item-text a{color:var(--navy);text-decoration:none;font-weight:600}
+.contact-item-text a:hover{color:var(--sky)}
+.contact-form{background:var(--bg);border-radius:6px;padding:32px;border:1px solid var(--border)}
+.contact-form-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--navy);margin-bottom:20px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);font-weight:600;display:block;margin-bottom:6px}
+.form-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);border-radius:3px;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:var(--navy)}
+.form-select{width:100%;padding:11px 14px;border:1.5px solid var(--border);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);border-radius:3px;outline:none;transition:border-color 0.2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238aa0b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
+.form-select:focus{border-color:var(--navy)}
+.form-submit{width:100%;padding:13px;background:var(--navy);color:var(--white);font-size:14px;font-weight:600;border:none;cursor:pointer;border-radius:3px;transition:background 0.2s;font-family:'DM Sans',sans-serif;margin-top:6px}
+.form-submit:hover{background:var(--navy-dark)}
+.form-section{background:var(--navy);padding:90px 40px}
+.form-inner{max-width:860px;margin:0 auto;text-align:center}
+.form-inner .section-label{color:var(--sky)}
+.form-inner .section-title{color:var(--white)}
+.form-inner .section-title span{color:var(--sky)}
+.form-box{background:var(--white);border-radius:6px;padding:40px;text-align:left;margin-top:40px}
+.form-box-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--navy);margin-bottom:6px}
+.form-box-sub{font-size:13px;color:var(--text-light);margin-bottom:24px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-footer-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px}
+.form-security{font-size:12px;color:var(--text-light)}
+.form-price-tag{background:var(--navy);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;padding:4px 16px;border-radius:2px}
+.form-section-divider{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--navy);background:var(--navy-light);border-left:3px solid var(--navy);padding:8px 14px;border-radius:0 3px 3px 0;margin:20px 0 14px;display:flex;align-items:center;gap:8px}
+.option-checkbox{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border);border-radius:3px;cursor:pointer;transition:all 0.15s;font-size:13px;color:var(--text-mid);background:var(--white);user-select:none}
+.option-checkbox:hover{border-color:var(--navy);color:var(--navy)}
+.option-checkbox input[type="checkbox"]{accent-color:var(--navy);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.option-checkbox input:checked+span{color:var(--navy);font-weight:600}
+.option-checkbox:has(input:checked){border-color:var(--navy);background:var(--navy-light)}
+.provenance-toggle{display:flex;gap:8px;margin-bottom:10px}
+.prov-btn{flex:1;padding:10px;border:1.5px solid var(--border);background:var(--white);border-radius:3px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;color:var(--text-mid);font-family:'DM Sans',sans-serif;text-align:center}
+.prov-btn.active{background:var(--navy);border-color:var(--navy);color:var(--white)}
+footer{background:var(--black);padding:48px 40px 32px}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;flex-wrap:wrap;gap:32px}
+.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--white);margin-bottom:10px}
+.footer-logo span{color:var(--sky)}
+.footer-tagline{font-size:13px;color:rgba(255,255,255,0.4);max-width:240px;line-height:1.6}
+.footer-links{display:flex;gap:48px;flex-wrap:wrap}
+.footer-col-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:12px;font-weight:600}
+.footer-col a{display:block;font-size:13px;color:rgba(255,255,255,0.6);text-decoration:none;margin-bottom:8px;transition:color 0.2s}
+.footer-col a:hover{color:var(--white)}
+.footer-bottom{border-top:1px solid rgba(255,255,255,0.1);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:12px;color:rgba(255,255,255,0.3)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){
+  nav{padding:0 20px}.nav-links{display:none}
+  .hero{grid-template-columns:1fr;padding:100px 20px 60px;gap:40px;min-height:auto}.hero-right{display:none}
+  .stats-inner,.steps,.pricing-grid,.reviews-grid,.about-inner,.contact-grid{grid-template-columns:1fr}
+  .stats-section,.about-section,.pricing-bg,.faq-section,.form-section{padding:60px 20px}
+  .section,.reviews-section,.contact-section{padding:60px 20px}
+  .footer-top{flex-direction:column}.footer-links{gap:32px}
+  .form-row,.form-row-3{grid-template-columns:1fr}.form-box{padding:24px 20px}
+}
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <a href="#" class="nav-logo">🚗 EASY<span>CAR</span>CHECK</a>
   <div class="nav-right">
     <div class="nav-links">
-      <a href="#comment">Comment ça marche</a>
-      <a href="#tarifs">Tarifs</a>
-      <a href="#avis">Avis</a>
-      <a href="#about">Qui sommes-nous</a>
-      <a href="#contact">Contact</a>
-      <a href="#analyser" class="nav-cta">Analyser une annonce →</a>
+      <a href="#comment" data-i18n="nav_how">Comment ça marche</a>
+      <a href="#tarifs" data-i18n="nav_pricing">Tarifs</a>
+      <a href="#avis" data-i18n="nav_reviews">Avis</a>
+      <a href="#about" data-i18n="nav_about">Qui sommes-nous</a>
+      <a href="#contact" data-i18n="nav_contact">Contact</a>
+      <a href="#analyser" class="nav-cta" data-i18n="nav_cta">Analyser une annonce →</a>
     </div>
     <div class="lang-switcher">
       <button class="lang-btn active" onclick="setLang('fr')">FR</button>
@@ -292,344 +224,284 @@
   </div>
 </nav>
 
-<!-- HERO -->
 <section style="background:linear-gradient(180deg,#eef2f7 0%,#fff 100%)">
   <div class="hero">
     <div class="hero-left">
-      <div class="hero-badge">🇨🇭 EasyCarCheck · Analyse IA</div>
+      <div class="hero-badge" data-i18n="hero_badge">🇨🇭 EasyCarCheck · Analyse IA</div>
       <h1 class="hero-title">
-        Achetez en<br><span class="accent">toute sécurité.</span>
-        <span class="line2">Le bon véhicule. Au bon prix.</span>
+        <span data-i18n="hero_title1">Achetez en<br><span class="accent">toute sécurité.</span></span>
+        <span class="line2" data-i18n="hero_title2">Le bon véhicule. Au bon prix.</span>
       </h1>
-      <p class="hero-sub">Colle le lien d'une annonce ou entre le numéro VIN. EasyCarCheck analyse <strong>le prix, la fiabilité, les coûts d'entretien</strong> et te donne un verdict clair en quelques minutes.</p>
+      <p class="hero-sub" data-i18n="hero_sub">Colle le lien d'une annonce ou entre le numéro VIN. EasyCarCheck analyse <strong>le prix, la fiabilité, les coûts d'entretien</strong> et te donne un verdict clair en quelques minutes.</p>
       <div class="hero-actions">
-        <a href="#analyser" class="btn-primary">Analyser une annonce — 9 CHF</a>
-        <a href="#comment" class="btn-secondary">Voir un exemple</a>
+        <a href="#analyser" class="btn-primary" data-i18n="hero_cta">Analyser une annonce — 9 CHF</a>
+        <a href="#comment" class="btn-secondary" data-i18n="hero_example">Voir un exemple</a>
       </div>
       <div class="hero-trust">
-        <div class="trust-item"><div class="trust-dot"></div>Marché suisse uniquement</div>
-        <div class="trust-item"><div class="trust-dot"></div>Résultat en quelques minutes</div>
-        <div class="trust-item"><div class="trust-dot"></div>TWINT / Carte acceptés</div>
+        <div class="trust-item"><div class="trust-dot"></div><span data-i18n="trust1">Marché suisse uniquement</span></div>
+        <div class="trust-item"><div class="trust-dot"></div><span data-i18n="trust2">Résultat en quelques minutes</span></div>
+        <div class="trust-item"><div class="trust-dot"></div><span data-i18n="trust3">TWINT / Carte acceptés</span></div>
       </div>
     </div>
     <div class="hero-right">
       <div class="mockup">
-        <div class="mockup-bar"><div class="mockup-logo">EASY<span>CAR</span>CHECK</div><div class="mockup-tag">Rapport #001 · Mai 2026</div></div>
+        <div class="mockup-bar"><div class="mockup-logo">EASY<span>CAR</span>CHECK</div><div class="mockup-tag" data-i18n="mockup_tag">Rapport #001 · Mai 2026</div></div>
         <div class="mockup-body">
           <div class="mockup-vehicle">VW Golf R 7.5</div>
           <div class="mockup-meta">2018 · 138 000 km · CHF 22 500</div>
           <div class="mockup-scores">
-            <div class="mockup-score ms-g"><div class="ms-num">8</div><div class="ms-label">Prix</div></div>
-            <div class="mockup-score ms-r"><div class="ms-num">7</div><div class="ms-label">Fiabilité</div></div>
-            <div class="mockup-score ms-y"><div class="ms-num">6</div><div class="ms-label">Km</div></div>
-            <div class="mockup-score ms-b"><div class="ms-num">8</div><div class="ms-label">Entretien</div></div>
+            <div class="mockup-score ms-g"><div class="ms-num">8</div><div class="ms-label" data-i18n="score_prix">Prix</div></div>
+            <div class="mockup-score ms-r"><div class="ms-num">7</div><div class="ms-label" data-i18n="score_fiab">Fiabilité</div></div>
+            <div class="mockup-score ms-y"><div class="ms-num">6</div><div class="ms-label" data-i18n="score_km">Km</div></div>
+            <div class="mockup-score ms-b"><div class="ms-num">8</div><div class="ms-label" data-i18n="score_ent">Entretien</div></div>
           </div>
-          <div class="mockup-verdict"><div class="mv-label">⚡ Verdict EasyCarCheck</div><div class="mv-text">BONNE OPPORTUNITÉ — Négocier à 20 500–21 500 CHF</div></div>
-          <div class="mockup-row"><span class="mockup-row-label">Budget entretien an 1</span><span class="mockup-row-val">1 300–2 200 CHF</span></div>
-          <div class="mockup-row"><span class="mockup-row-label">Coût total possession</span><span class="mockup-row-val">~24 500 CHF</span></div>
-          <div class="mockup-row"><span class="mockup-row-label">Red flags</span><span class="mockup-row-val" style="color:var(--amber)">3 points ⚠</span></div>
-          <div class="mockup-price-box"><div class="mpb-label">Ce rapport vous a coûté</div><div class="mpb-val">9.- CHF</div></div>
+          <div class="mockup-verdict"><div class="mv-label" data-i18n="verdict_label">⚡ Verdict EasyCarCheck</div><div class="mv-text" data-i18n="verdict_text">BONNE OPPORTUNITÉ — Négocier à 20 500–21 500 CHF</div></div>
+          <div class="mockup-row"><span class="mockup-row-label" data-i18n="budget_label">Budget entretien an 1</span><span class="mockup-row-val">1 300–2 200 CHF</span></div>
+          <div class="mockup-row"><span class="mockup-row-label" data-i18n="cout_total">Coût total possession</span><span class="mockup-row-val">~24 500 CHF</span></div>
+          <div class="mockup-row"><span class="mockup-row-label" data-i18n="red_flags">Red flags</span><span class="mockup-row-val" style="color:var(--amber)" data-i18n="red_flags_val">3 points ⚠</span></div>
+          <div class="mockup-price-box"><div class="mpb-label" data-i18n="rapport_cost">Ce rapport vous a coûté</div><div class="mpb-val">9.- CHF</div></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- STATS -->
 <div class="stats-section">
   <div class="stats-inner">
-    <div class="stat-card"><div class="stat-num">300K</div><div class="stat-label">Transactions/an en Suisse</div></div>
-    <div class="stat-card"><div class="stat-num">9.-</div><div class="stat-label">CHF par rapport</div></div>
-    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Langues disponibles</div></div>
-    <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Concurrent IA local</div></div>
+    <div class="stat-card"><div class="stat-num">300K</div><div class="stat-label" data-i18n="stat1">Transactions/an en Suisse</div></div>
+    <div class="stat-card"><div class="stat-num">9.-</div><div class="stat-label" data-i18n="stat2">CHF par rapport</div></div>
+    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label" data-i18n="stat3">Langues disponibles</div></div>
+    <div class="stat-card"><div class="stat-num">0</div><div class="stat-label" data-i18n="stat4">Concurrent IA local</div></div>
   </div>
 </div>
 
-<!-- IA SPÉCIALISÉE -->
 <div style="background:linear-gradient(135deg,#1a3d6e,#0f2548);padding:70px 40px;">
   <div style="max-width:1100px;margin:0 auto;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;">
       <div>
-        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#5ab4e8;font-weight:700;margin-bottom:12px;">🤖 Intelligence Artificielle</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,4vw,48px);letter-spacing:2px;color:#fff;line-height:1.1;margin-bottom:20px;">La première IA automobile<br><span style="color:#5ab4e8;">spécialisée pour la Suisse.</span></div>
-        <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;margin-bottom:24px;">EasyCarCheck est la première plateforme suisse à avoir spécialisé l'intelligence artificielle exclusivement pour l'analyse de véhicules d'occasion — adaptée aux réalités du marché suisse, pas un outil générique.</p>
-        <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;">Notre IA a été entraînée et calibrée sur les spécificités locales — prix en CHF, plateformes suisses, tarifs garages, réglementations cantonales — pour vous donner une analyse vraiment pertinente.</p>
+        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#5ab4e8;font-weight:700;margin-bottom:12px;">🤖 <span data-i18n="ia_label">Intelligence Artificielle</span></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,4vw,48px);letter-spacing:2px;color:#fff;line-height:1.1;margin-bottom:20px;" data-i18n="ia_title">La première IA automobile<br><span style="color:#5ab4e8;">spécialisée pour la Suisse.</span></div>
+        <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;margin-bottom:24px;" data-i18n="ia_p1">EasyCarCheck est la première plateforme suisse à avoir spécialisé l'intelligence artificielle exclusivement pour l'analyse de véhicules d'occasion — adaptée aux réalités du marché suisse, pas un outil générique.</p>
+        <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;" data-i18n="ia_p2">Notre IA a été entraînée et calibrée sur les spécificités locales — prix en CHF, plateformes suisses, tarifs garages, réglementations cantonales — pour vous donner une analyse vraiment pertinente.</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">🇨🇭 Calibrée marché suisse</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;">Prix comparés aux annonces réelles sur AutoScout24.ch, Ricardo et Anibis — pas des données étrangères.</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat1_title">🇨🇭 Calibrée marché suisse</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat1_desc">Prix comparés aux annonces réelles sur AutoScout24.ch, Ricardo et Anibis — pas des données étrangères.</div>
         </div>
         <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">🗣️ 3 langues nationales + EN</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;">Disponible en français, allemand, italien et anglais pour les expatriés — la seule plateforme auto suisse aussi complète.</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat2_title">🗣️ 3 langues nationales + EN</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat2_desc">Disponible en français, allemand, italien et anglais pour les expatriés — la seule plateforme auto suisse aussi complète.</div>
         </div>
         <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">🔧 Expertise automobile réelle</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;">AdBlue, free service, red flags spécifiques, tarifs garages suisses — une IA nourrie par une vraie passion automobile.</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat3_title">🔧 Expertise automobile réelle</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat3_desc">AdBlue, free service, red flags spécifiques, tarifs garages suisses — une IA nourrie par une vraie passion automobile.</div>
         </div>
         <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">🗺️ Taxes cantonales intégrées</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;">Estimation de la taxe annuelle sur les plaques selon votre canton — une information unique en Suisse.</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat4_title">🗺️ Taxes cantonales intégrées</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat4_desc">Estimation de la taxe annuelle sur les plaques selon votre canton — une information unique en Suisse.</div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- HOW IT WORKS -->
 <div id="comment">
   <div class="section">
-    <div class="section-label">Comment ça marche</div>
-    <div class="section-title">3 étapes.<br><span>Zéro surprise.</span></div>
+    <div class="section-label" data-i18n="how_label">Comment ça marche</div>
+    <div class="section-title">3 <span data-i18n="how_title">étapes.<br><span>Zéro surprise.</span></span></div>
     <div class="steps">
       <div class="step active">
         <div class="step-num">01</div><div class="step-icon">🔗</div>
-        <div class="step-title">Tu colles le lien</div>
-        <div class="step-desc">AutoScout24, Ricardo, Anibis, Facebook Marketplace — n'importe quelle annonce suisse. Ou entre directement les infos du véhicule.</div>
-        <span class="step-tag">30 secondes</span>
+        <div class="step-title" data-i18n="step1_title">Tu colles le lien</div>
+        <div class="step-desc" data-i18n="step1_desc">AutoScout24, Ricardo, Anibis, Facebook Marketplace — n'importe quelle annonce suisse. Ou entre directement les infos du véhicule.</div>
+        <span class="step-tag" data-i18n="step1_tag">30 secondes</span>
       </div>
       <div class="step active">
         <div class="step-num">02</div><div class="step-icon">🤖</div>
-        <div class="step-title">L'IA analyse</div>
-        <div class="step-desc">Prix vs marché suisse réel, fiabilité, coûts garage, AdBlue, free service, red flags connus — scoring complet en 7 critères.</div>
-        <span class="step-tag">Analyse complète</span>
+        <div class="step-title" data-i18n="step2_title">L'IA analyse</div>
+        <div class="step-desc" data-i18n="step2_desc">Prix vs marché suisse réel, fiabilité, coûts garage, AdBlue, free service, red flags connus — scoring complet en 7 critères.</div>
+        <span class="step-tag" data-i18n="step2_tag">Analyse complète</span>
       </div>
       <div class="step active">
         <div class="step-num">03</div><div class="step-icon">📋</div>
-        <div class="step-title">Tu reçois le rapport</div>
-        <div class="step-desc">Verdict clair : acheter, négocier, ou éviter. Avec les tarifs exacts des garages suisses et les économies potentielles.</div>
-        <span class="step-tag">En quelques minutes</span>
+        <div class="step-title" data-i18n="step3_title">Tu reçois le rapport</div>
+        <div class="step-desc" data-i18n="step3_desc">Verdict clair : acheter, négocier, ou éviter. Avec les tarifs exacts des garages suisses et les économies potentielles.</div>
+        <span class="step-tag" data-i18n="step3_tag">En quelques minutes</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ABOUT -->
 <div id="about" class="about-section">
   <div class="about-inner">
     <div class="about-visual">
       <div class="about-card">
-        <div class="about-card-title">🎯 Notre mission</div>
-        <p>Rééquilibrer le rapport de force entre acheteur et vendeur sur le marché suisse de l'occasion. L'information, c'est le pouvoir.</p>
+        <div class="about-card-title">🎯 <span data-i18n="about_card1_title">Notre mission</span></div>
+        <p data-i18n="about_card1_text">Rééquilibrer le rapport de force entre acheteur et vendeur sur le marché suisse de l'occasion. L'information, c'est le pouvoir.</p>
       </div>
       <div class="about-card" style="border-left-color:var(--sky)">
-        <div class="about-card-title">🇨🇭 100% Suisse</div>
-        <p>Données de marché suisses, prix en CHF, plateformes locales. Conçu exclusivement pour les acheteurs en Suisse.</p>
+        <div class="about-card-title">🇨🇭 <span data-i18n="about_card2_title">100% Suisse</span></div>
+        <p data-i18n="about_card2_text">Données de marché suisses, prix en CHF, plateformes locales. Conçu exclusivement pour les acheteurs en Suisse.</p>
       </div>
       <div class="about-card" style="border-left-color:var(--green)">
-        <div class="about-card-title">🤖 IA + Expertise Auto</div>
-        <p>La puissance de l'intelligence artificielle combinée à une vraie connaissance du marché automobile suisse.</p>
+        <div class="about-card-title">🤖 <span data-i18n="about_card3_title">IA + Expertise Auto</span></div>
+        <p data-i18n="about_card3_text">La puissance de l'intelligence artificielle combinée à une vraie connaissance du marché automobile suisse.</p>
       </div>
       <div class="about-card" style="border-left-color:var(--amber)">
-        <div class="about-card-title">🚗 Voitures & Utilitaires</div>
-        <p>De la citadine au SUV, en passant par les utilitaires légers — Partner, Transit, Caddy — EasyCarCheck couvre tous les segments.</p>
+        <div class="about-card-title">🚗 <span data-i18n="about_card4_title">Voitures & Utilitaires</span></div>
+        <p data-i18n="about_card4_text">De la citadine au SUV, en passant par les utilitaires légers — Partner, Transit, Caddy — EasyCarCheck couvre tous les segments.</p>
       </div>
     </div>
     <div class="about-text">
-      <div class="section-label">Qui sommes-nous</div>
-      <div class="section-title">Nés d'une<br><span>passion auto.</span></div>
-      <p>EasyCarCheck est né d'un constat simple : en Suisse, acheter une voiture d'occasion c'est souvent acheter dans le flou. Prix surévalués, kilométrages suspects, vices cachés, AdBlue non signalé, free service expiré — l'acheteur fait face seul à un vendeur qui a toutes les informations.</p>
-      <p>Notre mission est simple : <strong>te donner les informations que le vendeur ne te donnera jamais</strong>, en quelques minutes et pour le prix d'un café.</p>
-      <p>EasyCarCheck c'est l'alliance de la technologie IA et d'une expertise automobile profonde, pensée exclusivement pour le marché suisse.</p>
+      <div class="section-label" data-i18n="about_label">Qui sommes-nous</div>
+      <div class="section-title"><span data-i18n="about_title">Nés d'une<br><span>passion auto.</span></span></div>
+      <p data-i18n="about_p1">EasyCarCheck est né d'un constat simple : en Suisse, acheter une voiture d'occasion c'est souvent acheter dans le flou. Prix surévalués, kilométrages suspects, vices cachés, AdBlue non signalé, free service expiré — l'acheteur fait face seul à un vendeur qui a toutes les informations.</p>
+      <p data-i18n="about_p2">Notre mission est simple : <strong>te donner les informations que le vendeur ne te donnera jamais</strong>, en quelques minutes et pour le prix d'un café.</p>
+      <p data-i18n="about_p3">EasyCarCheck c'est l'alliance de la technologie IA et d'une expertise automobile profonde, pensée exclusivement pour le marché suisse.</p>
       <div class="about-values">
-        <div class="about-value"><div class="about-value-icon">🔍</div><div class="about-value-text"><strong>Transparence totale</strong>Nous te disons ce que nous savons — et ce que nous ne savons pas.</div></div>
-        <div class="about-value"><div class="about-value-icon">🛡️</div><div class="about-value-text"><strong>Honnêteté</strong>Notre rapport est un outil d'aide à la décision, pas une garantie.</div></div>
-        <div class="about-value"><div class="about-value-icon">⚡</div><div class="about-value-text"><strong>Simplicité</strong>Un lien. Un rapport. Un verdict. Pas de jargon, pas de blabla.</div></div>
+        <div class="about-value"><div class="about-value-icon">🔍</div><div class="about-value-text"><strong data-i18n="val1_title">Transparence totale</strong><span data-i18n="val1_text">Nous te disons ce que nous savons — et ce que nous ne savons pas.</span></div></div>
+        <div class="about-value"><div class="about-value-icon">🛡️</div><div class="about-value-text"><strong data-i18n="val2_title">Honnêteté</strong><span data-i18n="val2_text">Notre rapport est un outil d'aide à la décision, pas une garantie.</span></div></div>
+        <div class="about-value"><div class="about-value-icon">⚡</div><div class="about-value-text"><strong data-i18n="val3_title">Simplicité</strong><span data-i18n="val3_text">Un lien. Un rapport. Un verdict. Pas de jargon, pas de blabla.</span></div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- PRICING -->
 <div id="tarifs" class="pricing-bg">
   <div class="pricing-inner">
-    <div class="section-label">Tarifs</div>
-    <div class="section-title">Simple.<br><span>Transparent.</span></div>
+    <div class="section-label" data-i18n="pricing_label">Tarifs</div>
+    <div class="section-title"><span data-i18n="pricing_title">Simple.<br><span>Transparent.</span></span></div>
     <div class="pricing-grid">
       <div class="pricing-card">
-        <div class="pricing-label">Gratuit</div>
+        <div class="pricing-label" data-i18n="plan1_label">Gratuit</div>
         <div class="pricing-price">0.-</div>
-        <div class="pricing-price-sub">Score de base</div>
+        <div class="pricing-price-sub" data-i18n="plan1_sub">Score de base</div>
         <ul class="pricing-features">
-          <li>Score prix (aperçu)</li>
-          <li>Score fiabilité (aperçu)</li>
-          <li>Verdict simplifié</li>
+          <li data-i18n="plan1_f1">Score prix (aperçu)</li>
+          <li data-i18n="plan1_f2">Score fiabilité (aperçu)</li>
+          <li data-i18n="plan1_f3">Verdict simplifié</li>
         </ul>
-        <a href="#analyser" class="pricing-btn btn-outline" style="display:block;text-align:center;text-decoration:none;">Essayer gratuitement</a>
+        <a href="#analyser" class="pricing-btn btn-outline" style="display:block;text-align:center;text-decoration:none;" data-i18n="plan1_btn">Essayer gratuitement</a>
       </div>
       <div class="pricing-card featured">
-        <div class="featured-badge">⭐ Recommandé</div>
-        <div class="pricing-label">Rapport Complet</div>
+        <div class="featured-badge" data-i18n="featured_badge">⭐ Recommandé</div>
+        <div class="pricing-label" data-i18n="plan2_label">Rapport Complet</div>
         <div class="pricing-price">9.-</div>
-        <div class="pricing-price-sub">CHF · paiement unique</div>
+        <div class="pricing-price-sub" data-i18n="plan2_sub">CHF · paiement unique</div>
         <ul class="pricing-features">
-          <li>Analyse prix vs marché suisse</li>
-          <li>Score fiabilité complet</li>
-          <li>Coûts garage Suisse détaillés</li>
-          <li>Section AdBlue (si concerné)</li>
-          <li>Free Service restant</li>
-          <li>Red flags du modèle</li>
-          <li>Taxe cantonale estimée</li>
-          <li>Verdict : acheter / négocier / éviter</li>
-          <li>Rapport PDF professionnel</li>
+          <li data-i18n="plan2_f1">Analyse prix vs marché suisse</li>
+          <li data-i18n="plan2_f2">Score fiabilité complet</li>
+          <li data-i18n="plan2_f3">Coûts garage Suisse détaillés</li>
+          <li data-i18n="plan2_f4">Section AdBlue (si concerné)</li>
+          <li data-i18n="plan2_f5">Free Service restant</li>
+          <li data-i18n="plan2_f6">Red flags du modèle</li>
+          <li data-i18n="plan2_f7">Taxe cantonale estimée</li>
+          <li data-i18n="plan2_f8">Verdict : acheter / négocier / éviter</li>
+          <li data-i18n="plan2_f9">Rapport PDF professionnel</li>
         </ul>
-        <a href="#analyser" class="pricing-btn btn-white" style="display:block;text-align:center;text-decoration:none;">Commander mon rapport →</a>
+        <a href="#analyser" class="pricing-btn btn-white" style="display:block;text-align:center;text-decoration:none;" data-i18n="plan2_btn">Commander mon rapport →</a>
       </div>
       <div class="pricing-card">
-        <div class="pricing-label">Pack 5 Rapports</div>
+        <div class="pricing-label" data-i18n="plan3_label">Pack 5 Rapports</div>
         <div class="pricing-price">39.-</div>
-        <div class="pricing-price-sub">CHF · économisez 6 CHF</div>
+        <div class="pricing-price-sub" data-i18n="plan3_sub">CHF · économisez 6 CHF</div>
         <ul class="pricing-features">
-          <li>5 rapports complets</li>
-          <li>Valable 6 mois</li>
-          <li>Idéal pour comparer plusieurs véhicules</li>
+          <li data-i18n="plan3_f1">5 rapports complets</li>
+          <li data-i18n="plan3_f2">Valable 6 mois</li>
+          <li data-i18n="plan3_f3">Idéal pour comparer plusieurs véhicules</li>
         </ul>
-        <a href="#analyser" class="pricing-btn btn-outline" style="display:block;text-align:center;text-decoration:none;">Acheter le pack →</a>
+        <a href="#analyser" class="pricing-btn btn-outline" style="display:block;text-align:center;text-decoration:none;" data-i18n="plan3_btn">Acheter le pack →</a>
       </div>
     </div>
-    <p class="pricing-note">Paiement sécurisé · TWINT · Carte bancaire · Aucun abonnement caché</p>
+    <p class="pricing-note" data-i18n="pricing_note">Paiement sécurisé · TWINT · Carte bancaire · Aucun abonnement caché</p>
   </div>
 </div>
 
-<!-- REVIEWS -->
 <div id="avis" class="reviews-section">
-  <div class="section-label">Avis clients</div>
-  <div class="section-title">Ce qu'ils<br><span>en pensent.</span></div>
-  <div class="reviews-grid" style="grid-template-columns:1fr">
+  <div class="section-label" data-i18n="reviews_label">Avis clients</div>
+  <div class="section-title"><span data-i18n="reviews_title">Ce qu'ils<br><span>en pensent.</span></span></div>
+  <div style="grid-template-columns:1fr;display:grid">
     <div class="review-empty" style="max-width:560px;margin:0 auto">
-      <strong>🌟 Les premiers avis arrivent bientôt</strong>
-      <p>EasyCarCheck vient de lancer. Les premiers rapports sont en cours — les avis de nos clients apparaîtront ici très prochainement.</p>
-      <p style="margin-top:12px;font-size:12px">Tu as déjà utilisé EasyCarCheck ? Écris-nous à <a href="mailto:contact@easycarcheck.ch" style="color:var(--navy);font-weight:600">contact@easycarcheck.ch</a></p>
+      <strong data-i18n="reviews_empty_title">🌟 Les premiers avis arrivent bientôt</strong>
+      <p data-i18n="reviews_empty_text">EasyCarCheck vient de lancer. Les premiers rapports sont en cours — les avis de nos clients apparaîtront ici très prochainement.</p>
+      <p style="margin-top:12px;font-size:12px" data-i18n="reviews_empty_cta">Tu as déjà utilisé EasyCarCheck ? Écris-nous à <a href="mailto:contact@easycarcheck.ch" style="color:var(--navy);font-weight:600">contact@easycarcheck.ch</a></p>
     </div>
   </div>
 </div>
 
-<!-- FAQ -->
 <div class="faq-section">
   <div class="faq-inner">
-    <div class="section-label" style="text-align:center">FAQ</div>
-    <div class="section-title" style="text-align:center;margin-bottom:0">Questions<br><span>fréquentes.</span></div>
+    <div class="section-label" style="text-align:center" data-i18n="faq_label">FAQ</div>
+    <div class="section-title" style="text-align:center;margin-bottom:0"><span data-i18n="faq_title">Questions<br><span>fréquentes.</span></span></div>
     <div class="faq-list">
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">EasyCarCheck remplace-t-il une inspection physique ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>Non. EasyCarCheck est un outil d'analyse data — il ne détecte pas les vices cachés physiques. Il analyse le prix, la fiabilité historique du modèle, les coûts d'entretien et les red flags connus. Pour une inspection mécanique complète, nous recommandons le TCS ou un garage indépendant.</p></div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">Quels types de véhicules sont couverts ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>EasyCarCheck couvre les voitures de tourisme et les utilitaires légers (Peugeot Partner, Fiat Fiorino, VW Caddy, Ford Transit, etc.) sur le marché suisse. Toutes les marques et motorisations sont supportées.</p></div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">Combien de temps pour recevoir mon rapport ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>En quelques minutes après votre commande. Vous recevez votre rapport complet par email à l'adresse indiquée lors de la commande.</p></div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">Les données sont-elles spécifiques au marché suisse ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>Oui, c'est notre principale différence. Tous les prix sont comparés au marché suisse réel (AutoScout24.ch, Ricardo, Anibis), les coûts d'entretien sont basés sur les tarifs des garages suisses, et les analyses sont calibrées pour les conditions locales.</p></div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">Que contient exactement le rapport complet ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>Score prix vs marché suisse, score fiabilité du modèle, tableau des coûts garage Suisse, section AdBlue (si le modèle est concerné), free service restant, red flags connus du modèle, taxe cantonale estimée, checklist avant achat, et verdict final : acheter / négocier / éviter.</p></div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">Comment fonctionne le paiement ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>Paiement 100% sécurisé par TWINT ou carte bancaire. Aucun abonnement — vous payez uniquement par rapport commandé. Le paiement est effectué après soumission du formulaire.</p></div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">Puis-je obtenir un remboursement ? <span class="faq-icon">+</span></div>
-        <div class="faq-answer"><p>Si pour une raison technique nous ne pouvons pas générer votre rapport, vous êtes intégralement remboursé. Contactez-nous à contact@easycarcheck.ch.</p></div>
-      </div>
+      <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq1_q">EasyCarCheck remplace-t-il une inspection physique ?</span> <span class="faq-icon">+</span></div><div class="faq-answer"><p data-i18n="faq1_a">Non. EasyCarCheck est un outil d'analyse data — il ne détecte pas les vices cachés physiques. Il analyse le prix, la fiabilité historique du modèle, les coûts d'entretien et les red flags connus. Pour une inspection mécanique complète, nous recommandons le TCS ou un garage indépendant.</p></div></div>
+      <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq2_q">Quels types de véhicules sont couverts ?</span> <span class="faq-icon">+</span></div><div class="faq-answer"><p data-i18n="faq2_a">EasyCarCheck couvre les voitures de tourisme et les utilitaires légers (Peugeot Partner, Fiat Fiorino, VW Caddy, Ford Transit, etc.) sur le marché suisse. Toutes les marques et motorisations sont supportées.</p></div></div>
+      <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq3_q">Combien de temps pour recevoir mon rapport ?</span> <span class="faq-icon">+</span></div><div class="faq-answer"><p data-i18n="faq3_a">En quelques minutes après votre commande. Vous recevez votre rapport complet par email à l'adresse indiquée lors de la commande.</p></div></div>
+      <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq4_q">Les données sont-elles spécifiques au marché suisse ?</span> <span class="faq-icon">+</span></div><div class="faq-answer"><p data-i18n="faq4_a">Oui, c'est notre principale différence. Tous les prix sont comparés au marché suisse réel (AutoScout24.ch, Ricardo, Anibis), les coûts d'entretien sont basés sur les tarifs des garages suisses, et les analyses sont calibrées pour les conditions locales.</p></div></div>
+      <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq5_q">Que contient exactement le rapport complet ?</span> <span class="faq-icon">+</span></div><div class="faq-answer"><p data-i18n="faq5_a">Score prix vs marché suisse, score fiabilité du modèle, tableau des coûts garage Suisse, section AdBlue (si le modèle est concerné), free service restant, red flags connus du modèle, taxe cantonale estimée, checklist avant achat, et verdict final : acheter / négocier / éviter.</p></div></div>
+      <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq6_q">Comment fonctionne le paiement ?</span> <span class="faq-icon">+</span></div><div class="faq-answer"><p data-i18n="faq6_a">Paiement 100% sécurisé par TWINT ou carte bancaire. Aucun abonnement — vous payez uniquement par rapport commandé. Le paiement est effectué après soumission du formulaire.</p></div></div>
+      <div class="faq-item"><div class="faq-question" onclick="toggleFaq(this)"><span data-i18n="faq7_q">Puis-je obtenir un remboursement ?</span> <span class="faq-icon">+</span></div><div class="faq-answer"><p data-i18n="faq7_a">Si pour une raison technique nous ne pouvons pas générer votre rapport, vous êtes intégralement remboursé. Contactez-nous à contact@easycarcheck.ch.</p></div></div>
     </div>
   </div>
 </div>
 
-<!-- CONTACT -->
 <div id="contact" class="contact-section">
-  <div class="section-label">Contact</div>
-  <div class="section-title">On est là<br><span>pour toi.</span></div>
+  <div class="section-label" data-i18n="contact_label">Contact</div>
+  <div class="section-title"><span data-i18n="contact_title">On est là<br><span>pour toi.</span></span></div>
   <div class="contact-grid">
     <div class="contact-info">
-      <div class="contact-item">
-        <div class="contact-icon">📧</div>
-        <div>
-          <div class="contact-item-title">Email</div>
-          <div class="contact-item-text"><a href="mailto:contact@easycarcheck.ch">contact@easycarcheck.ch</a><br>Réponse sous 24h</div>
-        </div>
-      </div>
-      <div class="contact-item">
-        <div class="contact-icon">🇨🇭</div>
-        <div>
-          <div class="contact-item-title">Marché</div>
-          <div class="contact-item-text">Suisse uniquement<br>FR · DE · IT · EN</div>
-        </div>
-      </div>
-      <div class="contact-item">
-        <div class="contact-icon">⏱️</div>
-        <div>
-          <div class="contact-item-title">Disponibilité</div>
-          <div class="contact-item-text">Rapports générés 7j/7<br>Support en semaine</div>
-        </div>
-      </div>
-      <div class="contact-item">
-        <div class="contact-icon">📱</div>
-        <div>
-          <div class="contact-item-title">Réseaux sociaux</div>
-          <div class="contact-item-text">TikTok · Instagram<br>@easycarcheck</div>
-        </div>
-      </div>
+      <div class="contact-item"><div class="contact-icon">📧</div><div><div class="contact-item-title" data-i18n="contact_email_title">Email</div><div class="contact-item-text"><a href="mailto:contact@easycarcheck.ch">contact@easycarcheck.ch</a><br><span data-i18n="contact_email_sub">Réponse sous 24h</span></div></div></div>
+      <div class="contact-item"><div class="contact-icon">🇨🇭</div><div><div class="contact-item-title" data-i18n="contact_market_title">Marché</div><div class="contact-item-text" data-i18n="contact_market_text">Suisse uniquement<br>FR · DE · IT · EN</div></div></div>
+      <div class="contact-item"><div class="contact-icon">⏱️</div><div><div class="contact-item-title" data-i18n="contact_avail_title">Disponibilité</div><div class="contact-item-text" data-i18n="contact_avail_text">Rapports générés 7j/7<br>Support en semaine</div></div></div>
+      <div class="contact-item"><div class="contact-icon">📱</div><div><div class="contact-item-title" data-i18n="contact_social_title">Réseaux sociaux</div><div class="contact-item-text" data-i18n="contact_social_text">TikTok · Instagram<br>@easycarcheck</div></div></div>
     </div>
     <div class="contact-form">
-      <div class="contact-form-title">Envoie-nous un message</div>
-      <div class="form-group"><label class="form-label">Nom</label><input type="text" class="form-input" placeholder="Ton nom"></div>
-      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" placeholder="ton@email.ch"></div>
-      <div class="form-group"><label class="form-label">Message</label><textarea class="form-input" rows="4" placeholder="Ta question ou remarque..." style="resize:vertical"></textarea></div>
-      <button class="form-submit">Envoyer le message →</button>
+      <div class="contact-form-title" data-i18n="contact_form_title">Envoie-nous un message</div>
+      <div class="form-group"><label class="form-label" data-i18n="contact_name">Nom</label><input type="text" class="form-input" data-i18n-placeholder="contact_name_ph" placeholder="Ton nom"></div>
+      <div class="form-group"><label class="form-label" data-i18n="contact_email_lbl">Email</label><input type="email" class="form-input" placeholder="ton@email.ch"></div>
+      <div class="form-group"><label class="form-label" data-i18n="contact_msg">Message</label><textarea class="form-input" rows="4" data-i18n-placeholder="contact_msg_ph" placeholder="Ta question ou remarque..." style="resize:vertical"></textarea></div>
+      <button class="form-submit" data-i18n="contact_send">Envoyer le message →</button>
     </div>
   </div>
 </div>
 
-<!-- FORM / ANALYSER -->
 <div id="analyser" class="form-section">
   <div class="form-inner">
-    <div class="section-label">Commencer maintenant</div>
-    <div class="section-title">Analyse ton<br><span>annonce.</span></div>
+    <div class="section-label" data-i18n="form_label">Commencer maintenant</div>
+    <div class="section-title"><span data-i18n="form_title">Analyse ton<br><span>annonce.</span></span></div>
     <div class="form-box">
-      <div class="form-box-title">Soumettre une annonce</div>
-      <div class="form-box-sub">Remplis le formulaire — plus d'informations = analyse plus précise. Tu reçois ton rapport en quelques minutes.</div>
-      <div style="font-size:12px;color:var(--text-light);margin-bottom:16px;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);font-weight:700">*</span> Champs obligatoires — tout le reste est optionnel mais améliore la précision du rapport.</div>
+      <div class="form-box-title" data-i18n="form_box_title">Soumettre une annonce</div>
+      <div class="form-box-sub" data-i18n="form_box_sub">Remplis le formulaire — plus d'informations = analyse plus précise. Tu reçois ton rapport en quelques minutes.</div>
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:16px;display:flex;align-items:center;gap:6px;"><span style="color:var(--red);font-weight:700">*</span> <span data-i18n="form_required">Champs obligatoires — tout le reste est optionnel mais améliore la précision du rapport.</span></div>
 
-      <!-- OPTION 1 : LIEN -->
       <div style="background:var(--navy-light);border-radius:4px;padding:16px 18px;margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--navy);margin-bottom:12px;">Option 1 — Lien de l'annonce</div>
-        <div class="form-group" style="margin-bottom:0"><label class="form-label">Colle le lien de l'annonce</label><input type="url" id="form-annonce" class="form-input" placeholder="https://autoscout24.ch/..."></div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--navy);margin-bottom:12px;" data-i18n="opt1_label">Option 1 — Lien de l'annonce</div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="opt1_field">Colle le lien de l'annonce</label><input type="url" id="form-annonce" class="form-input" placeholder="https://autoscout24.ch/..."></div>
       </div>
-
-      <div style="text-align:center;font-size:13px;color:var(--text-light);margin:8px 0;font-weight:600;letter-spacing:2px;">— OU —</div>
-
-      <!-- OPTION 2 : VIN -->
+      <div style="text-align:center;font-size:13px;color:var(--text-light);margin:8px 0;font-weight:600;letter-spacing:2px;" data-i18n="or_sep">— OU —</div>
       <div style="background:var(--sky-light);border-radius:4px;padding:16px 18px;margin-bottom:14px;border:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sky);margin-bottom:4px;">Option 2 — Numéro VIN</div>
-        <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">📍 Où trouver le VIN ? Sur le permis de circulation, sur le pare-brise côté conducteur, ou sur le montant de la porte.</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sky);margin-bottom:4px;" data-i18n="opt2_label">Option 2 — Numéro VIN</div>
+        <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;" data-i18n="vin_hint">📍 Où trouver le VIN ? Sur le permis de circulation, sur le pare-brise côté conducteur, ou sur le montant de la porte.</div>
         <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Numéro VIN (17 caractères)</label>
+          <label class="form-label" data-i18n="vin_label">Numéro VIN (17 caractères)</label>
           <input type="text" class="form-input" id="vin-input" placeholder="ex: WBA3A5G5XFN123456" maxlength="17" oninput="validateVIN(this)" style="text-transform:uppercase;letter-spacing:2px;font-family:monospace;">
           <div id="vin-status" style="font-size:12px;margin-top:6px;display:none;"></div>
         </div>
       </div>
 
-      <!-- SECTION 1 : INFOS DE BASE -->
-      <div class="form-section-divider">🚗 Informations de base</div>
+      <div class="form-section-divider">🚗 <span data-i18n="sec1_title">Informations de base</span></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Marque <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-marque" placeholder="ex: BMW, VW, Audi..." required></div>
-        <div class="form-group"><label class="form-label">Modèle <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-modele" placeholder="ex: M5, Golf R, A4..."></div>
+        <div class="form-group"><label class="form-label"><span data-i18n="f_marque">Marque</span> <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-marque" data-i18n-placeholder="f_marque_ph" placeholder="ex: BMW, VW, Audi..." required></div>
+        <div class="form-group"><label class="form-label"><span data-i18n="f_modele">Modèle</span> <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-modele" data-i18n-placeholder="f_modele_ph" placeholder="ex: M5, Golf R, A4..."></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Année <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-annee" placeholder="ex: 2018"></div>
-        <div class="form-group"><label class="form-label">Kilométrage <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-km" placeholder="ex: 138 000 km"></div>
+        <div class="form-group"><label class="form-label"><span data-i18n="f_annee">Année</span> <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-annee" placeholder="ex: 2018"></div>
+        <div class="form-group"><label class="form-label"><span data-i18n="f_km">Kilométrage</span> <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-km" data-i18n-placeholder="f_km_ph" placeholder="ex: 138 000 km"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Prix demandé (CHF) <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-prix" placeholder="ex: 22 500"></div>
-        <div class="form-group"><label class="form-label">Canton d'immatriculation</label>
+        <div class="form-group"><label class="form-label"><span data-i18n="f_prix">Prix demandé (CHF)</span> <span style="color:var(--red)">*</span></label><input type="text" class="form-input" id="form-prix" placeholder="ex: 22 500"></div>
+        <div class="form-group"><label class="form-label" data-i18n="f_canton">Canton d'immatriculation</label>
           <select class="form-select" id="form-canton">
             <option value="">— Sélectionner —</option>
             <option>AG – Argovie</option><option>AI – Appenzell Rhodes-Intérieures</option><option>AR – Appenzell Rhodes-Extérieures</option>
@@ -645,57 +517,41 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Carrosserie</label>
+        <div class="form-group"><label class="form-label" data-i18n="f_carrosserie">Carrosserie</label>
           <select class="form-select" id="form-carrosserie">
             <option value="">— Sélectionner —</option>
-            <option>Berline</option>
-            <option>Break / Touring</option>
-            <option>SUV / Crossover</option>
-            <option>Coupé</option>
-            <option>Cabriolet / Roadster</option>
-            <option>Monospace / Van</option>
-            <option>Utilitaire léger</option>
-            <option>Pick-up</option>
+            <option>Berline</option><option>Break / Touring</option><option>SUV / Crossover</option>
+            <option>Coupé</option><option>Cabriolet / Roadster</option><option>Monospace / Van</option>
+            <option>Utilitaire léger</option><option>Pick-up</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Puissance (ch)</label>
+        <div class="form-group"><label class="form-label" data-i18n="f_puissance">Puissance (ch)</label>
           <input type="number" class="form-input" id="form-puissance" placeholder="ex: 290" min="30" max="2000">
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Couleur <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
-          <input type="text" class="form-input" id="form-couleur" placeholder="ex: Noir métallisé, Blanc nacré...">
+        <div class="form-group"><label class="form-label" data-i18n="f_couleur">Couleur <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+          <input type="text" class="form-input" id="form-couleur" data-i18n-placeholder="f_couleur_ph" placeholder="ex: Noir métallisé, Blanc nacré...">
         </div>
-        <div class="form-group"><label class="form-label">Nombre de propriétaires <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+        <div class="form-group"><label class="form-label" data-i18n="f_proprio">Nombre de propriétaires <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
           <select class="form-select" id="form-proprio">
             <option value="">— Sélectionner —</option>
-            <option>1 propriétaire</option>
-            <option>2 propriétaires</option>
-            <option>3 propriétaires</option>
-            <option>4 propriétaires</option>
-            <option>5 propriétaires ou plus</option>
-            <option>Inconnu</option>
+            <option>1 propriétaire</option><option>2 propriétaires</option><option>3 propriétaires</option>
+            <option>4 propriétaires</option><option>5 propriétaires ou plus</option><option>Inconnu</option>
           </select>
         </div>
       </div>
 
-      <!-- SECTION 2 : CARACTÉRISTIQUES TECHNIQUES -->
-      <div class="form-section-divider">⚙️ Caractéristiques techniques</div>
+      <div class="form-section-divider">⚙️ <span data-i18n="sec2_title">Caractéristiques techniques</span></div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Carburant</label>
+        <div class="form-group"><label class="form-label" data-i18n="f_carburant">Carburant</label>
           <select class="form-select" id="form-carburant">
             <option value="">— Sélectionner —</option>
-            <option>Essence</option>
-            <option>Diesel</option>
-            <option>Hybride (mild)</option>
-            <option>Hybride rechargeable (PHEV)</option>
-            <option>Électrique</option>
-            <option>GPL / GNV</option>
+            <option>Essence</option><option>Diesel</option><option>Hybride (mild)</option>
+            <option>Hybride rechargeable (PHEV)</option><option>Électrique</option><option>GPL / GNV</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Boîte de vitesses</label>
+        <div class="form-group"><label class="form-label" data-i18n="f_boite">Boîte de vitesses</label>
           <select class="form-select" id="form-boite">
             <option value="">— Sélectionner —</option>
             <option>Manuelle</option>
@@ -706,142 +562,139 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">CO2 (g/km) <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+        <div class="form-group"><label class="form-label" data-i18n="f_co2">CO2 (g/km) <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
           <input type="number" class="form-input" id="form-co2" placeholder="ex: 142" min="0" max="500">
         </div>
-        <div class="form-group">
-          <label class="form-label">Poids à vide (kg) <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
+        <div class="form-group"><label class="form-label" data-i18n="f_poids">Poids à vide (kg) <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(optionnel)</span></label>
           <input type="number" class="form-input" id="form-poids" placeholder="ex: 1 450" min="500" max="5000">
         </div>
       </div>
 
-      <!-- SECTION 3 : PROVENANCE & MFK -->
-      <div class="form-section-divider">🇨🇭 Provenance & MFK</div>
+      <div class="form-section-divider">🇨🇭 <span data-i18n="sec3_title">Provenance & MFK</span></div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Provenance du véhicule</label>
+          <label class="form-label" data-i18n="f_provenance">Provenance du véhicule</label>
           <div class="provenance-toggle">
-            <button type="button" class="prov-btn active" id="prov-ch" onclick="setProvenance('ch')">🇨🇭 Suisse</button>
-            <button type="button" class="prov-btn" id="prov-import" onclick="setProvenance('import')">✈️ Importé</button>
+            <button type="button" class="prov-btn active" id="prov-ch" onclick="setProvenance('ch')" data-i18n="prov_ch">🇨🇭 Suisse</button>
+            <button type="button" class="prov-btn" id="prov-import" onclick="setProvenance('import')" data-i18n="prov_import">✈️ Importé</button>
           </div>
           <div id="import-pays-wrapper" style="display:none">
-            <input type="text" class="form-input" id="form-pays-import" placeholder="Pays d'origine (ex: Allemagne, France...)">
+            <input type="text" class="form-input" id="form-pays-import" data-i18n-placeholder="prov_import_ph" placeholder="Pays d'origine (ex: Allemagne, France...)">
           </div>
           <input type="hidden" id="form-provenance" value="Suisse">
         </div>
         <div class="form-group">
-          <label class="form-label">Date dernière MFK <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(contrôle technique)</span></label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select class="form-select" id="form-mfk-mois"><option value="">Mois</option><option value="01">Janvier</option><option value="02">Février</option><option value="03">Mars</option><option value="04">Avril</option><option value="05">Mai</option><option value="06">Juin</option><option value="07">Juillet</option><option value="08">Août</option><option value="09">Septembre</option><option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option></select><select class="form-select" id="form-mfk-annee"><option value="">Année</option></select></div>
+          <label class="form-label" data-i18n="f_mfk">Date dernière MFK <span style="font-size:10px;color:var(--text-light);text-transform:none;letter-spacing:0">(contrôle technique)</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <select class="form-select" id="form-mfk-mois">
+              <option value="">Mois</option>
+              <option value="01">Janvier</option><option value="02">Février</option><option value="03">Mars</option>
+              <option value="04">Avril</option><option value="05">Mai</option><option value="06">Juin</option>
+              <option value="07">Juillet</option><option value="08">Août</option><option value="09">Septembre</option>
+              <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
+            </select>
+            <select class="form-select" id="form-mfk-annee"><option value="">Année</option></select>
+          </div>
         </div>
       </div>
 
-      <!-- SECTION 4 : OPTIONS & ÉQUIPEMENTS -->
-      <div class="form-section-divider">🔧 Options & équipements <span style="font-size:10px;font-weight:400;color:var(--text-light);text-transform:none;letter-spacing:0">(cocher ce qui est présent)</span></div>
+      <div class="form-section-divider">🔧 <span data-i18n="sec4_title">Options & équipements</span> <span style="font-size:10px;font-weight:400;color:var(--text-light);text-transform:none;letter-spacing:0" data-i18n="sec4_sub">(cocher ce qui est présent)</span></div>
       <div style="border:1.5px solid var(--border);border-radius:4px;overflow:hidden;">
-
-        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Confort &amp; intérieur</div>
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);" data-i18n="opt_comfort">Confort &amp; intérieur</div>
         <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
-          <label class="option-checkbox"><input type="checkbox" id="opt-sieges"><span>Sièges chauffants</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-sieges-vent"><span>Sièges ventilés</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-cuir"><span>Sièges en cuir</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-volant-chauf"><span>Volant chauffant</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-toit"><span>Toit ouvrant</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-toit-pano"><span>Toit panoramique</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-sieges"><span data-i18n="opt_seat_heat">Sièges chauffants</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-sieges-vent"><span data-i18n="opt_seat_vent">Sièges ventilés</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-cuir"><span data-i18n="opt_leather">Sièges en cuir</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-volant-chauf"><span data-i18n="opt_wheel_heat">Volant chauffant</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-toit"><span data-i18n="opt_sunroof">Toit ouvrant</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-toit-pano"><span data-i18n="opt_pano">Toit panoramique</span></label>
         </div>
-
-        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Technologie &amp; sécurité</div>
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);" data-i18n="opt_tech">Technologie &amp; sécurité</div>
         <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
-          <label class="option-checkbox"><input type="checkbox" id="opt-gps"><span>GPS / Navigation</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-carplay"><span>CarPlay / Android Auto</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-camera"><span>Caméra de recul</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-camera360"><span>Caméra 360°</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-pdc"><span>Radar stationnement</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-lane"><span>Lane assist</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-keyless"><span>Accès/démarrage sans clé</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-acc"><span>Régulateur adaptatif (ACC)</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-hud"><span>Head-up display</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-hifi"><span>Audio premium (B&amp;O, Harman...)</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-gps"><span data-i18n="opt_gps">GPS / Navigation</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-carplay"><span data-i18n="opt_carplay">CarPlay / Android Auto</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-camera"><span data-i18n="opt_cam">Caméra de recul</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-camera360"><span data-i18n="opt_cam360">Caméra 360°</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-pdc"><span data-i18n="opt_pdc">Radar stationnement</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-lane"><span data-i18n="opt_lane">Lane assist</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-keyless"><span data-i18n="opt_keyless">Accès/démarrage sans clé</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-acc"><span data-i18n="opt_acc">Régulateur adaptatif (ACC)</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-hud"><span data-i18n="opt_hud">Head-up display</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-hifi"><span data-i18n="opt_hifi">Audio premium (B&amp;O, Harman...)</span></label>
         </div>
-
-        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Éclairage &amp; extérieur</div>
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);" data-i18n="opt_lights">Éclairage &amp; extérieur</div>
         <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
-          <label class="option-checkbox"><input type="checkbox" id="opt-xenon"><span>Phares Xenon / LED</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-matrix"><span>Phares Matrix / laser</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-jantes"><span>Jantes alliage</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-attelage"><span>Attelage remorque</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-xenon"><span data-i18n="opt_xenon">Phares Xenon / LED</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-matrix"><span data-i18n="opt_matrix">Phares Matrix / laser</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-jantes"><span data-i18n="opt_wheels">Jantes alliage</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-attelage"><span data-i18n="opt_tow">Attelage remorque</span></label>
         </div>
-
-        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);">Transmission &amp; garanties</div>
+        <div style="background:var(--bg);padding:8px 14px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);" data-i18n="opt_trans">Transmission &amp; garanties</div>
         <div style="padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;border-bottom:1px solid var(--border);">
-          <label class="option-checkbox"><input type="checkbox" id="opt-awd"><span>4x4 / AWD</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-freservice"><span>Free Service actif</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-garantie"><span>Garantie usine active</span></label>
-          <label class="option-checkbox"><input type="checkbox" id="opt-suspension"><span>Suspension pneumatique</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-awd"><span data-i18n="opt_awd">4x4 / AWD</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-freservice"><span data-i18n="opt_freeservice">Free Service actif</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-garantie"><span data-i18n="opt_warranty">Garantie usine active</span></label>
+          <label class="option-checkbox"><input type="checkbox" id="opt-suspension"><span data-i18n="opt_airsusp">Suspension pneumatique</span></label>
         </div>
-
         <div style="padding:14px;">
-          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px;">Autres options non listées <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-light)">(optionnel)</span></div>
-          <textarea id="opt-autres" rows="2" class="form-input" placeholder="ex: Head-up display, pack M Sport, échappement sport, toit carbone, sièges massants..." style="resize:vertical;font-size:13px;"></textarea>
-          <div style="font-size:11px;color:var(--text-light);margin-top:4px;">L'IA prendra en compte ces options pour affiner l'analyse et l'estimation de valeur.</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px;" data-i18n="opt_other">Autres options non listées</div>
+          <textarea id="opt-autres" rows="2" class="form-input" data-i18n-placeholder="opt_other_ph" placeholder="ex: Head-up display, pack M Sport, échappement sport..." style="resize:vertical;font-size:13px;"></textarea>
+          <div style="font-size:11px;color:var(--text-light);margin-top:4px;" data-i18n="opt_other_hint">L'IA prendra en compte ces options pour affiner l'analyse et l'estimation de valeur.</div>
         </div>
-
       </div>
 
-      <!-- EMAIL -->
-      <div class="form-section-divider">📧 Réception du rapport</div>
+      <div class="form-section-divider">📧 <span data-i18n="sec5_title">Réception du rapport</span></div>
       <div class="form-group">
-        <label class="form-label">Votre email *</label>
+        <label class="form-label"><span data-i18n="f_email">Votre email</span> *</label>
         <input type="email" id="form-email" class="form-input" placeholder="ton@email.ch" style="max-width:400px;">
-        <div style="font-size:11px;color:var(--text-light);margin-top:5px;">Le rapport PDF sera envoyé à cette adresse dans les minutes suivant le paiement.</div>
+        <div style="font-size:11px;color:var(--text-light);margin-top:5px;" data-i18n="f_email_hint">Le rapport PDF sera envoyé à cette adresse dans les minutes suivant le paiement.</div>
       </div>
 
-      <button type="button" onclick="submitToStripe()" class="form-submit" style="margin-top:16px;display:block;text-align:center;width:100%;cursor:pointer;font-size:15px;padding:16px;">
+      <button type="button" onclick="submitToStripe()" class="form-submit" style="margin-top:16px;display:block;text-align:center;width:100%;cursor:pointer;font-size:15px;padding:16px;" data-i18n="form_submit_btn">
         Commander mon rapport EasyCarCheck → 9 CHF
       </button>
       <div class="form-footer-row">
-        <span class="form-security">🔒 Paiement sécurisé · TWINT accepté · Stripe</span>
+        <span class="form-security" data-i18n="form_security">🔒 Paiement sécurisé · TWINT accepté · Stripe</span>
         <span class="form-price-tag">9.- CHF</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- FOOTER -->
 <footer>
   <div class="footer-inner">
     <div class="footer-top">
       <div>
         <div class="footer-logo">EASY<span>CAR</span>CHECK</div>
-        <p class="footer-tagline">L'analyse IA pensée pour l'acheteur suisse. Simple, rapide, fiable.</p>
+        <p class="footer-tagline" data-i18n="footer_tagline">L'analyse IA pensée pour l'acheteur suisse. Simple, rapide, fiable.</p>
       </div>
       <div class="footer-links">
         <div class="footer-col">
-          <div class="footer-col-title">Produit</div>
-          <a href="#comment">Comment ça marche</a>
-          <a href="#tarifs">Tarifs</a>
-          <a href="#avis">Avis clients</a>
+          <div class="footer-col-title" data-i18n="footer_col1">Produit</div>
+          <a href="#comment" data-i18n="nav_how">Comment ça marche</a>
+          <a href="#tarifs" data-i18n="nav_pricing">Tarifs</a>
+          <a href="#avis" data-i18n="nav_reviews">Avis clients</a>
         </div>
         <div class="footer-col">
-          <div class="footer-col-title">Entreprise</div>
-          <a href="#about">Qui sommes-nous</a>
-          <a href="#contact">Contact</a>
-          <a href="#">FAQ</a>
+          <div class="footer-col-title" data-i18n="footer_col2">Entreprise</div>
+          <a href="#about" data-i18n="nav_about">Qui sommes-nous</a>
+          <a href="#contact" data-i18n="nav_contact">Contact</a>
+          <a href="#" data-i18n="faq_label">FAQ</a>
         </div>
         <div class="footer-col">
-          <div class="footer-col-title">Légal</div>
-          <a href="/mentions-legales.html">Conditions d'utilisation</a>
-          <a href="/mentions-legales.html">Confidentialité</a>
+          <div class="footer-col-title" data-i18n="footer_col3">Légal</div>
+          <a href="/mentions-legales.html" data-i18n="footer_cgu">Conditions d'utilisation</a>
+          <a href="/mentions-legales.html" data-i18n="footer_privacy">Confidentialité</a>
         </div>
         <div class="footer-col">
-          <div class="footer-col-title">Réseaux</div>
+          <div class="footer-col-title" data-i18n="footer_col4">Réseaux</div>
           <a href="#">TikTok</a>
           <a href="#">Instagram</a>
         </div>
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© 2026 EasyCarCheck · Suisse · Tous droits réservés</p>
+      <p data-i18n="footer_copy">© 2026 EasyCarCheck · Suisse · Tous droits réservés</p>
       <div style="display:flex;gap:12px">
         <span style="font-size:11px;color:rgba(255,255,255,0.3);cursor:pointer" onclick="setLang('fr')">FR</span>
         <span style="font-size:11px;color:rgba(255,255,255,0.3);cursor:pointer" onclick="setLang('de')">DE</span>
@@ -853,6 +706,364 @@
 </footer>
 
 <script>
+const T = {
+  fr: {
+    nav_how:"Comment ça marche",nav_pricing:"Tarifs",nav_reviews:"Avis",nav_about:"Qui sommes-nous",nav_contact:"Contact",nav_cta:"Analyser une annonce →",
+    hero_badge:"🇨🇭 EasyCarCheck · Analyse IA",
+    hero_title1:"Achetez en<br><span class='accent'>toute sécurité.</span>",
+    hero_title2:"Le bon véhicule. Au bon prix.",
+    hero_sub:"Colle le lien d'une annonce ou entre le numéro VIN. EasyCarCheck analyse <strong>le prix, la fiabilité, les coûts d'entretien</strong> et te donne un verdict clair en quelques minutes.",
+    hero_cta:"Analyser une annonce — 9 CHF",hero_example:"Voir un exemple",
+    trust1:"Marché suisse uniquement",trust2:"Résultat en quelques minutes",trust3:"TWINT / Carte acceptés",
+    mockup_tag:"Rapport #001 · Mai 2026",score_prix:"Prix",score_fiab:"Fiabilité",score_km:"Km",score_ent:"Entretien",
+    verdict_label:"⚡ Verdict EasyCarCheck",verdict_text:"BONNE OPPORTUNITÉ — Négocier à 20 500–21 500 CHF",
+    budget_label:"Budget entretien an 1",cout_total:"Coût total possession",red_flags:"Red flags",red_flags_val:"3 points ⚠",rapport_cost:"Ce rapport vous a coûté",
+    stat1:"Transactions/an en Suisse",stat2:"CHF par rapport",stat3:"Langues disponibles",stat4:"Concurrent IA local",
+    ia_label:"Intelligence Artificielle",
+    ia_title:"La première IA automobile<br><span style='color:#5ab4e8;'>spécialisée pour la Suisse.</span>",
+    ia_p1:"EasyCarCheck est la première plateforme suisse à avoir spécialisé l'intelligence artificielle exclusivement pour l'analyse de véhicules d'occasion — adaptée aux réalités du marché suisse, pas un outil générique.",
+    ia_p2:"Notre IA a été entraînée et calibrée sur les spécificités locales — prix en CHF, plateformes suisses, tarifs garages, réglementations cantonales — pour vous donner une analyse vraiment pertinente.",
+    ia_feat1_title:"🇨🇭 Calibrée marché suisse",ia_feat1_desc:"Prix comparés aux annonces réelles sur AutoScout24.ch, Ricardo et Anibis — pas des données étrangères.",
+    ia_feat2_title:"🗣️ 3 langues nationales + EN",ia_feat2_desc:"Disponible en français, allemand, italien et anglais pour les expatriés — la seule plateforme auto suisse aussi complète.",
+    ia_feat3_title:"🔧 Expertise automobile réelle",ia_feat3_desc:"AdBlue, free service, red flags spécifiques, tarifs garages suisses — une IA nourrie par une vraie passion automobile.",
+    ia_feat4_title:"🗺️ Taxes cantonales intégrées",ia_feat4_desc:"Estimation de la taxe annuelle sur les plaques selon votre canton — une information unique en Suisse.",
+    how_label:"Comment ça marche",how_title:"étapes.<br><span>Zéro surprise.</span>",
+    step1_title:"Tu colles le lien",step1_desc:"AutoScout24, Ricardo, Anibis, Facebook Marketplace — n'importe quelle annonce suisse. Ou entre directement les infos du véhicule.",step1_tag:"30 secondes",
+    step2_title:"L'IA analyse",step2_desc:"Prix vs marché suisse réel, fiabilité, coûts garage, AdBlue, free service, red flags connus — scoring complet en 7 critères.",step2_tag:"Analyse complète",
+    step3_title:"Tu reçois le rapport",step3_desc:"Verdict clair : acheter, négocier, ou éviter. Avec les tarifs exacts des garages suisses et les économies potentielles.",step3_tag:"En quelques minutes",
+    about_label:"Qui sommes-nous",about_title:"Nés d'une<br><span>passion auto.</span>",
+    about_card1_title:"Notre mission",about_card1_text:"Rééquilibrer le rapport de force entre acheteur et vendeur sur le marché suisse de l'occasion. L'information, c'est le pouvoir.",
+    about_card2_title:"100% Suisse",about_card2_text:"Données de marché suisses, prix en CHF, plateformes locales. Conçu exclusivement pour les acheteurs en Suisse.",
+    about_card3_title:"IA + Expertise Auto",about_card3_text:"La puissance de l'intelligence artificielle combinée à une vraie connaissance du marché automobile suisse.",
+    about_card4_title:"Voitures & Utilitaires",about_card4_text:"De la citadine au SUV, en passant par les utilitaires légers — Partner, Transit, Caddy — EasyCarCheck couvre tous les segments.",
+    about_p1:"EasyCarCheck est né d'un constat simple : en Suisse, acheter une voiture d'occasion c'est souvent acheter dans le flou. Prix surévalués, kilométrages suspects, vices cachés, AdBlue non signalé, free service expiré — l'acheteur fait face seul à un vendeur qui a toutes les informations.",
+    about_p2:"Notre mission est simple : <strong>te donner les informations que le vendeur ne te donnera jamais</strong>, en quelques minutes et pour le prix d'un café.",
+    about_p3:"EasyCarCheck c'est l'alliance de la technologie IA et d'une expertise automobile profonde, pensée exclusivement pour le marché suisse.",
+    val1_title:"Transparence totale",val1_text:"Nous te disons ce que nous savons — et ce que nous ne savons pas.",
+    val2_title:"Honnêteté",val2_text:"Notre rapport est un outil d'aide à la décision, pas une garantie.",
+    val3_title:"Simplicité",val3_text:"Un lien. Un rapport. Un verdict. Pas de jargon, pas de blabla.",
+    pricing_label:"Tarifs",pricing_title:"Simple.<br><span>Transparent.</span>",
+    plan1_label:"Gratuit",plan1_sub:"Score de base",plan1_f1:"Score prix (aperçu)",plan1_f2:"Score fiabilité (aperçu)",plan1_f3:"Verdict simplifié",plan1_btn:"Essayer gratuitement",
+    featured_badge:"⭐ Recommandé",plan2_label:"Rapport Complet",plan2_sub:"CHF · paiement unique",
+    plan2_f1:"Analyse prix vs marché suisse",plan2_f2:"Score fiabilité complet",plan2_f3:"Coûts garage Suisse détaillés",plan2_f4:"Section AdBlue (si concerné)",plan2_f5:"Free Service restant",plan2_f6:"Red flags du modèle",plan2_f7:"Taxe cantonale estimée",plan2_f8:"Verdict : acheter / négocier / éviter",plan2_f9:"Rapport PDF professionnel",plan2_btn:"Commander mon rapport →",
+    plan3_label:"Pack 5 Rapports",plan3_sub:"CHF · économisez 6 CHF",plan3_f1:"5 rapports complets",plan3_f2:"Valable 6 mois",plan3_f3:"Idéal pour comparer plusieurs véhicules",plan3_btn:"Acheter le pack →",
+    pricing_note:"Paiement sécurisé · TWINT · Carte bancaire · Aucun abonnement caché",
+    reviews_label:"Avis clients",reviews_title:"Ce qu'ils<br><span>en pensent.</span>",
+    reviews_empty_title:"🌟 Les premiers avis arrivent bientôt",
+    reviews_empty_text:"EasyCarCheck vient de lancer. Les premiers rapports sont en cours — les avis de nos clients apparaîtront ici très prochainement.",
+    reviews_empty_cta:"Tu as déjà utilisé EasyCarCheck ? Écris-nous à <a href='mailto:contact@easycarcheck.ch' style='color:var(--navy);font-weight:600'>contact@easycarcheck.ch</a>",
+    faq_label:"FAQ",faq_title:"Questions<br><span>fréquentes.</span>",
+    faq1_q:"EasyCarCheck remplace-t-il une inspection physique ?",faq1_a:"Non. EasyCarCheck est un outil d'analyse data — il ne détecte pas les vices cachés physiques. Il analyse le prix, la fiabilité historique du modèle, les coûts d'entretien et les red flags connus. Pour une inspection mécanique complète, nous recommandons le TCS ou un garage indépendant.",
+    faq2_q:"Quels types de véhicules sont couverts ?",faq2_a:"EasyCarCheck couvre les voitures de tourisme et les utilitaires légers (Peugeot Partner, Fiat Fiorino, VW Caddy, Ford Transit, etc.) sur le marché suisse. Toutes les marques et motorisations sont supportées.",
+    faq3_q:"Combien de temps pour recevoir mon rapport ?",faq3_a:"En quelques minutes après votre commande. Vous recevez votre rapport complet par email à l'adresse indiquée lors de la commande.",
+    faq4_q:"Les données sont-elles spécifiques au marché suisse ?",faq4_a:"Oui, c'est notre principale différence. Tous les prix sont comparés au marché suisse réel (AutoScout24.ch, Ricardo, Anibis), les coûts d'entretien sont basés sur les tarifs des garages suisses, et les analyses sont calibrées pour les conditions locales.",
+    faq5_q:"Que contient exactement le rapport complet ?",faq5_a:"Score prix vs marché suisse, score fiabilité du modèle, tableau des coûts garage Suisse, section AdBlue (si le modèle est concerné), free service restant, red flags connus du modèle, taxe cantonale estimée, checklist avant achat, et verdict final : acheter / négocier / éviter.",
+    faq6_q:"Comment fonctionne le paiement ?",faq6_a:"Paiement 100% sécurisé par TWINT ou carte bancaire. Aucun abonnement — vous payez uniquement par rapport commandé. Le paiement est effectué après soumission du formulaire.",
+    faq7_q:"Puis-je obtenir un remboursement ?",faq7_a:"Si pour une raison technique nous ne pouvons pas générer votre rapport, vous êtes intégralement remboursé. Contactez-nous à contact@easycarcheck.ch.",
+    contact_label:"Contact",contact_title:"On est là<br><span>pour toi.</span>",
+    contact_email_title:"Email",contact_email_sub:"Réponse sous 24h",
+    contact_market_title:"Marché",contact_market_text:"Suisse uniquement<br>FR · DE · IT · EN",
+    contact_avail_title:"Disponibilité",contact_avail_text:"Rapports générés 7j/7<br>Support en semaine",
+    contact_social_title:"Réseaux sociaux",contact_social_text:"TikTok · Instagram<br>@easycarcheck",
+    contact_form_title:"Envoie-nous un message",contact_name:"Nom",contact_name_ph:"Ton nom",contact_email_lbl:"Email",contact_msg:"Message",contact_msg_ph:"Ta question ou remarque...",contact_send:"Envoyer le message →",
+    form_label:"Commencer maintenant",form_title:"Analyse ton<br><span>annonce.</span>",
+    form_box_title:"Soumettre une annonce",form_box_sub:"Remplis le formulaire — plus d'informations = analyse plus précise. Tu reçois ton rapport en quelques minutes.",
+    form_required:"Champs obligatoires — tout le reste est optionnel mais améliore la précision du rapport.",
+    opt1_label:"Option 1 — Lien de l'annonce",opt1_field:"Colle le lien de l'annonce",or_sep:"— OU —",
+    opt2_label:"Option 2 — Numéro VIN",vin_hint:"📍 Où trouver le VIN ? Sur le permis de circulation, sur le pare-brise côté conducteur, ou sur le montant de la porte.",vin_label:"Numéro VIN (17 caractères)",
+    sec1_title:"Informations de base",f_marque:"Marque",f_marque_ph:"ex: BMW, VW, Audi...",f_modele:"Modèle",f_modele_ph:"ex: M5, Golf R, A4...",
+    f_annee:"Année",f_km:"Kilométrage",f_km_ph:"ex: 138 000 km",f_prix:"Prix demandé (CHF)",f_canton:"Canton d'immatriculation",
+    f_carrosserie:"Carrosserie",f_puissance:"Puissance (ch)",f_couleur:"Couleur",f_couleur_ph:"ex: Noir métallisé, Blanc nacré...",f_proprio:"Nombre de propriétaires",
+    select_default:"— Sélectionner —",
+    sec2_title:"Caractéristiques techniques",f_carburant:"Carburant",f_boite:"Boîte de vitesses",f_co2:"CO2 (g/km)",f_poids:"Poids à vide (kg)",
+    sec3_title:"Provenance & MFK",f_provenance:"Provenance du véhicule",prov_ch:"🇨🇭 Suisse",prov_import:"✈️ Importé",prov_import_ph:"Pays d'origine (ex: Allemagne, France...)",f_mfk:"Date dernière MFK",
+    sec4_title:"Options & équipements",sec4_sub:"(cocher ce qui est présent)",
+    opt_comfort:"Confort & intérieur",opt_seat_heat:"Sièges chauffants",opt_seat_vent:"Sièges ventilés",opt_leather:"Sièges en cuir",opt_wheel_heat:"Volant chauffant",opt_sunroof:"Toit ouvrant",opt_pano:"Toit panoramique",
+    opt_tech:"Technologie & sécurité",opt_gps:"GPS / Navigation",opt_carplay:"CarPlay / Android Auto",opt_cam:"Caméra de recul",opt_cam360:"Caméra 360°",opt_pdc:"Radar stationnement",opt_lane:"Lane assist",opt_keyless:"Accès/démarrage sans clé",opt_acc:"Régulateur adaptatif (ACC)",opt_hud:"Head-up display",opt_hifi:"Audio premium (B&O, Harman...)",
+    opt_lights:"Éclairage & extérieur",opt_xenon:"Phares Xenon / LED",opt_matrix:"Phares Matrix / laser",opt_wheels:"Jantes alliage",opt_tow:"Attelage remorque",
+    opt_trans:"Transmission & garanties",opt_awd:"4x4 / AWD",opt_freeservice:"Free Service actif",opt_warranty:"Garantie usine active",opt_airsusp:"Suspension pneumatique",
+    opt_other:"Autres options non listées",opt_other_ph:"ex: Head-up display, pack M Sport, échappement sport...",opt_other_hint:"L'IA prendra en compte ces options pour affiner l'analyse et l'estimation de valeur.",
+    sec5_title:"Réception du rapport",f_email:"Votre email",f_email_hint:"Le rapport PDF sera envoyé à cette adresse dans les minutes suivant le paiement.",
+    form_submit_btn:"Commander mon rapport EasyCarCheck → 9 CHF",form_security:"🔒 Paiement sécurisé · TWINT accepté · Stripe",
+    footer_tagline:"L'analyse IA pensée pour l'acheteur suisse. Simple, rapide, fiable.",
+    footer_col1:"Produit",footer_col2:"Entreprise",footer_col3:"Légal",footer_col4:"Réseaux",
+    footer_cgu:"Conditions d'utilisation",footer_privacy:"Confidentialité",
+    footer_copy:"© 2026 EasyCarCheck · Suisse · Tous droits réservés",
+    alert_email:"Merci d'entrer votre email pour recevoir le rapport.",alert_annonce:"Merci d'entrer un lien d'annonce ou un numéro VIN.",alert_marque:"Merci d'indiquer la marque et le modèle.",alert_annee:"Merci d'indiquer l'année.",alert_km:"Merci d'indiquer le kilométrage.",alert_prix:"Merci d'indiquer le prix demandé.",btn_loading:"Chargement...",btn_error:"Commander mon rapport EasyCarCheck → 9 CHF"
+  },
+  de: {
+    nav_how:"So funktioniert's",nav_pricing:"Preise",nav_reviews:"Bewertungen",nav_about:"Über uns",nav_contact:"Kontakt",nav_cta:"Inserat analysieren →",
+    hero_badge:"🇨🇭 EasyCarCheck · KI-Analyse",
+    hero_title1:"Kaufen Sie mit<br><span class='accent'>voller Sicherheit.</span>",
+    hero_title2:"Das richtige Fahrzeug. Zum richtigen Preis.",
+    hero_sub:"Fügen Sie den Link eines Inserats ein oder geben Sie die VIN ein. EasyCarCheck analysiert <strong>den Preis, die Zuverlässigkeit, die Unterhaltskosten</strong> und gibt Ihnen in wenigen Minuten ein klares Urteil.",
+    hero_cta:"Inserat analysieren — 9 CHF",hero_example:"Beispiel ansehen",
+    trust1:"Nur Schweizer Markt",trust2:"Ergebnis in wenigen Minuten",trust3:"TWINT / Karte akzeptiert",
+    mockup_tag:"Bericht #001 · Mai 2026",score_prix:"Preis",score_fiab:"Zuverl.",score_km:"Km",score_ent:"Unterhalt",
+    verdict_label:"⚡ EasyCarCheck Urteil",verdict_text:"GUTE GELEGENHEIT — Verhandeln auf 20 500–21 500 CHF",
+    budget_label:"Unterhaltsbudget Jahr 1",cout_total:"Gesamtkosten Besitz",red_flags:"Red flags",red_flags_val:"3 Punkte ⚠",rapport_cost:"Dieser Bericht hat Sie gekostet",
+    stat1:"Transaktionen/Jahr in der Schweiz",stat2:"CHF pro Bericht",stat3:"Verfügbare Sprachen",stat4:"Lokaler KI-Konkurrent",
+    ia_label:"Künstliche Intelligenz",
+    ia_title:"Die erste auf die Schweiz<br><span style='color:#5ab4e8;'>spezialisierte Fahrzeug-KI.</span>",
+    ia_p1:"EasyCarCheck ist die erste Schweizer Plattform, die künstliche Intelligenz ausschliesslich für die Analyse von Occasionsfahrzeugen spezialisiert hat — angepasst an die Realitäten des Schweizer Markts, kein generisches Tool.",
+    ia_p2:"Unsere KI wurde auf lokale Spezifika trainiert und kalibriert — Preise in CHF, Schweizer Plattformen, Garagentarife, kantonale Regelungen — um Ihnen eine wirklich relevante Analyse zu liefern.",
+    ia_feat1_title:"🇨🇭 Kalibriert für den Schweizer Markt",ia_feat1_desc:"Preise verglichen mit echten Inseraten auf AutoScout24.ch, Ricardo und Anibis — keine ausländischen Daten.",
+    ia_feat2_title:"🗣️ 3 Landessprachen + EN",ia_feat2_desc:"Verfügbar auf Französisch, Deutsch, Italienisch und Englisch — die einzige so vollständige Schweizer Autoplattform.",
+    ia_feat3_title:"🔧 Echtes Automobil-Know-how",ia_feat3_desc:"AdBlue, Free Service, modellspezifische Red Flags, Schweizer Garagentarife — eine KI gespeist von echter Leidenschaft für Autos.",
+    ia_feat4_title:"🗺️ Kantonale Steuern integriert",ia_feat4_desc:"Schätzung der jährlichen Fahrzeugsteuer nach Ihrem Kanton — eine in der Schweiz einzigartige Information.",
+    how_label:"So funktioniert's",how_title:"Schritte.<br><span>Keine Überraschungen.</span>",
+    step1_title:"Sie fügen den Link ein",step1_desc:"AutoScout24, Ricardo, Anibis, Facebook Marketplace — jedes Schweizer Inserat. Oder geben Sie die Fahrzeuginfos direkt ein.",step1_tag:"30 Sekunden",
+    step2_title:"Die KI analysiert",step2_desc:"Preis vs. realer Schweizer Markt, Zuverlässigkeit, Garagenkosten, AdBlue, Free Service, bekannte Red Flags — vollständiges Scoring in 7 Kriterien.",step2_tag:"Vollständige Analyse",
+    step3_title:"Sie erhalten den Bericht",step3_desc:"Klares Urteil: kaufen, verhandeln oder meiden. Mit den genauen Schweizer Garagentarifen und den möglichen Einsparungen.",step3_tag:"In wenigen Minuten",
+    about_label:"Über uns",about_title:"Aus echter<br><span>Leidenschaft für Autos.</span>",
+    about_card1_title:"Unsere Mission",about_card1_text:"Das Kräfteverhältnis zwischen Käufer und Verkäufer auf dem Schweizer Occasionsmarkt neu ausbalancieren. Information ist Macht.",
+    about_card2_title:"100% Schweiz",about_card2_text:"Schweizer Marktdaten, Preise in CHF, lokale Plattformen. Ausschliesslich für Käufer in der Schweiz konzipiert.",
+    about_card3_title:"KI + Auto-Expertise",about_card3_text:"Die Kraft der künstlichen Intelligenz kombiniert mit echtem Wissen über den Schweizer Automobilmarkt.",
+    about_card4_title:"Autos & Nutzfahrzeuge",about_card4_text:"Vom Stadtauto bis zum SUV, über leichte Nutzfahrzeuge — Partner, Transit, Caddy — EasyCarCheck deckt alle Segmente ab.",
+    about_p1:"EasyCarCheck entstand aus einer einfachen Beobachtung: In der Schweiz bedeutet ein Occasionskauf oft, im Dunkeln zu tappen. Überhöhte Preise, verdächtige Kilometerstände, versteckte Mängel, nicht deklariertes AdBlue, abgelaufener Free Service — der Käufer steht allein einem Verkäufer gegenüber, der alle Informationen hat.",
+    about_p2:"Unsere Mission ist einfach: <strong>Ihnen die Informationen zu geben, die der Verkäufer Ihnen nie mitteilen wird</strong>, in wenigen Minuten und zum Preis eines Kaffees.",
+    about_p3:"EasyCarCheck ist das Zusammenspiel von KI-Technologie und tiefem Automobil-Know-how, ausschliesslich für den Schweizer Markt konzipiert.",
+    val1_title:"Totale Transparenz",val1_text:"Wir sagen Ihnen, was wir wissen — und was wir nicht wissen.",
+    val2_title:"Ehrlichkeit",val2_text:"Unser Bericht ist ein Entscheidungshilfsmittel, keine Garantie.",
+    val3_title:"Einfachheit",val3_text:"Ein Link. Ein Bericht. Ein Urteil. Kein Fachjargon, kein Blabla.",
+    pricing_label:"Preise",pricing_title:"Einfach.<br><span>Transparent.</span>",
+    plan1_label:"Gratis",plan1_sub:"Basisscore",plan1_f1:"Preisscore (Vorschau)",plan1_f2:"Zuverlässigkeitsscore (Vorschau)",plan1_f3:"Vereinfachtes Urteil",plan1_btn:"Kostenlos testen",
+    featured_badge:"⭐ Empfohlen",plan2_label:"Vollständiger Bericht",plan2_sub:"CHF · Einmalzahlung",
+    plan2_f1:"Preisanalyse vs. Schweizer Markt",plan2_f2:"Vollständiger Zuverlässigkeitsscore",plan2_f3:"Detaillierte Schweizer Garagenkosten",plan2_f4:"AdBlue-Abschnitt (falls relevant)",plan2_f5:"Verbleibender Free Service",plan2_f6:"Red Flags des Modells",plan2_f7:"Geschätzte Kantonssteuer",plan2_f8:"Urteil: kaufen / verhandeln / meiden",plan2_f9:"Professioneller PDF-Bericht",plan2_btn:"Meinen Bericht bestellen →",
+    plan3_label:"5-Berichte-Pack",plan3_sub:"CHF · sparen Sie 6 CHF",plan3_f1:"5 vollständige Berichte",plan3_f2:"Gültig 6 Monate",plan3_f3:"Ideal zum Vergleichen mehrerer Fahrzeuge",plan3_btn:"Pack kaufen →",
+    pricing_note:"Sichere Zahlung · TWINT · Bankkarte · Kein verstecktes Abonnement",
+    reviews_label:"Kundenbewertungen",reviews_title:"Was sie<br><span>sagen.</span>",
+    reviews_empty_title:"🌟 Die ersten Bewertungen kommen bald",
+    reviews_empty_text:"EasyCarCheck wurde gerade gestartet. Die ersten Berichte laufen — die Bewertungen unserer Kunden erscheinen hier in Kürze.",
+    reviews_empty_cta:"Haben Sie EasyCarCheck bereits genutzt? Schreiben Sie uns an <a href='mailto:contact@easycarcheck.ch' style='color:var(--navy);font-weight:600'>contact@easycarcheck.ch</a>",
+    faq_label:"FAQ",faq_title:"Häufige<br><span>Fragen.</span>",
+    faq1_q:"Ersetzt EasyCarCheck eine physische Inspektion?",faq1_a:"Nein. EasyCarCheck ist ein Datenanalyse-Tool — es erkennt keine physisch versteckten Mängel. Für eine vollständige mechanische Inspektion empfehlen wir den TCS oder eine unabhängige Garage.",
+    faq2_q:"Welche Fahrzeugtypen sind abgedeckt?",faq2_a:"EasyCarCheck deckt Personenwagen und leichte Nutzfahrzeuge auf dem Schweizer Markt ab. Alle Marken und Motorisierungen werden unterstützt.",
+    faq3_q:"Wie lange dauert es, meinen Bericht zu erhalten?",faq3_a:"Wenige Minuten nach Ihrer Bestellung. Sie erhalten Ihren vollständigen Bericht per E-Mail.",
+    faq4_q:"Sind die Daten spezifisch für den Schweizer Markt?",faq4_a:"Ja, das ist unser Hauptunterschied. Alle Preise werden mit dem echten Schweizer Markt verglichen (AutoScout24.ch, Ricardo, Anibis) und die Unterhaltskosten basieren auf Schweizer Garagentarifen.",
+    faq5_q:"Was enthält genau der vollständige Bericht?",faq5_a:"Preisscore vs. Schweizer Markt, Zuverlässigkeitsscore, Schweizer Garagenkosten, AdBlue, Free Service, Red Flags, Kantonssteuer, Checkliste und endgültiges Urteil: kaufen / verhandeln / meiden.",
+    faq6_q:"Wie funktioniert die Zahlung?",faq6_a:"100% sichere Zahlung per TWINT oder Bankkarte. Kein Abonnement — Sie zahlen nur pro bestelltem Bericht.",
+    faq7_q:"Kann ich eine Rückerstattung erhalten?",faq7_a:"Wenn wir aus technischen Gründen Ihren Bericht nicht erstellen können, werden Sie vollständig erstattet. Kontaktieren Sie uns unter contact@easycarcheck.ch.",
+    contact_label:"Kontakt",contact_title:"Wir sind<br><span>für Sie da.</span>",
+    contact_email_title:"E-Mail",contact_email_sub:"Antwort innerhalb von 24h",
+    contact_market_title:"Markt",contact_market_text:"Nur Schweiz<br>FR · DE · IT · EN",
+    contact_avail_title:"Verfügbarkeit",contact_avail_text:"Berichte 7 Tage/Woche generiert<br>Support werktags",
+    contact_social_title:"Soziale Netzwerke",contact_social_text:"TikTok · Instagram<br>@easycarcheck",
+    contact_form_title:"Schreiben Sie uns",contact_name:"Name",contact_name_ph:"Ihr Name",contact_email_lbl:"E-Mail",contact_msg:"Nachricht",contact_msg_ph:"Ihre Frage oder Anmerkung...",contact_send:"Nachricht senden →",
+    form_label:"Jetzt starten",form_title:"Analysieren Sie<br><span>Ihr Inserat.</span>",
+    form_box_title:"Inserat einreichen",form_box_sub:"Füllen Sie das Formular aus — mehr Informationen = genauere Analyse. Sie erhalten Ihren Bericht in wenigen Minuten.",
+    form_required:"Pflichtfelder — alles andere ist optional, verbessert aber die Genauigkeit des Berichts.",
+    opt1_label:"Option 1 — Link des Inserats",opt1_field:"Fügen Sie den Link des Inserats ein",or_sep:"— ODER —",
+    opt2_label:"Option 2 — VIN-Nummer",vin_hint:"📍 Wo finden Sie die VIN? Im Fahrzeugausweis, auf der Windschutzscheibe Fahrerseite oder am Türrahmen.",vin_label:"VIN-Nummer (17 Zeichen)",
+    sec1_title:"Grundinformationen",f_marque:"Marke",f_marque_ph:"z.B.: BMW, VW, Audi...",f_modele:"Modell",f_modele_ph:"z.B.: M5, Golf R, A4...",
+    f_annee:"Baujahr",f_km:"Kilometerstand",f_km_ph:"z.B.: 138 000 km",f_prix:"Verlangter Preis (CHF)",f_canton:"Zulassungskanton",
+    f_carrosserie:"Karosserie",f_puissance:"Leistung (PS)",f_couleur:"Farbe",f_couleur_ph:"z.B.: Schwarz metallic, Perlweiss...",f_proprio:"Anzahl Vorbesitzer",
+    select_default:"— Auswählen —",
+    sec2_title:"Technische Merkmale",f_carburant:"Kraftstoff",f_boite:"Getriebe",f_co2:"CO2 (g/km)",f_poids:"Leergewicht (kg)",
+    sec3_title:"Herkunft & MFK",f_provenance:"Fahrzeugherkunft",prov_ch:"🇨🇭 Schweiz",prov_import:"✈️ Import",prov_import_ph:"Herkunftsland (z.B.: Deutschland, Frankreich...)",f_mfk:"Datum letzte MFK",
+    sec4_title:"Optionen & Ausstattung",sec4_sub:"(Ankreuzen was vorhanden ist)",
+    opt_comfort:"Komfort & Innenraum",opt_seat_heat:"Sitzheizung",opt_seat_vent:"Sitzbelüftung",opt_leather:"Ledersitze",opt_wheel_heat:"Lenkradheizung",opt_sunroof:"Schiebedach",opt_pano:"Panoramadach",
+    opt_tech:"Technologie & Sicherheit",opt_gps:"GPS / Navigation",opt_carplay:"CarPlay / Android Auto",opt_cam:"Rückfahrkamera",opt_cam360:"360°-Kamera",opt_pdc:"Einparkhilfe",opt_lane:"Spurhalteassistent",opt_keyless:"Keyless-Zugang/-Start",opt_acc:"Adaptiver Tempomat (ACC)",opt_hud:"Head-up-Display",opt_hifi:"Premium-Audio (B&O, Harman...)",
+    opt_lights:"Beleuchtung & Exterieur",opt_xenon:"Xenon- / LED-Scheinwerfer",opt_matrix:"Matrix- / Laserscheinwerfer",opt_wheels:"Leichtmetallfelgen",opt_tow:"Anhängerkupplung",
+    opt_trans:"Antrieb & Garantien",opt_awd:"4x4 / AWD",opt_freeservice:"Free Service aktiv",opt_warranty:"Werksgarantie aktiv",opt_airsusp:"Luftfederung",
+    opt_other:"Weitere nicht aufgeführte Optionen",opt_other_ph:"z.B.: Head-up-Display, M Sport Paket, Sportauspuff...",opt_other_hint:"Die KI berücksichtigt diese Optionen für eine präzisere Analyse.",
+    sec5_title:"Berichtsempfang",f_email:"Ihre E-Mail",f_email_hint:"Der PDF-Bericht wird an diese Adresse innerhalb weniger Minuten nach der Zahlung gesendet.",
+    form_submit_btn:"Meinen EasyCarCheck-Bericht bestellen → 9 CHF",form_security:"🔒 Sichere Zahlung · TWINT akzeptiert · Stripe",
+    footer_tagline:"Die KI-Analyse für den Schweizer Käufer. Einfach, schnell, zuverlässig.",
+    footer_col1:"Produkt",footer_col2:"Unternehmen",footer_col3:"Rechtliches",footer_col4:"Netzwerke",
+    footer_cgu:"Nutzungsbedingungen",footer_privacy:"Datenschutz",
+    footer_copy:"© 2026 EasyCarCheck · Schweiz · Alle Rechte vorbehalten",
+    alert_email:"Bitte geben Sie Ihre E-Mail-Adresse ein.",alert_annonce:"Bitte geben Sie einen Inserat-Link oder eine VIN-Nummer ein.",alert_marque:"Bitte geben Sie Marke und Modell an.",alert_annee:"Bitte geben Sie das Baujahr an.",alert_km:"Bitte geben Sie den Kilometerstand an.",alert_prix:"Bitte geben Sie den verlangten Preis an.",btn_loading:"Wird geladen...",btn_error:"Meinen EasyCarCheck-Bericht bestellen → 9 CHF"
+  },
+  it: {
+    nav_how:"Come funziona",nav_pricing:"Prezzi",nav_reviews:"Recensioni",nav_about:"Chi siamo",nav_contact:"Contatto",nav_cta:"Analizza un annuncio →",
+    hero_badge:"🇨🇭 EasyCarCheck · Analisi IA",
+    hero_title1:"Acquista in<br><span class='accent'>tutta sicurezza.</span>",
+    hero_title2:"Il veicolo giusto. Al prezzo giusto.",
+    hero_sub:"Incolla il link di un annuncio o inserisci il numero VIN. EasyCarCheck analizza <strong>il prezzo, l'affidabilità, i costi di manutenzione</strong> e ti dà un verdetto chiaro in pochi minuti.",
+    hero_cta:"Analizza un annuncio — 9 CHF",hero_example:"Vedi un esempio",
+    trust1:"Solo mercato svizzero",trust2:"Risultato in pochi minuti",trust3:"TWINT / Carta accettati",
+    mockup_tag:"Rapporto #001 · Maggio 2026",score_prix:"Prezzo",score_fiab:"Affidab.",score_km:"Km",score_ent:"Manutenz.",
+    verdict_label:"⚡ Verdetto EasyCarCheck",verdict_text:"BUONA OPPORTUNITÀ — Negoziare a 20 500–21 500 CHF",
+    budget_label:"Budget manutenzione anno 1",cout_total:"Costo totale possesso",red_flags:"Red flags",red_flags_val:"3 punti ⚠",rapport_cost:"Questo rapporto ti è costato",
+    stat1:"Transazioni/anno in Svizzera",stat2:"CHF per rapporto",stat3:"Lingue disponibili",stat4:"Concorrente IA locale",
+    ia_label:"Intelligenza Artificiale",
+    ia_title:"La prima IA automobilistica<br><span style='color:#5ab4e8;'>specializzata per la Svizzera.</span>",
+    ia_p1:"EasyCarCheck è la prima piattaforma svizzera ad aver specializzato l'intelligenza artificiale esclusivamente per l'analisi di veicoli usati — adattata alle realtà del mercato svizzero, non uno strumento generico.",
+    ia_p2:"La nostra IA è stata addestrata e calibrata sulle specificità locali — prezzi in CHF, piattaforme svizzere, tariffe officine, regolamentazioni cantonali — per fornirvi un'analisi davvero pertinente.",
+    ia_feat1_title:"🇨🇭 Calibrata mercato svizzero",ia_feat1_desc:"Prezzi confrontati con annunci reali su AutoScout24.ch, Ricardo e Anibis — nessun dato straniero.",
+    ia_feat2_title:"🗣️ 3 lingue nazionali + EN",ia_feat2_desc:"Disponibile in francese, tedesco, italiano e inglese — l'unica piattaforma auto svizzera così completa.",
+    ia_feat3_title:"🔧 Vera competenza automobilistica",ia_feat3_desc:"AdBlue, free service, red flag specifici, tariffe officine svizzere — un'IA alimentata da una vera passione per le auto.",
+    ia_feat4_title:"🗺️ Tasse cantonali integrate",ia_feat4_desc:"Stima della tassa annuale sulle targhe secondo il vostro cantone — un'informazione unica in Svizzera.",
+    how_label:"Come funziona",how_title:"passi.<br><span>Nessuna sorpresa.</span>",
+    step1_title:"Incolla il link",step1_desc:"AutoScout24, Ricardo, Anibis, Facebook Marketplace — qualsiasi annuncio svizzero. O inserisci direttamente le info del veicolo.",step1_tag:"30 secondi",
+    step2_title:"L'IA analizza",step2_desc:"Prezzo vs mercato svizzero reale, affidabilità, costi officina, AdBlue, free service, red flag noti — scoring completo in 7 criteri.",step2_tag:"Analisi completa",
+    step3_title:"Ricevi il rapporto",step3_desc:"Verdetto chiaro: comprare, negoziare, o evitare. Con le tariffe esatte delle officine svizzere e i potenziali risparmi.",step3_tag:"In pochi minuti",
+    about_label:"Chi siamo",about_title:"Nati da una<br><span>passione auto.</span>",
+    about_card1_title:"La nostra missione",about_card1_text:"Riequilibrare il rapporto di forza tra acquirente e venditore sul mercato svizzero dell'usato. L'informazione è potere.",
+    about_card2_title:"100% Svizzera",about_card2_text:"Dati di mercato svizzeri, prezzi in CHF, piattaforme locali. Concepito esclusivamente per gli acquirenti in Svizzera.",
+    about_card3_title:"IA + Competenza Auto",about_card3_text:"La potenza dell'intelligenza artificiale combinata con una vera conoscenza del mercato automobilistico svizzero.",
+    about_card4_title:"Auto & Veicoli commerciali",about_card4_text:"Dalla city car al SUV, passando per i veicoli commerciali leggeri — Partner, Transit, Caddy — EasyCarCheck copre tutti i segmenti.",
+    about_p1:"EasyCarCheck è nato da una semplice osservazione: in Svizzera, comprare un'auto usata significa spesso comprare nell'incertezza. Prezzi gonfiati, chilometraggi sospetti, difetti nascosti, AdBlue non dichiarato, free service scaduto — l'acquirente si trova da solo di fronte a un venditore che ha tutte le informazioni.",
+    about_p2:"La nostra missione è semplice: <strong>darti le informazioni che il venditore non ti darà mai</strong>, in pochi minuti e al prezzo di un caffè.",
+    about_p3:"EasyCarCheck è l'alleanza tra la tecnologia IA e una profonda competenza automobilistica, pensata esclusivamente per il mercato svizzero.",
+    val1_title:"Trasparenza totale",val1_text:"Ti diciamo cosa sappiamo — e cosa non sappiamo.",
+    val2_title:"Onestà",val2_text:"Il nostro rapporto è uno strumento di supporto decisionale, non una garanzia.",
+    val3_title:"Semplicità",val3_text:"Un link. Un rapporto. Un verdetto. Niente gergo, niente blabla.",
+    pricing_label:"Prezzi",pricing_title:"Semplice.<br><span>Trasparente.</span>",
+    plan1_label:"Gratuito",plan1_sub:"Score di base",plan1_f1:"Score prezzo (anteprima)",plan1_f2:"Score affidabilità (anteprima)",plan1_f3:"Verdetto semplificato",plan1_btn:"Prova gratuitamente",
+    featured_badge:"⭐ Consigliato",plan2_label:"Rapporto Completo",plan2_sub:"CHF · pagamento unico",
+    plan2_f1:"Analisi prezzo vs mercato svizzero",plan2_f2:"Score affidabilità completo",plan2_f3:"Costi officina Svizzera dettagliati",plan2_f4:"Sezione AdBlue (se pertinente)",plan2_f5:"Free Service rimanente",plan2_f6:"Red flag del modello",plan2_f7:"Tassa cantonale stimata",plan2_f8:"Verdetto: comprare / negoziare / evitare",plan2_f9:"Rapporto PDF professionale",plan2_btn:"Ordina il mio rapporto →",
+    plan3_label:"Pack 5 Rapporti",plan3_sub:"CHF · risparmia 6 CHF",plan3_f1:"5 rapporti completi",plan3_f2:"Valido 6 mesi",plan3_f3:"Ideale per confrontare più veicoli",plan3_btn:"Acquista il pack →",
+    pricing_note:"Pagamento sicuro · TWINT · Carta di credito · Nessun abbonamento nascosto",
+    reviews_label:"Recensioni clienti",reviews_title:"Cosa<br><span>dicono.</span>",
+    reviews_empty_title:"🌟 Le prime recensioni arrivano presto",
+    reviews_empty_text:"EasyCarCheck è appena stato lanciato. I primi rapporti sono in corso — le recensioni dei nostri clienti appariranno qui molto presto.",
+    reviews_empty_cta:"Hai già utilizzato EasyCarCheck? Scrivici a <a href='mailto:contact@easycarcheck.ch' style='color:var(--navy);font-weight:600'>contact@easycarcheck.ch</a>",
+    faq_label:"FAQ",faq_title:"Domande<br><span>frequenti.</span>",
+    faq1_q:"EasyCarCheck sostituisce un'ispezione fisica?",faq1_a:"No. EasyCarCheck è uno strumento di analisi dati — non rileva i difetti fisici nascosti. Per un'ispezione meccanica completa, raccomandiamo il TCS o un'officina indipendente.",
+    faq2_q:"Quali tipi di veicoli sono coperti?",faq2_a:"EasyCarCheck copre le autovetture e i veicoli commerciali leggeri sul mercato svizzero. Tutte le marche e motorizzazioni sono supportate.",
+    faq3_q:"Quanto tempo ci vuole per ricevere il rapporto?",faq3_a:"Pochi minuti dopo il vostro ordine. Ricevete il vostro rapporto completo via email.",
+    faq4_q:"I dati sono specifici per il mercato svizzero?",faq4_a:"Sì, è la nostra principale differenza. Tutti i prezzi sono confrontati con il mercato svizzero reale (AutoScout24.ch, Ricardo, Anibis) e i costi di manutenzione si basano sulle tariffe delle officine svizzere.",
+    faq5_q:"Cosa contiene esattamente il rapporto completo?",faq5_a:"Score prezzo vs mercato svizzero, score affidabilità, costi officina, AdBlue, free service, red flag, tassa cantonale, checklist e verdetto finale: comprare / negoziare / evitare.",
+    faq6_q:"Come funziona il pagamento?",faq6_a:"Pagamento 100% sicuro tramite TWINT o carta di credito. Nessun abbonamento — pagate solo per rapporto ordinato.",
+    faq7_q:"Posso ottenere un rimborso?",faq7_a:"Se per ragioni tecniche non riusciamo a generare il vostro rapporto, sarete integralmente rimborsati. Contattateci a contact@easycarcheck.ch.",
+    contact_label:"Contatto",contact_title:"Siamo qui<br><span>per voi.</span>",
+    contact_email_title:"Email",contact_email_sub:"Risposta entro 24h",
+    contact_market_title:"Mercato",contact_market_text:"Solo Svizzera<br>FR · DE · IT · EN",
+    contact_avail_title:"Disponibilità",contact_avail_text:"Rapporti generati 7gg/7<br>Supporto nei giorni feriali",
+    contact_social_title:"Social network",contact_social_text:"TikTok · Instagram<br>@easycarcheck",
+    contact_form_title:"Scrivici un messaggio",contact_name:"Nome",contact_name_ph:"Il tuo nome",contact_email_lbl:"Email",contact_msg:"Messaggio",contact_msg_ph:"La tua domanda o osservazione...",contact_send:"Invia il messaggio →",
+    form_label:"Inizia ora",form_title:"Analizza il<br><span>tuo annuncio.</span>",
+    form_box_title:"Invia un annuncio",form_box_sub:"Compila il modulo — più informazioni = analisi più precisa. Ricevi il rapporto in pochi minuti.",
+    form_required:"Campi obbligatori — tutto il resto è opzionale ma migliora la precisione del rapporto.",
+    opt1_label:"Opzione 1 — Link dell'annuncio",opt1_field:"Incolla il link dell'annuncio",or_sep:"— O —",
+    opt2_label:"Opzione 2 — Numero VIN",vin_hint:"📍 Dove trovare il VIN? Sul libretto di circolazione, sul parabrezza lato conducente, o sul montante della porta.",vin_label:"Numero VIN (17 caratteri)",
+    sec1_title:"Informazioni di base",f_marque:"Marca",f_marque_ph:"es: BMW, VW, Audi...",f_modele:"Modello",f_modele_ph:"es: M5, Golf R, A4...",
+    f_annee:"Anno",f_km:"Chilometraggio",f_km_ph:"es: 138 000 km",f_prix:"Prezzo richiesto (CHF)",f_canton:"Cantone d'immatricolazione",
+    f_carrosserie:"Carrozzeria",f_puissance:"Potenza (cv)",f_couleur:"Colore",f_couleur_ph:"es: Nero metallizzato, Bianco perlato...",f_proprio:"Numero di proprietari",
+    select_default:"— Selezionare —",
+    sec2_title:"Caratteristiche tecniche",f_carburant:"Carburante",f_boite:"Cambio",f_co2:"CO2 (g/km)",f_poids:"Peso a vuoto (kg)",
+    sec3_title:"Provenienza & MFK",f_provenance:"Provenienza del veicolo",prov_ch:"🇨🇭 Svizzera",prov_import:"✈️ Importato",prov_import_ph:"Paese d'origine (es: Germania, Francia...)",f_mfk:"Data ultimo MFK",
+    sec4_title:"Opzioni & equipaggiamenti",sec4_sub:"(spuntare ciò che è presente)",
+    opt_comfort:"Comfort & interno",opt_seat_heat:"Sedili riscaldati",opt_seat_vent:"Sedili ventilati",opt_leather:"Sedili in pelle",opt_wheel_heat:"Volante riscaldato",opt_sunroof:"Tetto apribile",opt_pano:"Tetto panoramico",
+    opt_tech:"Tecnologia & sicurezza",opt_gps:"GPS / Navigazione",opt_carplay:"CarPlay / Android Auto",opt_cam:"Telecamera posteriore",opt_cam360:"Telecamera 360°",opt_pdc:"Sensori di parcheggio",opt_lane:"Assistente corsia",opt_keyless:"Accesso/avvio senza chiave",opt_acc:"Cruise control adattivo (ACC)",opt_hud:"Head-up display",opt_hifi:"Audio premium (B&O, Harman...)",
+    opt_lights:"Illuminazione & esterno",opt_xenon:"Fari Xenon / LED",opt_matrix:"Fari Matrix / laser",opt_wheels:"Cerchi in lega",opt_tow:"Gancio traino",
+    opt_trans:"Trasmissione & garanzie",opt_awd:"4x4 / AWD",opt_freeservice:"Free Service attivo",opt_warranty:"Garanzia di fabbrica attiva",opt_airsusp:"Sospensioni pneumatiche",
+    opt_other:"Altre opzioni non elencate",opt_other_ph:"es: Head-up display, pacchetto M Sport, scarico sportivo...",opt_other_hint:"L'IA terrà conto di queste opzioni per affinare l'analisi.",
+    sec5_title:"Ricezione del rapporto",f_email:"La vostra email",f_email_hint:"Il rapporto PDF sarà inviato a questo indirizzo entro pochi minuti dal pagamento.",
+    form_submit_btn:"Ordina il mio rapporto EasyCarCheck → 9 CHF",form_security:"🔒 Pagamento sicuro · TWINT accettato · Stripe",
+    footer_tagline:"L'analisi IA pensata per l'acquirente svizzero. Semplice, rapida, affidabile.",
+    footer_col1:"Prodotto",footer_col2:"Azienda",footer_col3:"Legale",footer_col4:"Social",
+    footer_cgu:"Condizioni d'uso",footer_privacy:"Privacy",
+    footer_copy:"© 2026 EasyCarCheck · Svizzera · Tutti i diritti riservati",
+    alert_email:"Inserisci la tua email per ricevere il rapporto.",alert_annonce:"Inserisci un link dell'annuncio o un numero VIN.",alert_marque:"Indica la marca e il modello.",alert_annee:"Indica l'anno del veicolo.",alert_km:"Indica il chilometraggio.",alert_prix:"Indica il prezzo richiesto.",btn_loading:"Caricamento...",btn_error:"Ordina il mio rapporto EasyCarCheck → 9 CHF"
+  },
+  en: {
+    nav_how:"How it works",nav_pricing:"Pricing",nav_reviews:"Reviews",nav_about:"About us",nav_contact:"Contact",nav_cta:"Analyse a listing →",
+    hero_badge:"🇨🇭 EasyCarCheck · AI Analysis",
+    hero_title1:"Buy with<br><span class='accent'>complete confidence.</span>",
+    hero_title2:"The right vehicle. At the right price.",
+    hero_sub:"Paste the link of a listing or enter the VIN number. EasyCarCheck analyses <strong>the price, reliability, maintenance costs</strong> and gives you a clear verdict in minutes.",
+    hero_cta:"Analyse a listing — 9 CHF",hero_example:"See an example",
+    trust1:"Swiss market only",trust2:"Result in minutes",trust3:"TWINT / Card accepted",
+    mockup_tag:"Report #001 · May 2026",score_prix:"Price",score_fiab:"Reliab.",score_km:"Km",score_ent:"Maintenance",
+    verdict_label:"⚡ EasyCarCheck Verdict",verdict_text:"GOOD OPPORTUNITY — Negotiate to 20 500–21 500 CHF",
+    budget_label:"Maintenance budget year 1",cout_total:"Total cost of ownership",red_flags:"Red flags",red_flags_val:"3 points ⚠",rapport_cost:"This report cost you",
+    stat1:"Transactions/year in Switzerland",stat2:"CHF per report",stat3:"Available languages",stat4:"Local AI competitor",
+    ia_label:"Artificial Intelligence",
+    ia_title:"The first automotive AI<br><span style='color:#5ab4e8;'>specialised for Switzerland.</span>",
+    ia_p1:"EasyCarCheck is the first Swiss platform to have specialised artificial intelligence exclusively for used vehicle analysis — adapted to the realities of the Swiss market, not a generic tool.",
+    ia_p2:"Our AI has been trained and calibrated on local specificities — prices in CHF, Swiss platforms, garage rates, cantonal regulations — to give you a truly relevant analysis.",
+    ia_feat1_title:"🇨🇭 Calibrated for the Swiss market",ia_feat1_desc:"Prices compared to real listings on AutoScout24.ch, Ricardo and Anibis — no foreign data.",
+    ia_feat2_title:"🗣️ 3 national languages + EN",ia_feat2_desc:"Available in French, German, Italian and English for expatriates — the only Swiss auto platform this complete.",
+    ia_feat3_title:"🔧 Real automotive expertise",ia_feat3_desc:"AdBlue, free service, model-specific red flags, Swiss garage rates — an AI fed by a true passion for cars.",
+    ia_feat4_title:"🗺️ Cantonal taxes integrated",ia_feat4_desc:"Estimation of the annual vehicle tax according to your canton — unique information in Switzerland.",
+    how_label:"How it works",how_title:"steps.<br><span>Zero surprises.</span>",
+    step1_title:"You paste the link",step1_desc:"AutoScout24, Ricardo, Anibis, Facebook Marketplace — any Swiss listing. Or enter the vehicle info directly.",step1_tag:"30 seconds",
+    step2_title:"The AI analyses",step2_desc:"Price vs. real Swiss market, reliability, garage costs, AdBlue, free service, known red flags — complete scoring in 7 criteria.",step2_tag:"Full analysis",
+    step3_title:"You receive the report",step3_desc:"Clear verdict: buy, negotiate, or avoid. With exact Swiss garage rates and potential savings.",step3_tag:"In minutes",
+    about_label:"About us",about_title:"Born from a<br><span>passion for cars.</span>",
+    about_card1_title:"Our mission",about_card1_text:"Rebalancing the power dynamic between buyer and seller on the Swiss used car market. Information is power.",
+    about_card2_title:"100% Swiss",about_card2_text:"Swiss market data, prices in CHF, local platforms. Designed exclusively for buyers in Switzerland.",
+    about_card3_title:"AI + Auto Expertise",about_card3_text:"The power of artificial intelligence combined with real knowledge of the Swiss automotive market.",
+    about_card4_title:"Cars & Vans",about_card4_text:"From city cars to SUVs, including light commercial vehicles — Partner, Transit, Caddy — EasyCarCheck covers all segments.",
+    about_p1:"EasyCarCheck was born from a simple observation: in Switzerland, buying a used car often means buying in the dark. Inflated prices, suspicious mileage, hidden defects, undeclared AdBlue, expired free service — the buyer faces alone a seller who has all the information.",
+    about_p2:"Our mission is simple: <strong>give you the information the seller will never tell you</strong>, in minutes and for the price of a coffee.",
+    about_p3:"EasyCarCheck is the alliance of AI technology and deep automotive expertise, designed exclusively for the Swiss market.",
+    val1_title:"Total transparency",val1_text:"We tell you what we know — and what we don't know.",
+    val2_title:"Honesty",val2_text:"Our report is a decision-support tool, not a guarantee.",
+    val3_title:"Simplicity",val3_text:"One link. One report. One verdict. No jargon, no blabla.",
+    pricing_label:"Pricing",pricing_title:"Simple.<br><span>Transparent.</span>",
+    plan1_label:"Free",plan1_sub:"Basic score",plan1_f1:"Price score (preview)",plan1_f2:"Reliability score (preview)",plan1_f3:"Simplified verdict",plan1_btn:"Try for free",
+    featured_badge:"⭐ Recommended",plan2_label:"Full Report",plan2_sub:"CHF · one-time payment",
+    plan2_f1:"Price analysis vs Swiss market",plan2_f2:"Full reliability score",plan2_f3:"Detailed Swiss garage costs",plan2_f4:"AdBlue section (if relevant)",plan2_f5:"Remaining Free Service",plan2_f6:"Model red flags",plan2_f7:"Estimated cantonal tax",plan2_f8:"Verdict: buy / negotiate / avoid",plan2_f9:"Professional PDF report",plan2_btn:"Order my report →",
+    plan3_label:"5-Report Pack",plan3_sub:"CHF · save 6 CHF",plan3_f1:"5 complete reports",plan3_f2:"Valid 6 months",plan3_f3:"Ideal for comparing multiple vehicles",plan3_btn:"Buy the pack →",
+    pricing_note:"Secure payment · TWINT · Bank card · No hidden subscription",
+    reviews_label:"Customer reviews",reviews_title:"What they<br><span>say.</span>",
+    reviews_empty_title:"🌟 First reviews coming soon",
+    reviews_empty_text:"EasyCarCheck just launched. The first reports are underway — customer reviews will appear here very soon.",
+    reviews_empty_cta:"Already used EasyCarCheck? Write to us at <a href='mailto:contact@easycarcheck.ch' style='color:var(--navy);font-weight:600'>contact@easycarcheck.ch</a>",
+    faq_label:"FAQ",faq_title:"Frequently asked<br><span>questions.</span>",
+    faq1_q:"Does EasyCarCheck replace a physical inspection?",faq1_a:"No. EasyCarCheck is a data analysis tool — it does not detect physical hidden defects. For a complete mechanical inspection, we recommend the TCS or an independent garage.",
+    faq2_q:"What types of vehicles are covered?",faq2_a:"EasyCarCheck covers passenger cars and light commercial vehicles on the Swiss market. All makes and engine types are supported.",
+    faq3_q:"How long does it take to receive my report?",faq3_a:"A few minutes after your order. You receive your complete report by email.",
+    faq4_q:"Is the data specific to the Swiss market?",faq4_a:"Yes, that's our main difference. All prices are compared to the real Swiss market (AutoScout24.ch, Ricardo, Anibis) and maintenance costs are based on Swiss garage rates.",
+    faq5_q:"What exactly does the full report contain?",faq5_a:"Price score vs Swiss market, reliability score, garage costs, AdBlue, free service, red flags, cantonal tax, pre-purchase checklist, and final verdict: buy / negotiate / avoid.",
+    faq6_q:"How does payment work?",faq6_a:"100% secure payment by TWINT or bank card. No subscription — you only pay per report ordered.",
+    faq7_q:"Can I get a refund?",faq7_a:"If for technical reasons we cannot generate your report, you will be fully refunded. Contact us at contact@easycarcheck.ch.",
+    contact_label:"Contact",contact_title:"We're here<br><span>for you.</span>",
+    contact_email_title:"Email",contact_email_sub:"Response within 24h",
+    contact_market_title:"Market",contact_market_text:"Switzerland only<br>FR · DE · IT · EN",
+    contact_avail_title:"Availability",contact_avail_text:"Reports generated 7 days/week<br>Support on weekdays",
+    contact_social_title:"Social media",contact_social_text:"TikTok · Instagram<br>@easycarcheck",
+    contact_form_title:"Send us a message",contact_name:"Name",contact_name_ph:"Your name",contact_email_lbl:"Email",contact_msg:"Message",contact_msg_ph:"Your question or comment...",contact_send:"Send message →",
+    form_label:"Start now",form_title:"Analyse your<br><span>listing.</span>",
+    form_box_title:"Submit a listing",form_box_sub:"Fill in the form — more information = more precise analysis. You receive your report in minutes.",
+    form_required:"Required fields — everything else is optional but improves report accuracy.",
+    opt1_label:"Option 1 — Listing link",opt1_field:"Paste the listing link",or_sep:"— OR —",
+    opt2_label:"Option 2 — VIN number",vin_hint:"📍 Where to find the VIN? On the vehicle registration document, on the windshield driver's side, or on the door pillar.",vin_label:"VIN number (17 characters)",
+    sec1_title:"Basic information",f_marque:"Make",f_marque_ph:"e.g.: BMW, VW, Audi...",f_modele:"Model",f_modele_ph:"e.g.: M5, Golf R, A4...",
+    f_annee:"Year",f_km:"Mileage",f_km_ph:"e.g.: 138,000 km",f_prix:"Asking price (CHF)",f_canton:"Registration canton",
+    f_carrosserie:"Body type",f_puissance:"Power (hp)",f_couleur:"Colour",f_couleur_ph:"e.g.: Metallic black, Pearl white...",f_proprio:"Number of owners",
+    select_default:"— Select —",
+    sec2_title:"Technical specifications",f_carburant:"Fuel",f_boite:"Gearbox",f_co2:"CO2 (g/km)",f_poids:"Kerb weight (kg)",
+    sec3_title:"Origin & MFK",f_provenance:"Vehicle origin",prov_ch:"🇨🇭 Switzerland",prov_import:"✈️ Imported",prov_import_ph:"Country of origin (e.g.: Germany, France...)",f_mfk:"Last MFK date",
+    sec4_title:"Options & equipment",sec4_sub:"(check what is present)",
+    opt_comfort:"Comfort & interior",opt_seat_heat:"Heated seats",opt_seat_vent:"Ventilated seats",opt_leather:"Leather seats",opt_wheel_heat:"Heated steering wheel",opt_sunroof:"Sunroof",opt_pano:"Panoramic roof",
+    opt_tech:"Technology & safety",opt_gps:"GPS / Navigation",opt_carplay:"CarPlay / Android Auto",opt_cam:"Rear camera",opt_cam360:"360° camera",opt_pdc:"Parking sensors",opt_lane:"Lane assist",opt_keyless:"Keyless access/start",opt_acc:"Adaptive cruise control (ACC)",opt_hud:"Head-up display",opt_hifi:"Audio premium (B&O, Harman...)",
+    opt_lights:"Lighting & exterior",opt_xenon:"Xenon / LED headlights",opt_matrix:"Matrix / laser headlights",opt_wheels:"Alloy wheels",opt_tow:"Tow bar",
+    opt_trans:"Drivetrain & warranties",opt_awd:"4x4 / AWD",opt_freeservice:"Active Free Service",opt_warranty:"Active factory warranty",opt_airsusp:"Air suspension",
+    opt_other:"Other options not listed",opt_other_ph:"e.g.: Head-up display, M Sport pack, sport exhaust...",opt_other_hint:"The AI will take these options into account to refine the analysis.",
+    sec5_title:"Report delivery",f_email:"Your email",f_email_hint:"The PDF report will be sent to this address within minutes of payment.",
+    form_submit_btn:"Order my EasyCarCheck report → 9 CHF",form_security:"🔒 Secure payment · TWINT accepted · Stripe",
+    footer_tagline:"The AI analysis designed for the Swiss buyer. Simple, fast, reliable.",
+    footer_col1:"Product",footer_col2:"Company",footer_col3:"Legal",footer_col4:"Social",
+    footer_cgu:"Terms of use",footer_privacy:"Privacy",
+    footer_copy:"© 2026 EasyCarCheck · Switzerland · All rights reserved",
+    alert_email:"Please enter your email to receive the report.",alert_annonce:"Please enter a listing link or VIN number.",alert_marque:"Please indicate the make and model.",alert_annee:"Please indicate the year.",alert_km:"Please indicate the mileage.",alert_prix:"Please indicate the asking price.",btn_loading:"Loading...",btn_error:"Order my EasyCarCheck report → 9 CHF"
+  }
+};
+
+let currentLang = 'fr';
+
+function setLang(lang) {
+  currentLang = lang;
+  const t = T[lang];
+  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.textContent === lang.toUpperCase()));
+  document.documentElement.lang = lang;
+  const titles = {fr:"EasyCarCheck.ch — Analyse IA de véhicules d'occasion en Suisse",de:"EasyCarCheck.ch — KI-Fahrzeuganalyse in der Schweiz",it:"EasyCarCheck.ch — Analisi IA veicoli usati in Svizzera",en:"EasyCarCheck.ch — AI Used Car Analysis in Switzerland"};
+  document.title = titles[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.innerHTML = t[key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (t[key] !== undefined) el.placeholder = t[key];
+  });
+}
+
 function toggleFaq(el) {
   const answer = el.nextElementSibling;
   const icon = el.querySelector('.faq-icon');
@@ -870,16 +1081,7 @@ function setProvenance(val) {
 }
 
 function getOptions() {
-  const ids = {
-    'opt-sieges':'Sièges chauffants','opt-sieges-vent':'Sièges ventilés','opt-cuir':'Sièges cuir',
-    'opt-volant-chauf':'Volant chauffant','opt-toit':'Toit ouvrant','opt-toit-pano':'Toit panoramique',
-    'opt-gps':'GPS/Navigation','opt-carplay':'CarPlay/Android Auto','opt-camera':'Caméra recul',
-    'opt-camera360':'Caméra 360°','opt-pdc':'Radar stationnement','opt-lane':'Lane assist',
-    'opt-keyless':'Keyless','opt-acc':'Régulateur adaptatif','opt-hud':'Head-up display',
-    'opt-hifi':'Audio premium','opt-xenon':'Xenon/LED','opt-matrix':'Phares Matrix/laser',
-    'opt-jantes':'Jantes alliage','opt-attelage':'Attelage','opt-awd':'4x4/AWD',
-    'opt-freservice':'Free Service actif','opt-garantie':'Garantie usine','opt-suspension':'Suspension pneumatique'
-  };
+  const ids = {'opt-sieges':'Sièges chauffants','opt-sieges-vent':'Sièges ventilés','opt-cuir':'Sièges cuir','opt-volant-chauf':'Volant chauffant','opt-toit':'Toit ouvrant','opt-toit-pano':'Toit panoramique','opt-gps':'GPS/Navigation','opt-carplay':'CarPlay/Android Auto','opt-camera':'Caméra recul','opt-camera360':'Caméra 360°','opt-pdc':'Radar stationnement','opt-lane':'Lane assist','opt-keyless':'Keyless','opt-acc':'Régulateur adaptatif','opt-hud':'Head-up display','opt-hifi':'Audio premium','opt-xenon':'Xenon/LED','opt-matrix':'Phares Matrix/laser','opt-jantes':'Jantes alliage','opt-attelage':'Attelage','opt-awd':'4x4/AWD','opt-freservice':'Free Service actif','opt-garantie':'Garantie usine','opt-suspension':'Suspension pneumatique'};
   const opts = [];
   for (const [id, label] of Object.entries(ids)) {
     const el = document.getElementById(id);
@@ -890,21 +1092,8 @@ function getOptions() {
   return opts.join(', ');
 }
 
-const translations = {
-  fr: { nav_how: "Comment ça marche", nav_pricing: "Tarifs", nav_reviews: "Avis", nav_about: "Qui sommes-nous", nav_contact: "Contact", nav_cta: "Analyser une annonce →", footer_copy: "© 2026 EasyCarCheck · Suisse · Tous droits réservés" },
-  de: { nav_how: "So funktioniert's", nav_pricing: "Preise", nav_reviews: "Bewertungen", nav_about: "Über uns", nav_contact: "Kontakt", nav_cta: "Inserat analysieren →", footer_copy: "© 2026 EasyCarCheck · Schweiz · Alle Rechte vorbehalten" },
-  it: { nav_how: "Come funziona", nav_pricing: "Prezzi", nav_reviews: "Recensioni", nav_about: "Chi siamo", nav_contact: "Contatto", nav_cta: "Analizza un annuncio →", footer_copy: "© 2026 EasyCarCheck · Svizzera · Tutti i diritti riservati" },
-  en: { nav_how: "How it works", nav_pricing: "Pricing", nav_reviews: "Reviews", nav_about: "About us", nav_contact: "Contact", nav_cta: "Analyse a listing →", footer_copy: "© 2026 EasyCarCheck · Switzerland · All rights reserved" }
-};
-
-function setLang(lang) {
-  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.textContent === lang.toUpperCase()));
-  document.documentElement.lang = lang;
-  const titles = { fr: 'EasyCarCheck.ch — Analyse IA · Suisse', de: 'EasyCarCheck.ch — KI-Analyse · Schweiz', it: 'EasyCarCheck.ch — Analisi IA · Svizzera', en: 'EasyCarCheck.ch — AI Analysis · Switzerland' };
-  document.title = titles[lang];
-}
-
 async function submitToStripe() {
+  const t = T[currentLang];
   const annonce = document.getElementById('form-annonce') ? document.getElementById('form-annonce').value : '';
   const vin = document.getElementById('vin-input') ? document.getElementById('vin-input').value : '';
   const email = document.getElementById('form-email') ? document.getElementById('form-email').value : '';
@@ -920,46 +1109,43 @@ async function submitToStripe() {
   const poids = document.getElementById('form-poids').value;
   const provenance = document.getElementById('form-provenance').value;
   const paysImport = document.getElementById('form-pays-import').value;
-  const mfkMois = document.getElementById('form-mfk-mois').value; const mfkAnnee = document.getElementById('form-mfk-annee').value; const mfk = mfkMois && mfkAnnee ? mfkMois + '/' + mfkAnnee : '';
+  const mfkMois = document.getElementById('form-mfk-mois').value;
+  const mfkAnnee = document.getElementById('form-mfk-annee').value;
+  const mfk = mfkMois && mfkAnnee ? mfkMois + '/' + mfkAnnee : '';
   const carrosserie = document.getElementById('form-carrosserie').value;
   const puissance = document.getElementById('form-puissance').value;
   const couleur = document.getElementById('form-couleur').value;
   const proprio = document.getElementById('form-proprio').value;
   const options = getOptions();
 
-  if (!email) { alert('Merci d\'entrer votre email pour recevoir le rapport.'); return; }
-  if (!annonce && !vin) { alert('Merci d\'entrer un lien d\'annonce ou un numéro VIN.'); return; }
-  if (!marque || !modele) { alert('Merci d\'indiquer la marque et le modèle du véhicule.'); return; }
-  if (!annee) { alert('Merci d\'indiquer l\'année du véhicule.'); return; }
-  if (!km) { alert('Merci d\'indiquer le kilométrage du véhicule.'); return; }
-  if (!prix) { alert('Merci d\'indiquer le prix demandé.'); return; }
+  if (!email) { alert(t.alert_email); return; }
+  if (!annonce && !vin) { alert(t.alert_annonce); return; }
+  if (!marque || !modele) { alert(t.alert_marque); return; }
+  if (!annee) { alert(t.alert_annee); return; }
+  if (!km) { alert(t.alert_km); return; }
+  if (!prix) { alert(t.alert_prix); return; }
 
-  const btn = document.querySelector('.form-submit');
-  btn.textContent = 'Chargement...';
+  const btn = document.querySelector('[data-i18n="form_submit_btn"]');
+  btn.textContent = t.btn_loading;
   btn.disabled = true;
 
   try {
     const response = await fetch('https://create-checkout.easycarcheck-swiss.workers.dev', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email, annonce, vin, marque, modele, annee, km, prix,
-       canton, carburant, boite, co2, poids,
-provenance: provenance === 'Importé' && paysImport ? `Importé (${paysImport})` : provenance,
-mfk, options, couleur, puissance, carrosserie, proprio
-      })
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email, annonce, vin, marque, modele, annee, km, prix, canton, carburant, boite, co2, poids, provenance: provenance === 'Importé' && paysImport ? `Importé (${paysImport})` : provenance, mfk, options, couleur, puissance, carrosserie, proprio, langue: currentLang})
     });
     const data = await response.json();
     if (data.url) {
       window.location.href = data.url;
     } else {
       alert('Erreur lors de la création du paiement. Veuillez réessayer.');
-      btn.textContent = 'Commander mon rapport EasyCarCheck → 9 CHF';
+      btn.textContent = t.btn_error;
       btn.disabled = false;
     }
   } catch (err) {
     alert('Erreur de connexion. Veuillez réessayer.');
-    btn.textContent = 'Commander mon rapport EasyCarCheck → 9 CHF';
+    btn.textContent = t.btn_error;
     btn.disabled = false;
   }
 }
