@@ -372,18 +372,7 @@ footer{background:var(--black);padding:48px 40px 32px}
   <div class="pricing-inner">
     <div class="section-label" data-i18n="pricing_label">Tarifs</div>
     <div class="section-title"><span data-i18n="pricing_title">Simple.<br><span>Transparent.</span></span></div>
-    <div class="pricing-grid">
-      <div class="pricing-card">
-        <div class="pricing-label" data-i18n="plan1_label">Gratuit</div>
-        <div class="pricing-price">0.-</div>
-        <div class="pricing-price-sub" data-i18n="plan1_sub">Score de base</div>
-        <ul class="pricing-features">
-          <li data-i18n="plan1_f1">Score prix (aperçu)</li>
-          <li data-i18n="plan1_f2">Score fiabilité (aperçu)</li>
-          <li data-i18n="plan1_f3">Verdict simplifié</li>
-        </ul>
-        <a href="#analyser" class="pricing-btn btn-outline" style="display:block;text-align:center;text-decoration:none;" data-i18n="plan1_btn">Essayer gratuitement</a>
-      </div>
+    <div class="pricing-grid" style="grid-template-columns:1fr;max-width:480px;margin:48px auto 0;">
       <div class="pricing-card featured">
         <div class="featured-badge" data-i18n="featured_badge">⭐ Recommandé</div>
         <div class="pricing-label" data-i18n="plan2_label">Rapport Complet</div>
@@ -401,17 +390,6 @@ footer{background:var(--black);padding:48px 40px 32px}
           <li data-i18n="plan2_f9">Rapport PDF professionnel</li>
         </ul>
         <a href="#analyser" class="pricing-btn btn-white" style="display:block;text-align:center;text-decoration:none;" data-i18n="plan2_btn">Commander mon rapport →</a>
-      </div>
-      <div class="pricing-card">
-        <div class="pricing-label" data-i18n="plan3_label">Pack 5 Rapports</div>
-        <div class="pricing-price">39.-</div>
-        <div class="pricing-price-sub" data-i18n="plan3_sub">CHF · économisez 6 CHF</div>
-        <ul class="pricing-features">
-          <li data-i18n="plan3_f1">5 rapports complets</li>
-          <li data-i18n="plan3_f2">Valable 6 mois</li>
-          <li data-i18n="plan3_f3">Idéal pour comparer plusieurs véhicules</li>
-        </ul>
-        <a href="#analyser" class="pricing-btn btn-outline" style="display:block;text-align:center;text-decoration:none;" data-i18n="plan3_btn">Acheter le pack →</a>
       </div>
     </div>
     <p class="pricing-note" data-i18n="pricing_note">Paiement sécurisé · TWINT · Carte bancaire · Aucun abonnement caché</p>
@@ -737,7 +715,7 @@ const T = {
     about_card3_title:"IA + Expertise Auto",about_card3_text:"La puissance de l'intelligence artificielle combinée à une vraie connaissance du marché automobile suisse.",
     about_card4_title:"Voitures & Utilitaires",about_card4_text:"De la citadine au SUV, en passant par les utilitaires légers — Partner, Transit, Caddy — EasyCarCheck couvre tous les segments.",
     about_p1:"EasyCarCheck est né d'un constat simple : en Suisse, acheter une voiture d'occasion c'est souvent acheter dans le flou. Prix surévalués, kilométrages suspects, vices cachés, AdBlue non signalé, free service expiré — l'acheteur fait face seul à un vendeur qui a toutes les informations.",
-    about_p2:"Notre mission est simple : <strong>te donner les informations que le vendeur ne te donnera jamais</strong>, en quelques minutes et pour le prix d'un café.",
+    about_p2:"Notre mission est simple : <strong>te donner les informations que le vendeur ne te donnera jamais</strong>, en quelques minutes et pour seulement 9 CHF.",
     about_p3:"EasyCarCheck c'est l'alliance de la technologie IA et d'une expertise automobile profonde, pensée exclusivement pour le marché suisse.",
     val1_title:"Transparence totale",val1_text:"Nous te disons ce que nous savons — et ce que nous ne savons pas.",
     val2_title:"Honnêteté",val2_text:"Notre rapport est un outil d'aide à la décision, pas une garantie.",
@@ -821,7 +799,7 @@ const T = {
     about_card3_title:"KI + Auto-Expertise",about_card3_text:"Die Kraft der künstlichen Intelligenz kombiniert mit echtem Wissen über den Schweizer Automobilmarkt.",
     about_card4_title:"Autos & Nutzfahrzeuge",about_card4_text:"Vom Stadtauto bis zum SUV, über leichte Nutzfahrzeuge — Partner, Transit, Caddy — EasyCarCheck deckt alle Segmente ab.",
     about_p1:"EasyCarCheck entstand aus einer einfachen Beobachtung: In der Schweiz bedeutet ein Occasionskauf oft, im Dunkeln zu tappen. Überhöhte Preise, verdächtige Kilometerstände, versteckte Mängel, nicht deklariertes AdBlue, abgelaufener Free Service — der Käufer steht allein einem Verkäufer gegenüber, der alle Informationen hat.",
-    about_p2:"Unsere Mission ist einfach: <strong>Ihnen die Informationen zu geben, die der Verkäufer Ihnen nie mitteilen wird</strong>, in wenigen Minuten und zum Preis eines Kaffees.",
+    about_p2:"Unsere Mission ist einfach: <strong>Ihnen die Informationen zu geben, die der Verkäufer Ihnen nie mitteilen wird</strong>, in wenigen Minuten und für nur 9 CHF.",
     about_p3:"EasyCarCheck ist das Zusammenspiel von KI-Technologie und tiefem Automobil-Know-how, ausschliesslich für den Schweizer Markt konzipiert.",
     val1_title:"Totale Transparenz",val1_text:"Wir sagen Ihnen, was wir wissen — und was wir nicht wissen.",
     val2_title:"Ehrlichkeit",val2_text:"Unser Bericht ist ein Entscheidungshilfsmittel, keine Garantie.",
@@ -905,7 +883,7 @@ const T = {
     about_card3_title:"IA + Competenza Auto",about_card3_text:"La potenza dell'intelligenza artificiale combinata con una vera conoscenza del mercato automobilistico svizzero.",
     about_card4_title:"Auto & Veicoli commerciali",about_card4_text:"Dalla city car al SUV, passando per i veicoli commerciali leggeri — Partner, Transit, Caddy — EasyCarCheck copre tutti i segmenti.",
     about_p1:"EasyCarCheck è nato da una semplice osservazione: in Svizzera, comprare un'auto usata significa spesso comprare nell'incertezza. Prezzi gonfiati, chilometraggi sospetti, difetti nascosti, AdBlue non dichiarato, free service scaduto — l'acquirente si trova da solo di fronte a un venditore che ha tutte le informazioni.",
-    about_p2:"La nostra missione è semplice: <strong>darti le informazioni che il venditore non ti darà mai</strong>, in pochi minuti e al prezzo di un caffè.",
+    about_p2:"La nostra missione è semplice: <strong>darti le informazioni che il venditore non ti darà mai</strong>, in pochi minuti e per soli 9 CHF.",
     about_p3:"EasyCarCheck è l'alleanza tra la tecnologia IA e una profonda competenza automobilistica, pensata esclusivamente per il mercato svizzero.",
     val1_title:"Trasparenza totale",val1_text:"Ti diciamo cosa sappiamo — e cosa non sappiamo.",
     val2_title:"Onestà",val2_text:"Il nostro rapporto è uno strumento di supporto decisionale, non una garanzia.",
@@ -989,7 +967,7 @@ const T = {
     about_card3_title:"AI + Auto Expertise",about_card3_text:"The power of artificial intelligence combined with real knowledge of the Swiss automotive market.",
     about_card4_title:"Cars & Vans",about_card4_text:"From city cars to SUVs, including light commercial vehicles — Partner, Transit, Caddy — EasyCarCheck covers all segments.",
     about_p1:"EasyCarCheck was born from a simple observation: in Switzerland, buying a used car often means buying in the dark. Inflated prices, suspicious mileage, hidden defects, undeclared AdBlue, expired free service — the buyer faces alone a seller who has all the information.",
-    about_p2:"Our mission is simple: <strong>give you the information the seller will never tell you</strong>, in minutes and for the price of a coffee.",
+    about_p2:"Our mission is simple: <strong>give you the information the seller will never tell you</strong>, in minutes and for only 9 CHF.",
     about_p3:"EasyCarCheck is the alliance of AI technology and deep automotive expertise, designed exclusively for the Swiss market.",
     val1_title:"Total transparency",val1_text:"We tell you what we know — and what we don't know.",
     val2_title:"Honesty",val2_text:"Our report is a decision-support tool, not a guarantee.",
