@@ -1027,6 +1027,7 @@ let currentLang = 'fr';
 
 function setLang(lang) {
   currentLang = lang;
+  localStorage.setItem('ecc_lang', lang);
   const t = T[lang];
   document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.textContent === lang.toUpperCase()));
   document.documentElement.lang = lang;
@@ -1040,6 +1041,71 @@ function setLang(lang) {
     const key = el.getAttribute('data-i18n-placeholder');
     if (t[key] !== undefined) el.placeholder = t[key];
   });
+  // Traduire les options des selects
+  updateSelects(lang);
+}
+
+function updateSelects(lang) {
+  const s = {
+    fr: {
+      select_default:"— Sélectionner —",
+      car:["Berline","Break / Touring","SUV / Crossover","Coupé","Cabriolet / Roadster","Monospace / Van","Utilitaire léger","Pick-up"],
+      prop:["1 propriétaire","2 propriétaires","3 propriétaires","4 propriétaires","5 propriétaires ou plus","Inconnu"],
+      fuel:["Essence","Diesel","Hybride (mild)","Hybride rechargeable (PHEV)","Électrique","GPL / GNV"],
+      box:["Manuelle","Automatique (convertisseur de couple)","Automatique double embrayage (DSG / S tronic / PDK)","CVT"],
+      months:["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],
+      month_default:"Mois", year_default:"Année"
+    },
+    de: {
+      select_default:"— Auswählen —",
+      car:["Limousine","Kombi / Touring","SUV / Crossover","Coupé","Cabriolet / Roadster","Minivan / Van","Leichtes Nutzfahrzeug","Pick-up"],
+      prop:["1 Vorbesitzer","2 Vorbesitzer","3 Vorbesitzer","4 Vorbesitzer","5 Vorbesitzer oder mehr","Unbekannt"],
+      fuel:["Benzin","Diesel","Hybrid (mild)","Plug-in-Hybrid (PHEV)","Elektro","LPG / CNG"],
+      box:["Manuell","Automatik (Drehmomentwandler)","Doppelkupplungsgetriebe (DSG / S tronic / PDK)","CVT"],
+      months:["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],
+      month_default:"Monat", year_default:"Jahr"
+    },
+    it: {
+      select_default:"— Selezionare —",
+      car:["Berlina","Station wagon / Touring","SUV / Crossover","Coupé","Cabriolet / Roadster","Monovolume / Van","Veicolo commerciale leggero","Pick-up"],
+      prop:["1 proprietario","2 proprietari","3 proprietari","4 proprietari","5 proprietari o più","Sconosciuto"],
+      fuel:["Benzina","Diesel","Ibrido (mild)","Ibrido plug-in (PHEV)","Elettrico","GPL / GNL"],
+      box:["Manuale","Automatico (convertitore di coppia)","Doppia frizione automatica (DSG / S tronic / PDK)","CVT"],
+      months:["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"],
+      month_default:"Mese", year_default:"Anno"
+    },
+    en: {
+      select_default:"— Select —",
+      car:["Saloon","Estate / Touring","SUV / Crossover","Coupé","Cabriolet / Roadster","MPV / Van","Light commercial vehicle","Pick-up"],
+      prop:["1 owner","2 owners","3 owners","4 owners","5 owners or more","Unknown"],
+      fuel:["Petrol","Diesel","Hybrid (mild)","Plug-in hybrid (PHEV)","Electric","LPG / CNG"],
+      box:["Manual","Automatic (torque converter)","Dual-clutch automatic (DSG / S tronic / PDK)","CVT"],
+      months:["January","February","March","April","May","June","July","August","September","October","November","December"],
+      month_default:"Month", year_default:"Year"
+    }
+  };
+  const t = s[lang];
+  // Carrosserie
+  const car = document.getElementById('form-carrosserie');
+  if (car) { car.options[0].text = t.select_default; t.car.forEach((v,i) => { if(car.options[i+1]) car.options[i+1].text = v; }); }
+  // Proprio
+  const prop = document.getElementById('form-proprio');
+  if (prop) { prop.options[0].text = t.select_default; t.prop.forEach((v,i) => { if(prop.options[i+1]) prop.options[i+1].text = v; }); }
+  // Carburant
+  const fuel = document.getElementById('form-carburant');
+  if (fuel) { fuel.options[0].text = t.select_default; t.fuel.forEach((v,i) => { if(fuel.options[i+1]) fuel.options[i+1].text = v; }); }
+  // Boite
+  const box = document.getElementById('form-boite');
+  if (box) { box.options[0].text = t.select_default; t.box.forEach((v,i) => { if(box.options[i+1]) box.options[i+1].text = v; }); }
+  // Canton - juste le premier option
+  const canton = document.getElementById('form-canton');
+  if (canton) canton.options[0].text = t.select_default;
+  // Mois MFK
+  const mois = document.getElementById('form-mfk-mois');
+  if (mois) { mois.options[0].text = t.month_default; t.months.forEach((v,i) => { if(mois.options[i+1]) mois.options[i+1].text = v; }); }
+  // Année MFK
+  const annee = document.getElementById('form-mfk-annee');
+  if (annee) annee.options[0].text = t.year_default;
 }
 
 function toggleFaq(el) {
