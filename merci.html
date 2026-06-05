@@ -6,32 +6,93 @@
 <title>Merci — EasyCarCheck</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #eef2f7; font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .card { background: #fff; border-radius: 8px; padding: 48px 40px; max-width: 560px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(26,61,110,0.12); }
-  .icon { font-size: 64px; margin-bottom: 24px; }
-  .title { font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 2px; color: #1a3d6e; margin-bottom: 12px; }
-  .subtitle { font-size: 16px; color: #3a5270; line-height: 1.7; margin-bottom: 32px; }
-  .info-box { background: #eef2f7; border-left: 4px solid #1a3d6e; padding: 16px 20px; border-radius: 4px; text-align: left; margin-bottom: 32px; }
-  .info-box p { font-size: 14px; color: #3a5270; line-height: 1.7; }
-  .info-box strong { color: #1a3d6e; }
-  .btn { display: inline-block; background: #1a3d6e; color: #fff; font-size: 14px; font-weight: 600; padding: 14px 32px; border-radius: 3px; text-decoration: none; transition: background 0.2s; }
-  .btn:hover { background: #0f2548; }
-  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; color: #1a3d6e; margin-bottom: 32px; }
-  .logo span { color: #5ab4e8; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1a3d6e;--navy-dark:#0f2548;--navy-light:#e8f0f8;--sky:#5ab4e8;--white:#ffffff;--bg:#eef2f7;--border:#d8e2ef;--text:#0f1e30;--text-mid:#3a5270;--text-light:#8aa0b8;--green:#1a7a3c;--green-light:#edf7f2}
+body{background:var(--bg);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--white);border-radius:8px;padding:48px 40px;max-width:560px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(26,61,110,0.10);border:1px solid var(--border)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;color:var(--navy);margin-bottom:32px;display:block}
+.logo span{color:var(--sky)}
+.check{font-size:56px;margin-bottom:20px;display:block}
+h1{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;color:var(--navy);margin-bottom:16px}
+.sub{font-size:15px;color:var(--text-mid);line-height:1.7;margin-bottom:28px}
+.info-box{background:var(--navy-light);border-left:4px solid var(--navy);border-radius:0 4px 4px 0;padding:16px 20px;text-align:left;margin-bottom:28px}
+.info-box p{font-size:13px;color:var(--text-mid);line-height:1.8;margin-bottom:8px}
+.info-box p:last-child{margin-bottom:0}
+.info-box strong{color:var(--navy)}
+.btn{display:inline-block;background:var(--navy);color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:14px 32px;border-radius:3px;text-decoration:none;transition:background 0.2s;letter-spacing:0.5px}
+.btn:hover{background:var(--navy-dark)}
+.lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:24px}
+.lang-btn{background:none;border:1px solid var(--border);font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;padding:4px 10px;color:var(--text-light);border-radius:2px;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.lang-btn.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="logo">EASY<span>CAR</span>CHECK</div>
-  <div class="icon">✅</div>
-  <div class="title">Paiement confirmé !</div>
-  <div class="subtitle">Merci pour votre commande. Votre rapport EasyCarCheck est en cours de génération et sera envoyé à votre adresse email <strong>dans quelques minutes</strong>.</div>
-  <div class="info-box">
-    <p>📧 <strong>Vérifiez votre boîte mail</strong> — le rapport arrive sous quelques minutes.<br><br>
-    📁 <strong>Pas reçu après 10 minutes ?</strong> Vérifiez vos spams ou contactez-nous à <strong>contact@easycarcheck.ch</strong></p>
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+    <button class="lang-btn" onclick="setLang('de')">DE</button>
+    <button class="lang-btn" onclick="setLang('it')">IT</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
   </div>
-  <a href="https://easycarcheck.ch" class="btn">Retour à l'accueil →</a>
+  <a href="https://easycarcheck.ch" class="logo">EASY<span>CAR</span>CHECK</a>
+  <span class="check">✅</span>
+  <h1 id="title">PAIEMENT CONFIRMÉ !</h1>
+  <p class="sub" id="sub">Merci pour votre commande. Votre rapport EasyCarCheck est en cours de génération et sera envoyé à votre adresse email <strong>dans quelques minutes</strong>.</p>
+  <div class="info-box">
+    <p id="info1">📬 <strong>Vérifiez votre boîte mail</strong> — le rapport arrive sous quelques minutes.</p>
+    <p id="info2">📁 <strong>Pas reçu après 10 minutes ?</strong> Vérifiez vos spams ou contactez-nous à <strong>contact@easycarcheck.ch</strong></p>
+  </div>
+  <a href="https://easycarcheck.ch" class="btn" id="btn">Retour à l'accueil →</a>
 </div>
+
+<script>
+const TM = {
+  fr: {
+    title:"PAIEMENT CONFIRMÉ !",
+    sub:"Merci pour votre commande. Votre rapport EasyCarCheck est en cours de génération et sera envoyé à votre adresse email <strong>dans quelques minutes</strong>.",
+    info1:"📬 <strong>Vérifiez votre boîte mail</strong> — le rapport arrive sous quelques minutes.",
+    info2:"📁 <strong>Pas reçu après 10 minutes ?</strong> Vérifiez vos spams ou contactez-nous à <strong>contact@easycarcheck.ch</strong>",
+    btn:"Retour à l'accueil →"
+  },
+  de: {
+    title:"ZAHLUNG BESTÄTIGT!",
+    sub:"Vielen Dank für Ihre Bestellung. Ihr EasyCarCheck-Bericht wird gerade erstellt und <strong>in wenigen Minuten</strong> an Ihre E-Mail-Adresse gesendet.",
+    info1:"📬 <strong>Überprüfen Sie Ihr Postfach</strong> — der Bericht kommt in wenigen Minuten.",
+    info2:"📁 <strong>Nach 10 Minuten nicht erhalten?</strong> Prüfen Sie Ihren Spam-Ordner oder kontaktieren Sie uns unter <strong>contact@easycarcheck.ch</strong>",
+    btn:"Zurück zur Startseite →"
+  },
+  it: {
+    title:"PAGAMENTO CONFERMATO!",
+    sub:"Grazie per il tuo ordine. Il tuo rapporto EasyCarCheck è in fase di generazione e sarà inviato al tuo indirizzo email <strong>in pochi minuti</strong>.",
+    info1:"📬 <strong>Controlla la tua casella email</strong> — il rapporto arriverà in pochi minuti.",
+    info2:"📁 <strong>Non ricevuto dopo 10 minuti?</strong> Controlla la cartella spam o contattaci a <strong>contact@easycarcheck.ch</strong>",
+    btn:"Torna alla home →"
+  },
+  en: {
+    title:"PAYMENT CONFIRMED!",
+    sub:"Thank you for your order. Your EasyCarCheck report is being generated and will be sent to your email address <strong>in a few minutes</strong>.",
+    info1:"📬 <strong>Check your inbox</strong> — the report will arrive within a few minutes.",
+    info2:"📁 <strong>Not received after 10 minutes?</strong> Check your spam folder or contact us at <strong>contact@easycarcheck.ch</strong>",
+    btn:"Back to home →"
+  }
+};
+
+function setLang(lang) {
+  const t = TM[lang];
+  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.textContent === lang.toUpperCase()));
+  document.documentElement.lang = lang;
+  document.getElementById('title').textContent = t.title;
+  document.getElementById('sub').innerHTML = t.sub;
+  document.getElementById('info1').innerHTML = t.info1;
+  document.getElementById('info2').innerHTML = t.info2;
+  document.getElementById('btn').textContent = t.btn;
+}
+
+// Détecter la langue depuis le referrer ou localStorage
+(function(){
+  const lang = localStorage.getItem('ecc_lang') || 'fr';
+  if (lang !== 'fr') setLang(lang);
+})();
+</script>
 </body>
 </html>
