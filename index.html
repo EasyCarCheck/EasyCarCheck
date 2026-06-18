@@ -224,14 +224,34 @@ footer{background:var(--black);padding:48px 40px 32px}
   .mob-sticky-cta .mob-price-tag{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);white-space:nowrap;flex-shrink:0}
   .mob-sticky-cta a{flex:1;text-align:center;background:var(--navy);color:#fff;font-size:13px;font-weight:600;padding:12px;border-radius:3px;text-decoration:none}
   body{padding-bottom:76px}
+
+  /* SECTION IA — "La première IA automobile spécialisée..." en carrousel horizontal */
+  .ia-section{padding:32px 0!important}
+  .ia-section>div{padding:0 20px}
+  .ia-grid{grid-template-columns:1fr!important;gap:0!important}
+  .ia-eyebrow{font-size:10px!important;letter-spacing:2px!important;margin-bottom:8px!important}
+  .ia-heading{font-size:clamp(24px,7.5vw,30px)!important;margin-bottom:12px!important}
+  .ia-p{font-size:13px!important;line-height:1.6!important;margin-bottom:18px!important}
+  .ia-p2-desktop{display:none!important}
+  .ia-cards{display:flex!important;flex-direction:row!important;gap:10px!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;padding:2px 20px 4px!important;scroll-snap-type:x mandatory;margin:0 -20px}
+  .ia-cards::-webkit-scrollbar{display:none}
+  .ia-card{flex:0 0 78%!important;scroll-snap-align:start;padding:15px 17px!important}
+  .ia-card-title{font-size:12.5px!important}
+  .ia-card-desc{font-size:11.5px!important;line-height:1.5!important}
+  .ia-dots{display:flex;gap:5px;justify-content:center;margin-top:12px;padding:0 20px}
+  .ia-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.25)}
+  .ia-dot.active{background:#5ab4e8}
 }
 @media(min-width:769px){
   .mob-sticky-cta{display:none}
+  .ia-dots{display:none}
 }
 
 @media(max-width:420px){
   .nav-logo{font-size:13px;letter-spacing:-0.5px}
   .lang-switcher{display:none}
+  .ia-heading{font-size:clamp(22px,7vw,26px)!important}
+  .ia-card{flex:0 0 85%!important}
 }
 </style>
 </head>
@@ -308,33 +328,34 @@ footer{background:var(--black);padding:48px 40px 32px}
   </div>
 </div>
 
-<div style="background:linear-gradient(135deg,#1a3d6e,#0f2548);padding:70px 40px;">
+<div class="ia-section" style="background:linear-gradient(135deg,#1a3d6e,#0f2548);padding:70px 40px;">
   <div style="max-width:1100px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;">
+    <div class="ia-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;">
       <div>
-        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#5ab4e8;font-weight:700;margin-bottom:12px;">🤖 <span data-i18n="ia_label">Intelligence Artificielle</span></div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,4vw,48px);letter-spacing:2px;color:#fff;line-height:1.1;margin-bottom:20px;" data-i18n="ia_title">La première IA automobile<br><span style="color:#5ab4e8;">spécialisée pour la Suisse.</span></div>
-        <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;margin-bottom:24px;" data-i18n="ia_p1">EasyCarCheck est la première plateforme suisse à avoir spécialisé l'intelligence artificielle exclusivement pour l'analyse de véhicules d'occasion — adaptée aux réalités du marché suisse, pas un outil générique.</p>
-        <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;" data-i18n="ia_p2">Notre IA a été entraînée et calibrée sur les spécificités locales — prix en CHF, plateformes suisses, tarifs garages, réglementations cantonales — pour vous donner une analyse vraiment pertinente.</p>
+        <div class="ia-eyebrow" style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#5ab4e8;font-weight:700;margin-bottom:12px;">🤖 <span data-i18n="ia_label">Intelligence Artificielle</span></div>
+        <div class="ia-heading" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,4vw,48px);letter-spacing:2px;color:#fff;line-height:1.1;margin-bottom:20px;" data-i18n="ia_title">La première IA automobile<br><span style="color:#5ab4e8;">spécialisée pour la Suisse.</span></div>
+        <p class="ia-p" style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;margin-bottom:24px;" data-i18n="ia_p1">EasyCarCheck est la première plateforme suisse à avoir spécialisé l'intelligence artificielle exclusivement pour l'analyse de véhicules d'occasion — adaptée aux réalités du marché suisse, pas un outil générique.</p>
+        <p class="ia-p ia-p2-desktop" style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.8;" data-i18n="ia_p2">Notre IA a été entraînée et calibrée sur les spécificités locales — prix en CHF, plateformes suisses, tarifs garages, réglementations cantonales — pour vous donner une analyse vraiment pertinente.</p>
       </div>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat1_title">🇨🇭 Calibrée marché suisse</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat1_desc">Prix comparés aux annonces réelles sur AutoScout24.ch, Ricardo et Anibis — pas des données étrangères.</div>
+      <div class="ia-cards" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="ia-card" style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
+          <div class="ia-card-title" style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat1_title">🇨🇭 Calibrée marché suisse</div>
+          <div class="ia-card-desc" style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat1_desc">Prix comparés aux annonces réelles sur AutoScout24.ch, Ricardo et Anibis — pas des données étrangères.</div>
         </div>
-        <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat2_title">🗣️ 3 langues nationales + EN</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat2_desc">Disponible en français, allemand, italien et anglais pour les expatriés — la seule plateforme auto suisse aussi complète.</div>
+        <div class="ia-card" style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
+          <div class="ia-card-title" style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat2_title">🗣️ 3 langues nationales + EN</div>
+          <div class="ia-card-desc" style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat2_desc">Disponible en français, allemand, italien et anglais pour les expatriés — la seule plateforme auto suisse aussi complète.</div>
         </div>
-        <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat3_title">🔧 Expertise automobile réelle</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat3_desc">AdBlue, free service, red flags spécifiques, tarifs garages suisses — une IA nourrie par une vraie passion automobile.</div>
+        <div class="ia-card" style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
+          <div class="ia-card-title" style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat3_title">🔧 Expertise automobile réelle</div>
+          <div class="ia-card-desc" style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat3_desc">AdBlue, free service, red flags spécifiques, tarifs garages suisses — une IA nourrie par une vraie passion automobile.</div>
         </div>
-        <div style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat4_title">🗺️ Taxes cantonales intégrées</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat4_desc">Estimation de la taxe annuelle sur les plaques selon votre canton — une information unique en Suisse.</div>
+        <div class="ia-card" style="background:rgba(255,255,255,0.08);border-left:4px solid #5ab4e8;padding:16px 20px;border-radius:0 4px 4px 0;">
+          <div class="ia-card-title" style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;" data-i18n="ia_feat4_title">🗺️ Taxes cantonales intégrées</div>
+          <div class="ia-card-desc" style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.6;" data-i18n="ia_feat4_desc">Estimation de la taxe annuelle sur les plaques selon votre canton — une information unique en Suisse.</div>
         </div>
       </div>
+      <div class="ia-dots"><span class="ia-dot active"></span><span class="ia-dot"></span><span class="ia-dot"></span><span class="ia-dot"></span></div>
     </div>
   </div>
 </div>
@@ -1296,6 +1317,18 @@ function mobToggleAcc(header) {
 (function(){
   if (window.innerWidth > 768) return;
   // rien à faire : max-height:0 par défaut via CSS, l'utilisateur ouvre au clic
+})();
+
+/* CARROUSEL SECTION IA — synchronise les points avec la position du scroll horizontal */
+(function(){
+  const cards = document.querySelector('.ia-cards');
+  const dots = document.querySelectorAll('.ia-dot');
+  if (!cards || !dots.length) return;
+  cards.addEventListener('scroll', () => {
+    const cardWidth = cards.scrollWidth / dots.length;
+    const index = Math.round(cards.scrollLeft / cardWidth);
+    dots.forEach((d, i) => d.classList.toggle('active', i === index));
+  });
 })();
 
 /* STICKY CTA MOBILE — bandeau flottant qui suit le scroll, masqué quand le CTA principal est visible */
