@@ -192,13 +192,46 @@ footer{background:var(--black);padding:48px 40px 32px}
 .footer-bottom p{font-size:12px;color:rgba(255,255,255,0.3)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:768px){
-  nav{padding:0 20px}.nav-links{display:none}
-  .hero{grid-template-columns:1fr;padding:100px 20px 60px;gap:40px;min-height:auto}.hero-right{display:none}
+  nav{padding:0 16px;height:56px}
+  .nav-logo{font-size:15px;letter-spacing:-0.5px;gap:3px;white-space:nowrap}
+  .nav-links{display:none}
+  .lang-switcher{padding-left:10px;gap:1px}
+  .lang-btn{padding:4px 6px;font-size:11px}
+  .hero{grid-template-columns:1fr;padding:84px 20px 50px;gap:32px;min-height:auto}.hero-right{display:none}
+  .hero-title{font-size:clamp(34px,9vw,46px)}
   .stats-inner,.steps,.pricing-grid,.reviews-grid,.about-inner,.contact-grid{grid-template-columns:1fr}
-  .stats-section,.about-section,.pricing-bg,.faq-section,.form-section{padding:60px 20px}
-  .section,.reviews-section,.contact-section{padding:60px 20px}
-  .footer-top{flex-direction:column}.footer-links{gap:32px}
-  .form-row,.form-row-3{grid-template-columns:1fr}.form-box{padding:24px 20px}
+  .stats-section,.about-section,.pricing-bg,.faq-section,.form-section{padding:48px 20px}
+  .section,.reviews-section,.contact-section{padding:48px 20px}
+  .section-title{font-size:clamp(28px,8vw,38px)}
+  .footer-top{flex-direction:column}.footer-links{gap:28px}
+  .footer-logo{font-size:20px;letter-spacing:2px}
+  .form-row,.form-row-3{grid-template-columns:1fr}.form-box{padding:20px 16px}
+  .contact-grid{gap:32px}
+  .contact-form{padding:24px 20px}
+  .contact-form-title{font-size:19px}
+  .options-grid{grid-template-columns:1fr 1fr}
+  .mockup-bar{padding:10px 16px}
+  .mockup-logo{font-size:15px}
+
+  /* ACCORDION MOBILE — sections repliables */
+  .mob-acc-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0!important}
+  .mob-acc-icon{font-size:18px;color:var(--sky);flex-shrink:0;transition:transform 0.25s;margin-left:12px}
+  .mob-acc-icon.open{transform:rotate(180deg)}
+  .mob-acc-body{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
+  .mob-acc-body.open{max-height:none}
+  .mob-sticky-cta{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:10px;align-items:center;z-index:200;box-shadow:0 -4px 16px rgba(26,61,110,0.08);transform:translateY(0);transition:transform 0.3s}
+  .mob-sticky-cta.hidden{transform:translateY(100%)}
+  .mob-sticky-cta .mob-price-tag{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);white-space:nowrap;flex-shrink:0}
+  .mob-sticky-cta a{flex:1;text-align:center;background:var(--navy);color:#fff;font-size:13px;font-weight:600;padding:12px;border-radius:3px;text-decoration:none}
+  body{padding-bottom:76px}
+}
+@media(min-width:769px){
+  .mob-sticky-cta{display:none}
+}
+
+@media(max-width:420px){
+  .nav-logo{font-size:13px;letter-spacing:-0.5px}
+  .lang-switcher{display:none}
 }
 </style>
 </head>
@@ -308,8 +341,14 @@ footer{background:var(--black);padding:48px 40px 32px}
 
 <div id="comment">
   <div class="section">
-    <div class="section-label" data-i18n="how_label">Comment ça marche</div>
-    <div class="section-title">3 <span data-i18n="how_title">étapes.<br><span>Zéro surprise.</span></span></div>
+    <div class="mob-acc-header" onclick="mobToggleAcc(this)">
+      <div>
+        <div class="section-label" data-i18n="how_label">Comment ça marche</div>
+        <div class="section-title">3 <span data-i18n="how_title">étapes.<br><span>Zéro surprise.</span></span></div>
+      </div>
+      <div class="mob-acc-icon">⌄</div>
+    </div>
+    <div class="mob-acc-body">
     <div class="steps">
       <div class="step active">
         <div class="step-num">01</div><div class="step-icon">🔗</div>
@@ -330,11 +369,20 @@ footer{background:var(--black);padding:48px 40px 32px}
         <span class="step-tag" data-i18n="step3_tag">En quelques minutes</span>
       </div>
     </div>
+    </div>
   </div>
 </div>
 
 <div id="about" class="about-section">
-  <div class="about-inner">
+  <div class="mob-acc-header" onclick="mobToggleAcc(this)" style="margin-bottom:0">
+    <div>
+      <div class="section-label" data-i18n="about_label">Qui sommes-nous</div>
+      <div class="section-title" style="margin-bottom:0"><span data-i18n="about_title">Nés d'une<br><span>passion auto.</span></span></div>
+    </div>
+    <div class="mob-acc-icon">⌄</div>
+  </div>
+  <div class="mob-acc-body">
+  <div class="about-inner" style="padding-top:40px">
     <div class="about-visual">
       <div class="about-card">
         <div class="about-card-title">🎯 <span data-i18n="about_card1_title">Notre mission</span></div>
@@ -354,10 +402,8 @@ footer{background:var(--black);padding:48px 40px 32px}
       </div>
     </div>
     <div class="about-text">
-      <div class="section-label" data-i18n="about_label">Qui sommes-nous</div>
-      <div class="section-title"><span data-i18n="about_title">Nés d'une<br><span>passion auto.</span></span></div>
       <p data-i18n="about_p1">EasyCarCheck est né d'un constat simple : en Suisse, acheter une voiture d'occasion c'est souvent acheter dans le flou. Prix surévalués, kilométrages suspects, vices cachés, AdBlue non signalé, free service expiré — l'acheteur fait face seul à un vendeur qui a toutes les informations.</p>
-      <p data-i18n="about_p2">Notre mission est simple : <strong>te donner les informations que le vendeur ne te donnera jamais</strong>, en quelques minutes et pour le prix d'un café.</p>
+      <p data-i18n="about_p2">Notre mission est simple : <strong>te donner les informations que le vendeur ne te donnera jamais</strong>, en quelques minutes et pour seulement 9 CHF.</p>
       <p data-i18n="about_p3">EasyCarCheck c'est l'alliance de la technologie IA et d'une expertise automobile profonde, pensée exclusivement pour le marché suisse.</p>
       <div class="about-values">
         <div class="about-value"><div class="about-value-icon">🔍</div><div class="about-value-text"><strong data-i18n="val1_title">Transparence totale</strong><span data-i18n="val1_text">Nous te disons ce que nous savons — et ce que nous ne savons pas.</span></div></div>
@@ -365,6 +411,7 @@ footer{background:var(--black);padding:48px 40px 32px}
         <div class="about-value"><div class="about-value-icon">⚡</div><div class="about-value-text"><strong data-i18n="val3_title">Simplicité</strong><span data-i18n="val3_text">Un lien. Un rapport. Un verdict. Pas de jargon, pas de blabla.</span></div></div>
       </div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -425,9 +472,15 @@ footer{background:var(--black);padding:48px 40px 32px}
 </div>
 
 <div id="contact" class="contact-section">
-  <div class="section-label" data-i18n="contact_label">Contact</div>
-  <div class="section-title"><span data-i18n="contact_title">On est là<br><span>pour toi.</span></span></div>
-  <div class="contact-grid">
+  <div class="mob-acc-header" onclick="mobToggleAcc(this)">
+    <div>
+      <div class="section-label" data-i18n="contact_label">Contact</div>
+      <div class="section-title" style="margin-bottom:0"><span data-i18n="contact_title">On est là<br><span>pour toi.</span></span></div>
+    </div>
+    <div class="mob-acc-icon">⌄</div>
+  </div>
+  <div class="mob-acc-body">
+  <div class="contact-grid" style="padding-top:40px">
     <div class="contact-info">
       <div class="contact-item"><div class="contact-icon">📧</div><div><div class="contact-item-title" data-i18n="contact_email_title">Email</div><div class="contact-item-text"><a href="mailto:contact@easycarcheck.ch">contact@easycarcheck.ch</a><br><span data-i18n="contact_email_sub">Réponse sous 24h</span></div></div></div>
       <div class="contact-item"><div class="contact-icon">🇨🇭</div><div><div class="contact-item-title" data-i18n="contact_market_title">Marché</div><div class="contact-item-text" data-i18n="contact_market_text">Suisse uniquement<br>FR · DE · IT · EN</div></div></div>
@@ -441,6 +494,7 @@ footer{background:var(--black);padding:48px 40px 32px}
       <div class="form-group"><label class="form-label" data-i18n="contact_msg">Message</label><textarea class="form-input" rows="4" data-i18n-placeholder="contact_msg_ph" placeholder="Ta question ou remarque..." style="resize:vertical"></textarea></div>
       <button class="form-submit" data-i18n="contact_send">Envoyer le message →</button>
     </div>
+  </div>
   </div>
 </div>
 
@@ -1219,6 +1273,56 @@ function validateVIN(input) {
     input.style.borderColor = "var(--green)";
   }
 }
+
+/* ACCORDION MOBILE — replie/déplie les sections sur petit écran uniquement */
+function mobToggleAcc(header) {
+  if (window.innerWidth > 768) return;
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.mob-acc-icon');
+  const isOpen = body.classList.contains('open');
+  if (isOpen) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    requestAnimationFrame(() => { body.style.maxHeight = '0px'; });
+    body.classList.remove('open');
+    icon.classList.remove('open');
+  } else {
+    body.classList.add('open');
+    icon.classList.add('open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+
+/* Sur mobile, toutes les sections accordéon démarrent fermées sauf indication contraire */
+(function(){
+  if (window.innerWidth > 768) return;
+  // rien à faire : max-height:0 par défaut via CSS, l'utilisateur ouvre au clic
+})();
+
+/* STICKY CTA MOBILE — bandeau flottant qui suit le scroll, masqué quand le CTA principal est visible */
+(function(){
+  const heroBtn = document.querySelector('.hero-actions .btn-primary');
+  if (!heroBtn) return;
+  const cta = document.createElement('div');
+  cta.className = 'mob-sticky-cta';
+  cta.id = 'mobStickyCta';
+  cta.innerHTML = '<span class="mob-price-tag">9.- CHF</span><a href="#analyser">' + (T[currentLang] ? T[currentLang].nav_cta : 'Analyser une annonce →') + '</a>';
+  document.body.appendChild(cta);
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      cta.classList.toggle('hidden', entry.isIntersecting);
+    });
+  }, {threshold: 0.2});
+  observer.observe(heroBtn);
+
+  // Met à jour le texte du bouton sticky quand la langue change
+  const origSetLang = window.setLang;
+  window.setLang = function(lang) {
+    origSetLang(lang);
+    const link = cta.querySelector('a');
+    if (link && T[lang]) link.textContent = T[lang].nav_cta;
+  };
+})();
 </script>
 </body>
 </html>
