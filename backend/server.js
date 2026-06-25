@@ -32,13 +32,14 @@ async function scrapeAnnonce(url) {
   }
 }
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
-async function analyserAvecGPT(scrapedData, langue) {
+async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
-Voici l'URL d'une annonce automobile : ${url}
-Analyse ce modèle de véhicule en te basant sur tes connaissances du marché suisse.
+Voici l'URL d'une annonce automobile sur AutoScout24 : ${url}
+Le scraping a retourné ces données (peuvent être incomplètes) : ${JSON.stringify(scrapedData)}
+Analyse ce véhicule en te basant sur l'URL, les données disponibles et tes connaissances du marché suisse.
 Analyse cette annonce et génère un rapport complet en ${langues[langue] || 'français'}.
 
 IMPORTANT : Extrais toi-même toutes les données du véhicule depuis le contenu brut (marque, modèle, année, km, prix, motorisation, options, description vendeur).
@@ -273,7 +274,7 @@ app.post('/analyse-gratuite', async (req, res) => {
     if (!url) return res.status(400).json({ error: 'URL manquante' });
 
     const scraped = await scrapeAnnonce(url);
-    const analyse = await analyserAvecGPT(scraped, langue);
+    const analyse = await analyserAvecGPT(scraped, langue, url);
 
     res.json({
       marque: analyse.marque,
