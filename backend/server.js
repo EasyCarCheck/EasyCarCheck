@@ -94,7 +94,7 @@ Remplace les valeurs par celles correspondant au véhicule de l'URL. JSON unique
 
   const content = response.data.choices[0].message.content;
   const clean = content.replace(/```json|```/g, '').trim();
-  
+  console.log('GPT RESPONSE:', clean.substring(0, 1000));
   try {
     return JSON.parse(clean);
   } catch(e) {
