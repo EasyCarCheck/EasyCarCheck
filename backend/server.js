@@ -32,7 +32,7 @@ async function scrapeAnnonce(url) {
     html = html.replace(/<[^>]+>/g, ' ');
     html = html.replace(/\s+/g, ' ').trim();
 
-    console.log('ZENROWS OK:', html.substring(0, 500));
+    console.log('ZENROWS OK:', html.substring(0, 2000));
     return { html: html.substring(0, 15000), url: url };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
