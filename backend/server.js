@@ -13,8 +13,23 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
-  // Retourne juste l'URL — GPT-4o analysera depuis ses connaissances
-  return { url: url, source: 'direct' };
+  try {
+    const response = await axios.get('https://app.scrapingbee.com/api/v1', {
+      params: {
+        api_key: process.env.SCRAPINGBEE_API_KEY,
+        url: url,
+        render_js: true,
+        premium_proxy: true,
+        country_code: 'ch'
+      },
+      timeout: 60000
+    });
+    console.log('SCRAPING OK:', JSON.stringify(response.data).substring(0, 500));
+    return response.data;
+  } catch (err) {
+    console.log('SCRAPING ERROR:', err.message);
+    return { url: url, error: err.message };
+  }
 }
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue) {
