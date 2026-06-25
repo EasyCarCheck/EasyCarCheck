@@ -244,11 +244,16 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
         <h1 style="color:#00B4D8;">🚗 EasyCarCheck</h1>
         <p>Votre rapport d'analyse est prêt !</p>
         <h2>${analyse.marque} ${analyse.modele} ${analyse.annee}</h2>
-        <p>Verdict : <strong>${analyse.verdict}</strong></p>
+        <p>Verdict : <strong style="color:${analyse.verdict === 'ACHETER' ? '#28a745' : analyse.verdict === 'ÉVITER' ? '#dc3545' : '#ffc107'}">${analyse.verdict}</strong></p>
         <p>Score global : <strong>${analyse.score_global}/10</strong></p>
+        <p style="color:#aaa;font-size:12px;">Le rapport PDF complet est en pièce jointe.</p>
         <p style="color:#aaa;font-size:11px;">EasyCarCheck · easycarcheck.ch</p>
       </div>
-    `
+    `,
+    attachments: [{
+      filename: `EasyCarCheck_Rapport_${reportNumber}.pdf`,
+      content: pdfBuffer.toString('base64')
+    }]
   });
   console.log('RESEND RESULT:', JSON.stringify(result));
 }
