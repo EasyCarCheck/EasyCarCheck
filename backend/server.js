@@ -39,15 +39,34 @@ async function analyserAvecGPT(scrapedData, langue, url) {
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
-Voici l'URL d'une annonce automobile : ${url}
-Voici le contenu HTML de la page (extrait) : ${scrapedData.html ? scrapedData.html.substring(0, 8000) : 'Non disponible'}
+Voici le contenu HTML d'une annonce automobile :
+${scrapedData.html ? scrapedData.html.substring(0, 8000) : 'Non disponible'}
 
-Analyse ce modèle de véhicule en te basant UNIQUEMENT sur tes connaissances générales de ce modèle et du marché suisse. Ne tente PAS d'accéder à l'URL. Utilise le slug pour identifier le véhicule.
+URL : ${url}
 
-Génère le rapport en ${langues[langue] || 'français'}.
+ÉTAPE 1 - Extrais ces données exactes depuis le HTML :
+- Prix exact en CHF
+- Kilométrage exact
+- Année exacte
+- Marque et modèle exacts
+- Carburant, boîte, puissance
+- Description du vendeur (cherche "Zylinderkopf", "Service", "Garantie", etc.)
+- Options listées
 
-RÈGLE ABSOLUE : Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après, sans commentaires.
-IMPORTANT : Le champ "verdict" doit contenir UNIQUEMENT l'un de ces trois mots : ACHETER, NÉGOCIER, ou ÉVITER. Rien d'autre.
+ÉTAPE 2 - Analyse approfondie :
+- Compare le prix avec le marché suisse actuel
+- Identifie TOUS les problèmes connus de ce modèle spécifique (ex: Mercedes A35 AMG → problème culasse moteur M260 récurrent signalé par les concessionnaires, remplacement coûte 5000-8000 CHF hors garantie, boîte DCT fragile)
+- Détecte les red flags dans la description vendeur
+- Si "Zylinderkopf" mentionné → red flag majeur culasse remplacée
+
+ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
+
+RÈGLES ABSOLUES :
+1. Réponds UNIQUEMENT avec du JSON valide
+2. Le champ "verdict" = UNIQUEMENT "ACHETER", "NÉGOCIER" ou "ÉVITER"
+3. "prix_negocie_suggere" doit être un nombre réaliste jamais 0
+4. Extrais les VRAIES valeurs du HTML, ne devine pas
+
 {
   "marque": "",
   "modele": "",
@@ -64,7 +83,7 @@ IMPORTANT : Le champ "verdict" doit contenir UNIQUEMENT l'un de ces trois mots :
   "score_fiabilite": 0,
   "score_entretien": 0,
   "score_global": 0,
-  "verdict": "ACHETER ou NÉGOCIER ou ÉVITER (un seul mot obligatoire)",
+  "verdict": "ACHETER ou NÉGOCIER ou ÉVITER",
   "economie_potentielle_min": 0,
   "economie_potentielle_max": 0,
   "prix_negocie_suggere": 0,
