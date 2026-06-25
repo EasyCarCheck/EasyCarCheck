@@ -95,7 +95,14 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte :
 
   const content = response.data.choices[0].message.content;
   const clean = content.replace(/```json|```/g, '').trim();
+  try {
   return JSON.parse(clean);
+} catch(e) {
+  // Essayer d'extraire le JSON même si mal formaté
+  const match = clean.match(/\{[\s\S]*\}/);
+  if (match) return JSON.parse(match[0]);
+  throw new Error('JSON invalide retourné par GPT-4o');
+}
 }
 
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
