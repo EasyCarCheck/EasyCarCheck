@@ -19,6 +19,8 @@ async function scrapeAnnonce(url) {
         apikey: process.env.ZENROWS_API_KEY,
         url: url,
         antibot: 'true',
+        js_render: 'true',
+        premium_proxy: 'true',
         response_type: 'markdown'
       },
       timeout: 60000
