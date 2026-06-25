@@ -16,34 +16,47 @@ async function scrapeAnnonce(url) {
   try {
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'fr-FR,fr;q=0.9',
-        'Referer': 'https://www.autoscout24.ch/',
-        'Cache-Control': 'no-cache'
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'Accept': 'text/html',
+        'Accept-Language': 'fr-FR,fr;q=0.9'
       },
       timeout: 30000,
       maxRedirects: 5
     });
 
-    let html = response.data;
-    html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-    html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-    html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
-    html = html.replace(/<[^>]+>/g, ' ');
-    html = html.replace(/\s+/g, ' ').trim();
+    const html = response.data;
+    
+    // Extraire les meta tags
+    const metaDesc = html.match(/meta-description["\s:]+([^"<\n]+)/i)?.[1] || 
+                     html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)/i)?.[1] || '';
+    const ogDesc = html.match(/meta-og:description["\s:]+([^"<\n]+)/i)?.[1] || 
+                   html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i)?.[1] || '';
+    const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || '';
+    
+    // Extraire le prix depuis le HTML
+    const prix = html.match(/CHF\s*([\d']+)/)?.[1]?.replace(/'/g, '') || '';
+    
+    // Extraire la description du vendeur
+    const descVendeur = html.match(/Zylinderkopf[^<]*/i)?.[0] || 
+                        html.match(/CH Fahrzeug[^<]*/i)?.[0] || '';
 
-    console.log('SCRAPING OK:', html.substring(0, 300));
-    return { html: html, url: url };
+    const texteExtrait = `
+      Titre: ${title}
+      Description: ${metaDesc || ogDesc}
+      Prix: CHF ${prix}
+      Description vendeur: ${descVendeur}
+      URL: ${url}
+    `;
+
+    console.log('SCRAPING OK:', texteExtrait.substring(0, 300));
+    return { html: texteExtrait, url: url };
   } catch (err) {
-    // Même en cas d'erreur, essayer d'extraire depuis le message d'erreur
     console.log('SCRAPING ERROR:', err.message);
-    // Extraire les infos depuis l'URL slug
+    // Fallback: extraire depuis l'URL slug
     const slug = url.split('/').pop() || '';
     return { html: `URL: ${url} Slug: ${slug}`, url: url };
   }
 }
-
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
