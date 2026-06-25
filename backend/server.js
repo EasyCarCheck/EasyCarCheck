@@ -18,16 +18,18 @@ async function scrapeAnnonce(url) {
       params: {
         apikey: process.env.ZENROWS_API_KEY,
         url: url,
-        antibot: 'true',
         js_render: 'true',
-        premium_proxy: 'true',
-        response_type: 'markdown'
+        premium_proxy: 'true'
       },
       timeout: 60000
     });
 
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
+    html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+    html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+    html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
+    html = html.replace(/<[^>]+>/g, ' ');
     html = html.replace(/\s+/g, ' ').trim();
 
     console.log('ZENROWS OK:', html.substring(0, 500));
