@@ -15,14 +15,15 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 async function scrapeAnnonce(url) {
   try {
     const response = await axios.get('https://api.zenrows.com/v1/', {
-      params: {
-        apikey: process.env.ZENROWS_API_KEY,
-        url: url,
-        js_render: 'true',
-        premium_proxy: 'true'
-      },
-      timeout: 60000
-    });
+  params: {
+    apikey: process.env.ZENROWS_API_KEY,
+    url: url,
+    js_render: 'true',
+    premium_proxy: 'true',
+    wait: '5000'
+  },
+  timeout: 90000
+});
 
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
