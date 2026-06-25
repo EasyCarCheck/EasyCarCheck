@@ -14,7 +14,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-    const response = await axios.get(url, {
+   const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+const proxyResponse = await axios.get(proxyUrl, { timeout: 30000 });
+const response = { data: proxyResponse.data.contents };
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
         'Accept': 'text/html',
