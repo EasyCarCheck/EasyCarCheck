@@ -14,10 +14,14 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-   const browserlessUrl = `https://production-sfo.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}&proxy=residential&proxyCountry=ch`;
-const response = await axios.post(browserlessUrl, {
-  url: url,
-  waitForTimeout: 5000
+    const browserlessUrl = `https://production-sfo.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}&proxy=residential&proxyCountry=ch`;
+    const response = await axios.post(browserlessUrl, {
+      url: url,
+      waitForTimeout: 8000,
+      waitForSelector: {
+        selector: 'h1',
+        timeout: 8000
+      }
     }, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 60000
@@ -37,7 +41,6 @@ const response = await axios.post(browserlessUrl, {
     return { html: `URL: ${url}`, url: url };
   }
 }
-
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
