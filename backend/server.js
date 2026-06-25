@@ -14,31 +14,16 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-   const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-const proxyResponse = await axios.get(proxyUrl, { timeout: 30000 });
-const response = { data: proxyResponse.data.contents };
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-        'Accept': 'text/html',
-        'Accept-Language': 'fr-FR,fr;q=0.9'
-      },
-      timeout: 30000,
-      maxRedirects: 5
-    });
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const proxyResponse = await axios.get(proxyUrl, { timeout: 30000 });
+    const html = proxyResponse.data.contents;
 
-    const html = response.data;
-    
     // Extraire les meta tags
-    const metaDesc = html.match(/meta-description["\s:]+([^"<\n]+)/i)?.[1] || 
-                     html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)/i)?.[1] || '';
-    const ogDesc = html.match(/meta-og:description["\s:]+([^"<\n]+)/i)?.[1] || 
-                   html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i)?.[1] || '';
+    const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)/i)?.[1] || 
+                     html.match(/content=["']([^"']+)["'][^>]+name=["']description["']/i)?.[1] || '';
+    const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i)?.[1] || '';
     const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || '';
-    
-    // Extraire le prix depuis le HTML
     const prix = html.match(/CHF\s*([\d']+)/)?.[1]?.replace(/'/g, '') || '';
-    
-    // Extraire la description du vendeur
     const descVendeur = html.match(/Zylinderkopf[^<]*/i)?.[0] || 
                         html.match(/CH Fahrzeug[^<]*/i)?.[0] || '';
 
@@ -54,7 +39,6 @@ const response = { data: proxyResponse.data.contents };
     return { html: texteExtrait, url: url };
   } catch (err) {
     console.log('SCRAPING ERROR:', err.message);
-    // Fallback: extraire depuis l'URL slug
     const slug = url.split('/').pop() || '';
     return { html: `URL: ${url} Slug: ${slug}`, url: url };
   }
