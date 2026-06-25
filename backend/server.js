@@ -37,54 +37,53 @@ async function analyserAvecGPT(scrapedData, langue, url) {
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
-Voici l'URL d'une annonce automobile sur AutoScout24 : ${url}
-Le scraping a retourné ces données (peuvent être incomplètes) : ${JSON.stringify(scrapedData)}
-Analyse ce véhicule en te basant sur l'URL, les données disponibles et tes connaissances du marché suisse.
-Analyse cette annonce et génère un rapport complet en ${langues[langue] || 'français'}.
+URL de l'annonce : ${url}
 
-IMPORTANT : Extrais toi-même toutes les données du véhicule depuis le contenu brut (marque, modèle, année, km, prix, motorisation, options, description vendeur).
+Analyse ce véhicule en te basant sur l'URL et tes connaissances du marché suisse.
+Génère le rapport en ${langues[langue] || 'français'}.
 
-Identifie les problèmes connus de ce modèle et les red flags dans la description du vendeur.
+RÈGLE ABSOLUE : Réponds UNIQUEMENT avec du JSON valide, sans aucun texte avant ou après, sans commentaires, sans apostrophes dans les clés.
 
-Réponds UNIQUEMENT en JSON valide avec cette structure exacte :
 {
-  "marque": "",
-  "modele": "",
-  "annee": "",
-  "kilometrage": "",
-  "prix": "",
-  "carburant": "",
-  "boite": "",
-  "puissance": "",
-  "couleur": "",
-  "options": [],
+  "marque": "Mercedes-Benz",
+  "modele": "A 35 AMG",
+  "annee": "2021",
+  "kilometrage": "54500 km",
+  "prix": "34900 CHF",
+  "carburant": "Essence",
+  "boite": "Automatique",
+  "puissance": "306 ch",
+  "couleur": "Bleu",
+  "options": ["4Matic", "Speedshift"],
   "description_vendeur": "",
-  "score_prix": 0,
-  "score_fiabilite": 0,
-  "score_entretien": 0,
-  "score_global": 0,
-  "verdict": "ACHETER|NÉGOCIER|ÉVITER",
-  "economie_potentielle_min": 0,
-  "economie_potentielle_max": 0,
-  "prix_negocie_suggere": 0,
-  "fourchette_marche_min": 0,
-  "fourchette_marche_max": 0,
-  "points_positifs": [],
-  "points_negatifs": [],
-  "red_flags": [],
-  "problemes_connus_modele": [],
-  "checklist_visite": [],
-  "questions_vendeur": [],
-  "cout_entretien_annee1": 0,
-  "cout_total_3ans": 0,
-  "taxe_cantonale_ge": 0,
-  "resume_verdict": ""
-}`;
+  "score_prix": 6,
+  "score_fiabilite": 5,
+  "score_entretien": 6,
+  "score_global": 6,
+  "verdict": "NÉGOCIER",
+  "economie_potentielle_min": 1500,
+  "economie_potentielle_max": 3000,
+  "prix_negocie_suggere": 32000,
+  "fourchette_marche_min": 30000,
+  "fourchette_marche_max": 34000,
+  "points_positifs": ["Faible kilométrage", "Véhicule suisse"],
+  "points_negatifs": ["Prix surévalué", "Consommation élevée"],
+  "red_flags": ["Culasse remplacée mentionnée dans l annonce"],
+  "problemes_connus_modele": ["Problème culasse moteur M260 récurrent", "Boîte DCT fragile"],
+  "checklist_visite": ["Vérifier historique culasse", "Tester la boîte DCT"],
+  "questions_vendeur": ["Pourquoi vendez-vous?", "Y a-t-il eu d autres réparations?"],
+  "cout_entretien_annee1": 1200,
+  "cout_total_3ans": 38500,
+  "taxe_cantonale_ge": 1065,
+  "resume_verdict": "Véhicule intéressant mais prix surévalué et historique de culasse préoccupant."
+}
+
+Remplace les valeurs par celles correspondant au véhicule de l'URL. JSON uniquement, rien d'autre.`;
 
   const response = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
-    temperature: 0.3,
+    temperature: 0.1,
     max_tokens: 2000
   }, {
     headers: {
@@ -95,16 +94,15 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte :
 
   const content = response.data.choices[0].message.content;
   const clean = content.replace(/```json|```/g, '').trim();
+  
   try {
-  return JSON.parse(clean);
-} catch(e) {
-  // Essayer d'extraire le JSON même si mal formaté
-  const match = clean.match(/\{[\s\S]*\}/);
-  if (match) return JSON.parse(match[0]);
-  throw new Error('JSON invalide retourné par GPT-4o');
+    return JSON.parse(clean);
+  } catch(e) {
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('JSON invalide');
+  }
 }
-}
-
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
 async function genererPDF(analyse, reportNumber, url) {
   const verdictColor = {
