@@ -40,7 +40,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
 Voici l'URL d'une annonce automobile : ${url}
-Slug extrait : ${scrapedData.slug}
+Voici le contenu HTML de la page (extrait) : ${scrapedData.html ? scrapedData.html.substring(0, 8000) : 'Non disponible'}
 
 Analyse ce modèle de véhicule en te basant UNIQUEMENT sur tes connaissances générales de ce modèle et du marché suisse. Ne tente PAS d'accéder à l'URL. Utilise le slug pour identifier le véhicule.
 
