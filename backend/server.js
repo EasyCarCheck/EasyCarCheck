@@ -14,33 +14,37 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const proxyResponse = await axios.get(proxyUrl, { timeout: 30000 });
-    const html = proxyResponse.data.contents;
-
-    // Extraire les meta tags
-    const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)/i)?.[1] || 
-                     html.match(/content=["']([^"']+)["'][^>]+name=["']description["']/i)?.[1] || '';
-    const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i)?.[1] || '';
-    const title = html.match(/<title>([^<]+)<\/title>/i)?.[1] || '';
-    const prix = html.match(/CHF\s*([\d']+)/)?.[1]?.replace(/'/g, '') || '';
-    const descVendeur = html.match(/Zylinderkopf[^<]*/i)?.[0] || 
-                        html.match(/CH Fahrzeug[^<]*/i)?.[0] || '';
-
-    const texteExtrait = `
-      Titre: ${title}
-      Description: ${metaDesc || ogDesc}
-      Prix: CHF ${prix}
-      Description vendeur: ${descVendeur}
-      URL: ${url}
-    `;
-
-    console.log('SCRAPING OK:', texteExtrait.substring(0, 300));
-    return { html: texteExtrait, url: url };
+    // Extraire l'ID depuis l'URL AutoScout24
+    const idMatch = url.match(/(\d{6,})/);
+    const listingId = idMatch ? idMatch[1] : null;
+    
+    if (listingId && url.includes('autoscout24')) {
+      const apiUrl = `https://www.autoscout24.ch/fr/d/${listingId}`;
+      const response = await axios.get(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`, {
+        timeout: 30000
+      });
+      
+      const html = response.data;
+      const metaDesc = html.match(/content="([^"]*km[^"]*)"/) ?.[1] || 
+                       html.match(/name="description"[^>]*content="([^"]+)"/i)?.[1] || '';
+      const prix = html.match(/CHF\s*([\d'.]+)/)?.[1]?.replace(/['.]/g, '') || '';
+      const descVendeur = html.match(/Zylinderkopf[^<"]{0,200}/i)?.[0] || '';
+      
+      const texte = `
+        Meta description: ${metaDesc}
+        Prix trouvé: CHF ${prix}
+        Description vendeur: ${descVendeur}
+        URL: ${url}
+      `;
+      
+      console.log('SCRAPING OK:', texte.substring(0, 400));
+      return { html: texte, url: url };
+    }
+    
+    return { html: `URL: ${url}`, url: url };
   } catch (err) {
     console.log('SCRAPING ERROR:', err.message);
-    const slug = url.split('/').pop() || '';
-    return { html: `URL: ${url} Slug: ${slug}`, url: url };
+    return { html: `URL: ${url}`, url: url };
   }
 }
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
