@@ -260,6 +260,24 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
 // ─── ROUTES ──────────────────────────────────────────────
 
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK 🚗' }));
+// Route test rapport sans paiement
+app.post('/test-rapport', async (req, res) => {
+  try {
+    const { url, email, langue = 'fr' } = req.body;
+    if (!url || !email) return res.status(400).json({ error: 'URL et email requis' });
+
+    const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+    const scraped = await scrapeAnnonce(url);
+    const analyse = await analyserAvecGPT(scraped, langue, url);
+    const pdf = await genererPDF(analyse, reportNumber, url);
+    await envoyerEmail(email, pdf, analyse, reportNumber);
+
+    res.json({ success: true, reportNumber, verdict: analyse.verdict, score: analyse.score_global });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Analyse gratuite
 app.post('/analyse-gratuite', async (req, res) => {
