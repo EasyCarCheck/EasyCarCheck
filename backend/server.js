@@ -13,8 +13,24 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
-  const slug = url.split('/').pop() || '';
-  return { url: url, slug: slug };
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      timeout: 30000
+    });
+    console.log('SCRAPING OK - Taille:', response.data.length);
+    return { html: response.data, url: url };
+  } catch (err) {
+    console.log('SCRAPING ERROR:', err.message);
+    return { html: '', url: url };
+  }
 }
 
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
