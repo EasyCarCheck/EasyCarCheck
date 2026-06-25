@@ -13,34 +13,17 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
-  const response = await axios.get('https://app.scrapingbee.com/api/v1', {
-    params: {
-      api_key: process.env.SCRAPINGBEE_API_KEY,
-      url: url,
-      render_js: true,
-      premium_proxy: true,
-      country_code: 'ch',
-      extract_rules: JSON.stringify({
-        title: { selector: 'h1', type: 'item' },
-        price: { selector: '[data-testid="price"]', type: 'item' },
-        description: { selector: '.description, .listing-description, .ad-description', type: 'item' },
-        details: { selector: '.listing-details, .vehicle-details, .data-table', type: 'list' },
-        full_text: { selector: 'body', type: 'item' }
-      })
-    }
-  });
-  return response.data;
+  // Retourne juste l'URL — GPT-4o analysera depuis ses connaissances
+  return { url: url, source: 'direct' };
 }
-
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
-Voici le contenu brut d'une annonce automobile :
-${JSON.stringify(scrapedData)}
-
+Voici l'URL d'une annonce automobile : ${url}
+Analyse ce modèle de véhicule en te basant sur tes connaissances du marché suisse.
 Analyse cette annonce et génère un rapport complet en ${langues[langue] || 'français'}.
 
 IMPORTANT : Extrais toi-même toutes les données du véhicule depuis le contenu brut (marque, modèle, année, km, prix, motorisation, options, description vendeur).
