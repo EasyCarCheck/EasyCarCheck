@@ -31,7 +31,7 @@ Analyse ce modèle de véhicule en te basant UNIQUEMENT sur tes connaissances g�
 Génère le rapport en ${langues[langue] || 'français'}.
 
 RÈGLE ABSOLUE : Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après, sans commentaires.
-
+IMPORTANT : Le champ "verdict" doit contenir UNIQUEMENT l'un de ces trois mots : ACHETER, NÉGOCIER, ou ÉVITER. Rien d'autre.
 {
   "marque": "",
   "modele": "",
@@ -48,7 +48,7 @@ RÈGLE ABSOLUE : Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou ap
   "score_fiabilite": 0,
   "score_entretien": 0,
   "score_global": 0,
-  "verdict": "",
+  "verdict": "ACHETER ou NÉGOCIER ou ÉVITER (un seul mot obligatoire)",
   "economie_potentielle_min": 0,
   "economie_potentielle_max": 0,
   "prix_negocie_suggere": 0,
