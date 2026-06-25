@@ -27,6 +27,7 @@ async function scrapeAnnonce(url) {
         details: { selector: '.listing-details, .vehicle-details, .data-table', type: 'list' },
         full_text: { selector: 'body', type: 'item' }
       })
+    }
   });
   return response.data;
 }
