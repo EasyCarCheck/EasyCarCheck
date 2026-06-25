@@ -14,11 +14,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-    const browserlessUrl = `https://chrome.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
-    const response = await axios.post(browserlessUrl, {
-      url: url,
-      waitFor: 2000,
-      gotoOptions: { waitUntil: 'networkidle2' }
+   const browserlessUrl = `https://production-sfo.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}&proxy=residential&proxyCountry=ch`;
+const response = await axios.post(browserlessUrl, {
+  url: url,
+  waitForTimeout: 5000
     }, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 60000
