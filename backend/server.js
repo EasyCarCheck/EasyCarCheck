@@ -236,7 +236,7 @@ async function genererPDF(analyse, reportNumber, url) {
 // ─── ENVOI EMAIL ─────────────────────────────────────────
 async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
   await resend.emails.send({
-    from: 'EasyCarCheck <contact@easycarcheck.ch>',
+    from: 'EasyCarCheck <onboarding@resend.dev>',
     to: email,
     subject: `🚗 Votre rapport EasyCarCheck #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
     html: `
