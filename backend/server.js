@@ -70,7 +70,7 @@ IMPORTANT : Le champ "verdict" doit contenir UNIQUEMENT l'un de ces trois mots :
     model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.1,
-    max_tokens: 2000
+    max_tokens: 4000
   }, {
     headers: {
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
