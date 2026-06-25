@@ -17,7 +17,7 @@ async function scrapeAnnonce(url) {
     params: {
       api_key: process.env.SCRAPINGBEE_API_KEY,
       url: url,
-      render_js: false,
+      render_js: true,
       extract_rules: JSON.stringify({
         title: { selector: 'h1', type: 'item' },
         price: { selector: '[data-testid="price"]', type: 'item' },
