@@ -13,72 +13,58 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
-  try {
-    const response = await axios.get('https://app.scrapingbee.com/api/v1', {
-      params: {
-        api_key: process.env.SCRAPINGBEE_API_KEY,
-        url: url,
-        render_js: true,
-        premium_proxy: true,
-        country_code: 'ch'
-      },
-      timeout: 60000
-    });
-    console.log('SCRAPING OK:', JSON.stringify(response.data).substring(0, 500));
-    return response.data;
-  } catch (err) {
-    console.log('SCRAPING ERROR:', err.message);
-    return { url: url, error: err.message };
-  }
+  const slug = url.split('/').pop() || '';
+  return { url: url, slug: slug };
 }
+
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
-URL de l'annonce : ${url}
+Voici l'URL d'une annonce automobile : ${url}
+Slug extrait : ${scrapedData.slug}
 
-Analyse ce véhicule en te basant sur l'URL et tes connaissances du marché suisse.
+Analyse ce modèle de véhicule en te basant UNIQUEMENT sur tes connaissances générales de ce modèle et du marché suisse. Ne tente PAS d'accéder à l'URL. Utilise le slug pour identifier le véhicule.
+
 Génère le rapport en ${langues[langue] || 'français'}.
 
-RÈGLE ABSOLUE : Réponds UNIQUEMENT avec du JSON valide, sans aucun texte avant ou après, sans commentaires, sans apostrophes dans les clés.
+RÈGLE ABSOLUE : Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après, sans commentaires.
 
 {
-  "marque": "Mercedes-Benz",
-  "modele": "A 35 AMG",
-  "annee": "2021",
-  "kilometrage": "54500 km",
-  "prix": "34900 CHF",
-  "carburant": "Essence",
-  "boite": "Automatique",
-  "puissance": "306 ch",
-  "couleur": "Bleu",
-  "options": ["4Matic", "Speedshift"],
+  "marque": "",
+  "modele": "",
+  "annee": "",
+  "kilometrage": "",
+  "prix": "",
+  "carburant": "",
+  "boite": "",
+  "puissance": "",
+  "couleur": "",
+  "options": [],
   "description_vendeur": "",
-  "score_prix": 6,
-  "score_fiabilite": 5,
-  "score_entretien": 6,
-  "score_global": 6,
-  "verdict": "NÉGOCIER",
-  "economie_potentielle_min": 1500,
-  "economie_potentielle_max": 3000,
-  "prix_negocie_suggere": 32000,
-  "fourchette_marche_min": 30000,
-  "fourchette_marche_max": 34000,
-  "points_positifs": ["Faible kilométrage", "Véhicule suisse"],
-  "points_negatifs": ["Prix surévalué", "Consommation élevée"],
-  "red_flags": ["Culasse remplacée mentionnée dans l annonce"],
-  "problemes_connus_modele": ["Problème culasse moteur M260 récurrent", "Boîte DCT fragile"],
-  "checklist_visite": ["Vérifier historique culasse", "Tester la boîte DCT"],
-  "questions_vendeur": ["Pourquoi vendez-vous?", "Y a-t-il eu d autres réparations?"],
-  "cout_entretien_annee1": 1200,
-  "cout_total_3ans": 38500,
-  "taxe_cantonale_ge": 1065,
-  "resume_verdict": "Véhicule intéressant mais prix surévalué et historique de culasse préoccupant."
-}
-
-Remplace les valeurs par celles correspondant au véhicule de l'URL. JSON uniquement, rien d'autre.`;
+  "score_prix": 0,
+  "score_fiabilite": 0,
+  "score_entretien": 0,
+  "score_global": 0,
+  "verdict": "",
+  "economie_potentielle_min": 0,
+  "economie_potentielle_max": 0,
+  "prix_negocie_suggere": 0,
+  "fourchette_marche_min": 0,
+  "fourchette_marche_max": 0,
+  "points_positifs": [],
+  "points_negatifs": [],
+  "red_flags": [],
+  "problemes_connus_modele": [],
+  "checklist_visite": [],
+  "questions_vendeur": [],
+  "cout_entretien_annee1": 0,
+  "cout_total_3ans": 0,
+  "taxe_cantonale_ge": 0,
+  "resume_verdict": ""
+}`;
 
   const response = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o',
@@ -94,7 +80,9 @@ Remplace les valeurs par celles correspondant au véhicule de l'URL. JSON unique
 
   const content = response.data.choices[0].message.content;
   const clean = content.replace(/```json|```/g, '').trim();
-  console.log('GPT RESPONSE:', clean.substring(0, 1000));
+  
+  console.log('GPT RESPONSE:', clean.substring(0, 500));
+  
   try {
     return JSON.parse(clean);
   } catch(e) {
@@ -103,6 +91,7 @@ Remplace les valeurs par celles correspondant au véhicule de l'URL. JSON unique
     throw new Error('JSON invalide');
   }
 }
+
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
 async function genererPDF(analyse, reportNumber, url) {
   const verdictColor = {
@@ -348,7 +337,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     try {
       const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
       const scraped = await scrapeAnnonce(url);
-      const analyse = await analyserAvecGPT(scraped, langue);
+      const analyse = await analyserAvecGPT(scraped, langue, url);
       const pdf = await genererPDF(analyse, reportNumber, url);
       await envoyerEmail(email, pdf, analyse, reportNumber);
       console.log(`✅ Rapport #${reportNumber} envoyé à ${email}`);
