@@ -3,11 +3,13 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
@@ -30,12 +32,7 @@ async function scrapeAnnonce(url) {
 
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue) {
-  const langues = {
-    fr: 'français',
-    de: 'allemand',
-    it: 'italien',
-    en: 'anglais'
-  };
+  const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
@@ -103,18 +100,10 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte :
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
 async function genererPDF(analyse, reportNumber, url) {
   const verdictColor = {
-    'ACHETER': '#28a745',
-    'NÉGOCIER': '#ffc107',
-    'EVITER': '#dc3545',
-    'VERHANDELN': '#ffc107',
-    'KAUFEN': '#28a745',
-    'MEIDEN': '#dc3545',
-    'NEGOTIATE': '#ffc107',
-    'BUY': '#28a745',
-    'AVOID': '#dc3545',
-    'ACQUISTARE': '#28a745',
-    'TRATTARE': '#ffc107',
-    'EVITARE': '#dc3545'
+    'ACHETER': '#28a745', 'NÉGOCIER': '#ffc107', 'ÉVITER': '#dc3545',
+    'VERHANDELN': '#ffc107', 'KAUFEN': '#28a745', 'MEIDEN': '#dc3545',
+    'NEGOTIATE': '#ffc107', 'BUY': '#28a745', 'AVOID': '#dc3545',
+    'ACQUISTARE': '#28a745', 'TRATTARE': '#ffc107', 'EVITARE': '#dc3545'
   };
   const color = verdictColor[analyse.verdict] || '#ffc107';
 
@@ -137,7 +126,6 @@ async function genererPDF(analyse, reportNumber, url) {
   .card-label { font-size: 10px; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
   .card-value { font-size: 18px; font-weight: bold; }
   .verdict-box { background: #1A3A5C; border-radius: 8px; padding: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-  .verdict-label { font-size: 10px; color: #aaa; text-transform: uppercase; }
   .verdict-value { font-size: 36px; font-weight: bold; color: ${color}; }
   .scores { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px; }
   .score-card { background: #1A3A5C; border-radius: 8px; padding: 15px; text-align: center; }
@@ -150,7 +138,6 @@ async function genererPDF(analyse, reportNumber, url) {
   .item.negative:before { content: "⚠ "; color: #ffc107; }
   .item.redflag:before { content: "✗ "; color: #dc3545; }
   .footer { text-align: center; color: #aaa; font-size: 10px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #1A3A5C; }
-  .url-source { font-size: 10px; color: #aaa; word-break: break-all; }
 </style>
 </head>
 <body>
@@ -171,12 +158,12 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>
   <div class="verdict-box">
     <div>
-      <div class="verdict-label">⭐ VERDICT EASYCARCHECK</div>
+      <div style="font-size:10px;color:#aaa;">⭐ VERDICT EASYCARCHECK</div>
       <div class="verdict-value">${analyse.verdict}</div>
       <div style="color:#aaa;font-size:12px;">Analyse spécialisée marché suisse</div>
     </div>
     <div style="text-align:right;">
-      <div class="verdict-label">ÉCONOMIE POTENTIELLE</div>
+      <div style="font-size:10px;color:#aaa;">ÉCONOMIE POTENTIELLE</div>
       <div style="font-size:20px;font-weight:bold;color:#00B4D8;">${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
     </div>
   </div>
@@ -218,16 +205,16 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>
   <div class="verdict-box">
     <div>
-      <div class="verdict-label">🏆 VERDICT FINAL</div>
+      <div style="font-size:10px;color:#aaa;">🏆 VERDICT FINAL</div>
       <div class="verdict-value">${analyse.verdict}</div>
       <div style="color:#aaa;font-size:13px;margin-top:10px;max-width:500px;">${analyse.resume_verdict}</div>
     </div>
     <div style="text-align:right;">
-      <div class="verdict-label">PRIX SUGGÉRÉ</div>
+      <div style="font-size:10px;color:#aaa;">PRIX SUGGÉRÉ</div>
       <div style="font-size:24px;font-weight:bold;color:#00B4D8;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
     </div>
   </div>
-  <div class="url-source">Source : ${url}</div>
+  <div style="font-size:10px;color:#aaa;word-break:break-all;">Source : ${url}</div>
   <div class="footer">
     Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel.<br>
     EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · 🇨🇭 Suisse
@@ -253,16 +240,8 @@ async function genererPDF(analyse, reportNumber, url) {
 
 // ─── ENVOI EMAIL ─────────────────────────────────────────
 async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASSWORD
-    }
-  });
-
-  await transporter.sendMail({
-    from: `EasyCarCheck <${process.env.GMAIL_USER}>`,
+  await resend.emails.send({
+    from: 'EasyCarCheck <contact@easycarcheck.ch>',
     to: email,
     subject: `🚗 Votre rapport EasyCarCheck #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
     html: `
@@ -278,17 +257,16 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
     `,
     attachments: [{
       filename: `EasyCarCheck_Rapport_${reportNumber}.pdf`,
-      content: pdfBuffer
+      content: pdfBuffer.toString('base64')
     }]
   });
 }
 
 // ─── ROUTES ──────────────────────────────────────────────
 
-// Test
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK 🚗' }));
 
-// Analyse gratuite (score + verdict uniquement)
+// Analyse gratuite
 app.post('/analyse-gratuite', async (req, res) => {
   try {
     const { url, langue = 'fr' } = req.body;
@@ -297,7 +275,6 @@ app.post('/analyse-gratuite', async (req, res) => {
     const scraped = await scrapeAnnonce(url);
     const analyse = await analyserAvecGPT(scraped, langue);
 
-    // Retourner uniquement score et verdict (pas de détails)
     res.json({
       marque: analyse.marque,
       modele: analyse.modele,
@@ -318,11 +295,7 @@ app.post('/create-checkout', async (req, res) => {
   try {
     const { url, email, langue = 'fr', pack = 'single' } = req.body;
 
-    const prices = {
-      single: 1200,
-      pack3: 3000,
-      pack5: 4500
-    };
+    const prices = { single: 1200, pack3: 3000, pack5: 4500 };
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -351,7 +324,7 @@ app.post('/create-checkout', async (req, res) => {
   }
 });
 
-// Webhook Stripe → génère et envoie le rapport
+// Webhook Stripe
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -367,19 +340,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
     const { url, email, langue } = session.metadata;
 
     try {
-      // Numéro de rapport
       const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
-
-      // Scraper + analyser
       const scraped = await scrapeAnnonce(url);
       const analyse = await analyserAvecGPT(scraped, langue);
-
-      // Générer PDF
       const pdf = await genererPDF(analyse, reportNumber, url);
-
-      // Envoyer email
       await envoyerEmail(email, pdf, analyse, reportNumber);
-
       console.log(`✅ Rapport #${reportNumber} envoyé à ${email}`);
     } catch (err) {
       console.error('Erreur génération rapport:', err);
