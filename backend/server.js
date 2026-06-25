@@ -14,27 +14,30 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-    const browserlessUrl = `https://production-sfo.browserless.io/unblock?token=${process.env.BROWSERLESS_API_KEY}&proxy=residential&proxyCountry=ch`;
-    const response = await axios.post(browserlessUrl, {
-      url: url,
-      content: true,
-      timeout: 30000
-    }, {
-      headers: { 'Content-Type': 'application/json' },
+    const response = await axios.get('https://app.scrapingbee.com/api/v1/', {
+      params: {
+        api_key: process.env.SCRAPINGBEE_API_KEY,
+        url: url,
+        render_js: 'true',
+        premium_proxy: 'true',
+        country_code: 'ch',
+        wait: 5000
+      },
       timeout: 60000
     });
 
-    let html = response.data.content || response.data;
+    let html = response.data;
+    if (typeof html !== 'string') html = JSON.stringify(html);
     html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
     html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
     html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
     html = html.replace(/<[^>]+>/g, ' ');
     html = html.replace(/\s+/g, ' ').trim();
 
-    console.log('BROWSERLESS OK:', html.substring(0, 500));
+    console.log('SCRAPINGBEE OK:', html.substring(0, 500));
     return { html: html.substring(0, 8000), url: url };
   } catch (err) {
-    console.log('BROWSERLESS ERROR:', err.message);
+    console.log('SCRAPINGBEE ERROR:', err.response?.data || err.message);
     return { html: `URL: ${url}`, url: url };
   }
 }
