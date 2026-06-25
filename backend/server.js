@@ -25,8 +25,20 @@ async function scrapeAnnonce(url) {
       },
       timeout: 30000
     });
-    console.log('SCRAPING OK - Taille:', response.data.length);
-    return { html: response.data, url: url };
+
+    // Nettoyer le HTML — garder uniquement le texte utile
+    let html = response.data;
+    // Supprimer scripts, styles, SVG
+    html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+    html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+    html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
+    // Supprimer les balises HTML
+    html = html.replace(/<[^>]+>/g, ' ');
+    // Supprimer les espaces multiples
+    html = html.replace(/\s+/g, ' ').trim();
+    
+    console.log('SCRAPING OK - Texte extrait:', html.substring(0, 500));
+    return { html: html, url: url };
   } catch (err) {
     console.log('SCRAPING ERROR:', err.message);
     return { html: '', url: url };
