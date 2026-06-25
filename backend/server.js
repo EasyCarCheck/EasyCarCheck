@@ -14,10 +14,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-    const browserlessUrl = `https://chrome.browserless.io/content?token=2Uln1PBVOziH7qlc81e7f22f3051b62e5fef71f89d555ebd4`;
+    const browserlessUrl = `https://chrome.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`;
     const response = await axios.post(browserlessUrl, {
       url: url,
-      waitFor: 2000
+      waitFor: 2000,
+      gotoOptions: { waitUntil: 'networkidle2' }
     }, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 60000
@@ -37,39 +38,41 @@ async function scrapeAnnonce(url) {
     return { html: `URL: ${url}`, url: url };
   }
 }
+
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
-Voici le contenu HTML d'une annonce automobile :
-${scrapedData.html ? scrapedData.html.substring(0, 8000) : 'Non disponible'}
+Voici le contenu de l'annonce automobile :
+URL: ${url}
+Contenu: ${scrapedData.html}
 
-URL : ${url}
-
-ÉTAPE 1 - Extrais ces données exactes depuis le HTML :
+ÉTAPE 1 - Extrais ces données exactes depuis le contenu :
 - Prix exact en CHF
 - Kilométrage exact
 - Année exacte
 - Marque et modèle exacts
 - Carburant, boîte, puissance
-- Description du vendeur (cherche "Zylinderkopf", "Service", "Garantie", etc.)
+- Description du vendeur
 - Options listées
 
 ÉTAPE 2 - Analyse approfondie :
 - Compare le prix avec le marché suisse actuel
-- Identifie TOUS les problèmes connus de ce modèle spécifique (ex: Mercedes A35 AMG → problème culasse moteur M260 récurrent signalé par les concessionnaires, remplacement coûte 5000-8000 CHF hors garantie, boîte DCT fragile)
+- Identifie TOUS les problèmes connus de ce modèle
+- Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent, remplacement 5000-8000 CHF hors garantie, boîte DCT fragile
 - Détecte les red flags dans la description vendeur
 - Si "Zylinderkopf" mentionné → red flag majeur culasse remplacée
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
 RÈGLES ABSOLUES :
-1. Réponds UNIQUEMENT avec du JSON valide
-2. Le champ "verdict" = UNIQUEMENT "ACHETER", "NÉGOCIER" ou "ÉVITER"
-3. "prix_negocie_suggere" doit être un nombre réaliste jamais 0
-4. Extrais les VRAIES valeurs du HTML, ne devine pas
+1. Réponds UNIQUEMENT avec du JSON valide sans apostrophes dans les chaînes
+2. Le champ verdict = UNIQUEMENT ACHETER, NÉGOCIER ou ÉVITER
+3. prix_negocie_suggere doit être un nombre réaliste jamais 0
+4. Utilise uniquement des guillemets doubles dans le JSON
+5. Pas de virgule après le dernier élément d'un tableau ou objet
 
 {
   "marque": "",
@@ -87,7 +90,7 @@ RÈGLES ABSOLUES :
   "score_fiabilite": 0,
   "score_entretien": 0,
   "score_global": 0,
-  "verdict": "ACHETER ou NÉGOCIER ou ÉVITER",
+  "verdict": "NÉGOCIER",
   "economie_potentielle_min": 0,
   "economie_potentielle_max": 0,
   "prix_negocie_suggere": 0,
@@ -118,16 +121,28 @@ RÈGLES ABSOLUES :
   });
 
   const content = response.data.choices[0].message.content;
-  const clean = content.replace(/```json|```/g, '').trim();
-  
+  let clean = content.replace(/```json|```/g, '').trim();
+
   console.log('GPT RESPONSE:', clean.substring(0, 500));
-  
+
   try {
     return JSON.parse(clean);
   } catch(e) {
-    const match = clean.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error('JSON invalide');
+    clean = clean.replace(/,(\s*[}\]])/g, '$1');
+    clean = clean.replace(/[\u2018\u2019]/g, '');
+    try {
+      return JSON.parse(clean);
+    } catch(e2) {
+      const match = clean.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          return JSON.parse(match[0]);
+        } catch(e3) {
+          throw new Error('JSON invalide');
+        }
+      }
+      throw new Error('JSON invalide');
+    }
   }
 }
 
@@ -296,24 +311,31 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
   });
   console.log('RESEND RESULT:', JSON.stringify(result));
 }
+
 // ─── ROUTES ──────────────────────────────────────────────
 
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK 🚗' }));
+
 // Route test rapport sans paiement
 app.post('/test-rapport', async (req, res) => {
   try {
     const { url, email, langue = 'fr' } = req.body;
     if (!url || !email) return res.status(400).json({ error: 'URL et email requis' });
 
+    console.log('1. Démarrage analyse...');
     const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
     const scraped = await scrapeAnnonce(url);
+    console.log('2. Scraping OK');
     const analyse = await analyserAvecGPT(scraped, langue, url);
+    console.log('3. GPT OK - Verdict:', analyse.verdict);
     const pdf = await genererPDF(analyse, reportNumber, url);
+    console.log('4. PDF OK');
     await envoyerEmail(email, pdf, analyse, reportNumber);
+    console.log('5. Email envoyé !');
 
     res.json({ success: true, reportNumber, verdict: analyse.verdict, score: analyse.score_global });
   } catch (err) {
-    console.error(err);
+    console.error('ERREUR:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -346,7 +368,6 @@ app.post('/analyse-gratuite', async (req, res) => {
 app.post('/create-checkout', async (req, res) => {
   try {
     const { url, email, langue = 'fr', pack = 'single' } = req.body;
-
     const prices = { single: 1200, pack3: 3000, pack5: 4500 };
 
     const session = await stripe.checkout.sessions.create({
