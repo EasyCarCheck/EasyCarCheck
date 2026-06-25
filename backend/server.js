@@ -64,7 +64,9 @@ Contenu: ${scrapedData.html}
 - Identifie TOUS les problèmes connus de ce modèle
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent, remplacement 5000-8000 CHF hors garantie, boîte DCT fragile
 - Détecte les red flags dans la description vendeur
-- Si "Zylinderkopf" mentionné → red flag majeur culasse remplacée
+- Si "Zylinderkopf" mentionné → red flag majeur : "Culasse remplacée" (traduis TOUJOURS en français)
+- Traduis TOUS les termes techniques allemands ou italiens en français dans le rapport
+- Pour évaluer le kilométrage : kilométrage NORMAL = moins de 20000 km/an. Ne qualifier de "élevé" que si plus de 25000 km/an. Un véhicule de 2021 avec 54500 km = environ 13600 km/an = parfaitement normal
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
@@ -74,6 +76,7 @@ RÈGLES ABSOLUES :
 3. prix_negocie_suggere doit être un nombre réaliste jamais 0
 4. Utilise uniquement des guillemets doubles dans le JSON
 5. Pas de virgule après le dernier élément d'un tableau ou objet
+6. Traduis TOUJOURS tout en ${langues[langue] || 'français'}, aucun mot en allemand ou italien
 
 {
   "marque": "",
