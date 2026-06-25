@@ -14,36 +14,26 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-    // Extraire l'ID depuis l'URL AutoScout24
-    const idMatch = url.match(/(\d{6,})/);
-    const listingId = idMatch ? idMatch[1] : null;
-    
-    if (listingId && url.includes('autoscout24')) {
-      const apiUrl = `https://www.autoscout24.ch/fr/d/${listingId}`;
-      const response = await axios.get(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`, {
-        timeout: 30000
-      });
-      
-      const html = response.data;
-      const metaDesc = html.match(/content="([^"]*km[^"]*)"/) ?.[1] || 
-                       html.match(/name="description"[^>]*content="([^"]+)"/i)?.[1] || '';
-      const prix = html.match(/CHF\s*([\d'.]+)/)?.[1]?.replace(/['.]/g, '') || '';
-      const descVendeur = html.match(/Zylinderkopf[^<"]{0,200}/i)?.[0] || '';
-      
-      const texte = `
-        Meta description: ${metaDesc}
-        Prix trouvé: CHF ${prix}
-        Description vendeur: ${descVendeur}
-        URL: ${url}
-      `;
-      
-      console.log('SCRAPING OK:', texte.substring(0, 400));
-      return { html: texte, url: url };
-    }
-    
-    return { html: `URL: ${url}`, url: url };
+    const browserlessUrl = `https://chrome.browserless.io/content?token=2Uln1PBVOziH7qlc81e7f22f3051b62e5fef71f89d555ebd4`;
+    const response = await axios.post(browserlessUrl, {
+      url: url,
+      waitFor: 2000
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 60000
+    });
+
+    let html = response.data;
+    html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+    html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+    html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
+    html = html.replace(/<[^>]+>/g, ' ');
+    html = html.replace(/\s+/g, ' ').trim();
+
+    console.log('BROWSERLESS OK:', html.substring(0, 500));
+    return { html: html.substring(0, 8000), url: url };
   } catch (err) {
-    console.log('SCRAPING ERROR:', err.message);
+    console.log('BROWSERLESS ERROR:', err.message);
     return { html: `URL: ${url}`, url: url };
   }
 }
