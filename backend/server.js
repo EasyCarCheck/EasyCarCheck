@@ -17,31 +17,30 @@ async function scrapeAnnonce(url) {
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9',
+        'Referer': 'https://www.autoscout24.ch/',
+        'Cache-Control': 'no-cache'
       },
-      timeout: 30000
+      timeout: 30000,
+      maxRedirects: 5
     });
 
-    // Nettoyer le HTML — garder uniquement le texte utile
     let html = response.data;
-    // Supprimer scripts, styles, SVG
     html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
     html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
     html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
-    // Supprimer les balises HTML
     html = html.replace(/<[^>]+>/g, ' ');
-    // Supprimer les espaces multiples
     html = html.replace(/\s+/g, ' ').trim();
-    
-    console.log('SCRAPING OK - Texte extrait:', html.substring(0, 500));
+
+    console.log('SCRAPING OK:', html.substring(0, 300));
     return { html: html, url: url };
   } catch (err) {
+    // Même en cas d'erreur, essayer d'extraire depuis le message d'erreur
     console.log('SCRAPING ERROR:', err.message);
-    return { html: '', url: url };
+    // Extraire les infos depuis l'URL slug
+    const slug = url.split('/').pop() || '';
+    return { html: `URL: ${url} Slug: ${slug}`, url: url };
   }
 }
 
