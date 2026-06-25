@@ -18,6 +18,8 @@ async function scrapeAnnonce(url) {
       api_key: process.env.SCRAPINGBEE_API_KEY,
       url: url,
       render_js: true,
+      premium_proxy: true,
+      country_code: 'ch',
       extract_rules: JSON.stringify({
         title: { selector: 'h1', type: 'item' },
         price: { selector: '[data-testid="price"]', type: 'item' },
@@ -25,7 +27,6 @@ async function scrapeAnnonce(url) {
         details: { selector: '.listing-details, .vehicle-details, .data-table', type: 'list' },
         full_text: { selector: 'body', type: 'item' }
       })
-    }
   });
   return response.data;
 }
