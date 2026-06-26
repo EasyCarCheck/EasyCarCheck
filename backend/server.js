@@ -199,28 +199,28 @@ async function genererPDF(analyse, reportNumber, url) {
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; }
   .cell { padding: 14px; border-right: 1px solid #d0e4f7; }
   .cell:last-child { border-right: none; }
-  .cell-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
-  .cell-value { font-size: 15px; font-weight: 700; color: #0d1b35; }
+  .cell-label { font-size: 11px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+  .cell-value { font-size: 17px; font-weight: 700; color: #0d1b35; }
   .cell-value-sm { font-size: 13px; font-weight: 600; color: #0d1b35; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
-  .section { padding: 20px; border-bottom: 1px solid #d0e4f7; }
+  .section { padding: 20px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
   .section-white { background: #fff; }
   .section-light { background: #f0f6ff; }
   .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
   .section-bar { width: 4px; height: 18px; border-radius: 2px; flex-shrink: 0; }
-  .section-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
-  .description-box { background: #f0f6ff; border-radius: 8px; padding: 12px; font-size: 12px; color: #3a5a7a; line-height: 1.6; border-left: 3px solid #1a3a6e; }
+  .section-label { font-size: 14px; font-weight: 700; letter-spacing: 1px; }
+  .description-box { background: #f0f6ff; border-radius: 8px; padding: 12px; font-size: 13px; color: #3a5a7a; line-height: 1.6; border-left: 3px solid #1a3a6e; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .point-card { background: #fff; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #0d1b35; }
-  .point-card-light { background: #f0f6ff; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #0d1b35; }
-  .checklist-item { background: #f0f6ff; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .checklist-item-white { background: #fff; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .cost-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; }
+  .point-card { background: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #0d1b35; }
+  .point-card-light { background: #f0f6ff; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #0d1b35; }
+  .checklist-item { background: #f0f6ff; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .checklist-item-white { background: #fff; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; page-break-inside: avoid; }
+  .cost-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; page-break-inside: avoid; }
   .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 6px; }
   .cost-value { font-size: 16px; font-weight: 800; }
-  .redflag-section { padding: 20px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; }
+  .redflag-section { padding: 20px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; page-break-inside: avoid; }
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 10px; }
   .redflag-card { background: rgba(220,53,69,0.06); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 6px; }
   .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; margin-bottom: 4px; }
