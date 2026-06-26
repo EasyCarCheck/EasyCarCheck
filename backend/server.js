@@ -74,10 +74,10 @@ Contenu: ${scrapedData.html}
 - La boîte "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
 - Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur traduite
 - Estime le coût entretien année 1 et total sur 3 ans
-- Génère TOUJOURS au minimum 5 points positifs/négatifs combinés dans points_positifs et points_negatifs
-- Génère TOUJOURS au minimum 5 éléments dans checklist_visite
-- Génère TOUJOURS au minimum 4 questions dans questions_vendeur
-- Génère TOUJOURS au minimum 3 problèmes connus dans problemes_connus_modele
+- Génère TOUJOURS au minimum 4 points positifs/négatifs combinés dans points_positifs et points_negatifs
+- Génère TOUJOURS exactement 4 éléments dans checklist_visite, pas plus
+- Génère TOUJOURS exactement 3 questions dans questions_vendeur, pas plus
+- Génère TOUJOURS au minimum 2 problèmes connus dans problemes_connus_modele, pas plus de 3
 - La taxe cantonale genevoise dépend du CO2 du véhicule. Estime TOUJOURS un montant réaliste entre 400 et 1200 CHF/an, JAMAIS 0
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
@@ -316,7 +316,7 @@ async function genererPDF(analyse, reportNumber, url) {
     </div>
   </div>` : ''}
 
-  <div class="section section-light" style="page-break-before: always;">
+  <div class="section section-light" style="page-break-before: always; page-break-inside: avoid;">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">COÛTS &amp; MARCHÉ</div></div>
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
