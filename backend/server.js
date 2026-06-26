@@ -68,6 +68,7 @@ Contenu: ${scrapedData.html}
 - Détecte les red flags dans la description vendeur
 - Si "Zylinderkopf" mentionné → red flag majeur : "Culasse remplacée" (traduis TOUJOURS en français)
 - Traduis INTÉGRALEMENT la description du vendeur en ${langues[langue] || 'français'}, mot par mot, sans laisser aucun mot en allemand ou italien
+- La description vendeur doit être rédigée en phrases claires et lisibles, PAS en liste de mots-clés bruts. Reformule si nécessaire pour que ce soit lisible et professionnel.
 - Traduis TOUS les termes techniques allemands ou italiens en français dans le rapport
 - Pour évaluer le kilométrage : kilométrage NORMAL = moins de 20000 km/an. Ne qualifier de "élevé" que si plus de 25000 km/an
 - La boîte "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
@@ -200,8 +201,8 @@ async function genererPDF(analyse, reportNumber, url) {
   .cell { padding: 14px; border-right: 1px solid #d0e4f7; }
   .cell:last-child { border-right: none; }
   .cell-label { font-size: 11px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
-  .cell-value { font-size: 17px; font-weight: 700; color: #0d1b35; }
-  .cell-value-sm { font-size: 13px; font-weight: 600; color: #0d1b35; }
+  .cell-value { font-size: 15px; font-weight: 700; color: #0d1b35; }
+  .cell-value-sm { font-size: 15px; font-weight: 700; color: #0d1b35; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
   .section { padding: 20px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
