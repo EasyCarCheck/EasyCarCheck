@@ -136,7 +136,6 @@ RÈGLES ABSOLUES :
 
   const content = response.data.choices[0].message.content;
   let clean = content.replace(/```json|```/g, '').trim();
-
   console.log('GPT RESPONSE:', clean.substring(0, 500));
 
   try {
@@ -149,11 +148,7 @@ RÈGLES ABSOLUES :
     } catch(e2) {
       const match = clean.match(/\{[\s\S]*\}/);
       if (match) {
-        try {
-          return JSON.parse(match[0]);
-        } catch(e3) {
-          throw new Error('JSON invalide');
-        }
+        try { return JSON.parse(match[0]); } catch(e3) { throw new Error('JSON invalide'); }
       }
       throw new Error('JSON invalide');
     }
@@ -163,12 +158,12 @@ RÈGLES ABSOLUES :
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
 async function genererPDF(analyse, reportNumber, url) {
   const verdictColor = {
-    'ACHETER': '#28a745', 'NÉGOCIER': '#ffc107', 'ÉVITER': '#dc3545',
-    'VERHANDELN': '#ffc107', 'KAUFEN': '#28a745', 'MEIDEN': '#dc3545',
-    'NEGOTIATE': '#ffc107', 'BUY': '#28a745', 'AVOID': '#dc3545',
-    'ACQUISTARE': '#28a745', 'TRATTARE': '#ffc107', 'EVITARE': '#dc3545'
+    'ACHETER': '#28a745', 'NÉGOCIER': '#d4a00a', 'ÉVITER': '#dc3545',
+    'VERHANDELN': '#d4a00a', 'KAUFEN': '#28a745', 'MEIDEN': '#dc3545',
+    'NEGOTIATE': '#d4a00a', 'BUY': '#28a745', 'AVOID': '#dc3545',
+    'ACQUISTARE': '#28a745', 'TRATTARE': '#d4a00a', 'EVITARE': '#dc3545'
   };
-  const colour = (score) => score >= 8 ? '#28a745' : score >= 5 ? '#ffc107' : '#dc3545';
+  const colour = (score) => score >= 8 ? '#28a745' : score >= 5 ? '#d4a00a' : '#dc3545';
   const badge = (score) => score >= 8 ? 'EXCELLENT' : score >= 5 ? 'MOYEN' : 'À ÉVITER';
 
   const html = `<!DOCTYPE html>
@@ -177,58 +172,64 @@ async function genererPDF(analyse, reportNumber, url) {
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #0a0e1a; color: #fff; }
+  body { font-family: Arial, sans-serif; background: #f0f6ff; color: #0d1b35; }
   .page { padding: 0; }
-  .header { background: linear-gradient(135deg, #0d1b35 0%, #162040 50%, #0d1b35 100%); padding: 24px; border-bottom: 2px solid #00B4D8; }
+  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 24px; border-bottom: 2px solid #00B4D8; }
   .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .logo { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #fff; }
   .logo span { color: #00B4D8; }
-  .report-num { font-size: 11px; color: #8fa8c8; }
+  .report-num { font-size: 11px; color: #b8d0f0; }
   .header-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-  .car-brand-label { font-size: 11px; color: #8fa8c8; letter-spacing: 3px; margin-bottom: 4px; }
-  .car-brand { font-size: 28px; font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+  .car-brand-label { font-size: 11px; color: #b8d0f0; letter-spacing: 3px; margin-bottom: 4px; }
+  .car-brand { font-size: 28px; font-weight: 900; letter-spacing: 2px; line-height: 1.1; color: #fff; }
   .car-model { font-size: 18px; color: #00B4D8; font-weight: 700; margin-top: 4px; }
-  .score-box { display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px 20px; min-width: 110px; }
-  .score-label { font-size: 9px; color: #8fa8c8; letter-spacing: 2px; margin-bottom: 4px; }
+  .score-box { display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px 20px; min-width: 110px; }
+  .score-label { font-size: 9px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 4px; }
   .score-num { font-size: 52px; font-weight: 900; line-height: 1; }
-  .score-denom { font-size: 12px; color: #8fa8c8; }
+  .score-denom { font-size: 12px; color: #b8d0f0; }
   .score-badge { margin-top: 6px; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #000; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #1a2540; }
-  .cell { padding: 14px; border-right: 1px solid #1a2540; }
-  .cell:last-child { border-right: none; }
-  .cell-label { font-size: 9px; color: #8fa8c8; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
-  .cell-value { font-size: 15px; font-weight: 700; }
-  .cell-value-sm { font-size: 13px; font-weight: 600; }
-  .scores-bar { padding: 14px 20px; background: #0d1525; border-bottom: 1px solid #1a2540; }
-  .scores-bar-title { font-size: 10px; color: #8fa8c8; letter-spacing: 1px; margin-bottom: 10px; }
+  .scores-bar { padding: 14px 20px; background: #fff; border-bottom: 1px solid #d0e4f7; }
+  .scores-bar-title { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
   .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .score-item { text-align: center; }
-  .score-item-label { font-size: 9px; color: #8fa8c8; margin-bottom: 4px; }
+  .score-item-label { font-size: 9px; color: #5a7a9a; margin-bottom: 4px; }
   .score-item-num { font-size: 22px; font-weight: 800; }
-  .score-bar-bg { height: 4px; background: #1a2540; border-radius: 2px; margin-top: 4px; }
+  .score-bar-bg { height: 4px; background: #d0e4f7; border-radius: 2px; margin-top: 4px; }
   .score-bar-fill { height: 4px; border-radius: 2px; }
-  .section { padding: 20px; border-bottom: 1px solid #1a2540; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; }
+  .cell { padding: 14px; border-right: 1px solid #d0e4f7; }
+  .cell:last-child { border-right: none; }
+  .cell-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+  .cell-value { font-size: 15px; font-weight: 700; color: #0d1b35; }
+  .cell-value-sm { font-size: 13px; font-weight: 600; color: #0d1b35; }
+  .grid-white { background: #fff; }
+  .grid-light { background: #f0f6ff; }
+  .section { padding: 20px; border-bottom: 1px solid #d0e4f7; }
+  .section-white { background: #fff; }
+  .section-light { background: #f0f6ff; }
   .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
   .section-bar { width: 4px; height: 18px; border-radius: 2px; flex-shrink: 0; }
   .section-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
-  .description-box { background: #0d1525; border-radius: 8px; padding: 12px; font-size: 12px; color: #c8d8e8; line-height: 1.6; border-left: 3px solid #00B4D8; }
+  .description-box { background: #f0f6ff; border-radius: 8px; padding: 12px; font-size: 12px; color: #3a5a7a; line-height: 1.6; border-left: 3px solid #1a3a6e; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .point-card { background: #0d1525; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #c8d8e8; }
-  .checklist-item { background: #0d1525; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #c8d8e8; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .point-card { background: #fff; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #0d1b35; }
+  .point-card-light { background: #f0f6ff; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #0d1b35; }
+  .checklist-item { background: #f0f6ff; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .checklist-item-white { background: #fff; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .cost-card { background: #0d1525; border-radius: 8px; padding: 14px; text-align: center; }
-  .cost-label { font-size: 9px; color: #8fa8c8; letter-spacing: 1px; margin-bottom: 6px; }
-  .cost-value { font-size: 18px; font-weight: 800; }
-  .cost-unit { font-size: 10px; color: #8fa8c8; margin-top: 2px; }
-  .redflag-section { padding: 20px; background: linear-gradient(135deg, #1a0a0a 0%, #2a0f0f 100%); border-bottom: 1px solid #dc3545; }
-  .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; display: inline-block; margin-bottom: 10px; }
-  .redflag-card { background: rgba(220,53,69,0.1); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.4); margin-bottom: 6px; }
-  .redflag-title { font-size: 12px; font-weight: 600; color: #ff6b6b; }
-  .verdict-section { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #0d1b35 0%, #162040 100%); }
-  .verdict-label { font-size: 10px; color: #8fa8c8; letter-spacing: 2px; margin-bottom: 6px; }
+  .cost-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; }
+  .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 6px; }
+  .cost-value { font-size: 16px; font-weight: 800; }
+  .redflag-section { padding: 20px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; }
+  .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 10px; }
+  .redflag-card { background: rgba(220,53,69,0.06); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 6px; }
+  .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; margin-bottom: 4px; }
+  .redflag-desc { font-size: 11px; color: #5a7a9a; }
+  .verdict-section { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); }
+  .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 6px; }
   .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
-  .verdict-desc { font-size: 11px; color: #8fa8c8; margin-top: 6px; max-width: 300px; line-height: 1.5; }
-  .footer { padding: 12px 20px 20px; border-top: 1px solid #1a2540; font-size: 9px; color: #8fa8c8; text-align: center; line-height: 1.6; }
+  .verdict-desc { font-size: 11px; color: #b8d0f0; margin-top: 6px; max-width: 300px; line-height: 1.5; }
+  .footer { padding: 14px 20px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -275,59 +276,59 @@ async function genererPDF(analyse, reportNumber, url) {
     </div>
   </div>
 
-  <div class="grid-4">
+  <div class="grid-4 grid-white">
     <div class="cell"><div class="cell-label">ANNÉE</div><div class="cell-value">${analyse.annee}</div></div>
-    <div class="cell"><div class="cell-label">KILOMÉTRAGE</div><div class="cell-value">${analyse.kilometrage} <span style="font-size:10px;color:#8fa8c8;">km</span></div></div>
-    <div class="cell"><div class="cell-label">PRIX DEMANDÉ</div><div class="cell-value" style="color:#00B4D8;">${analyse.prix} <span style="font-size:10px;">CHF</span></div></div>
-    <div class="cell"><div class="cell-label">PUISSANCE</div><div class="cell-value">${analyse.puissance} <span style="font-size:10px;color:#8fa8c8;">PS</span></div></div>
+    <div class="cell"><div class="cell-label">KILOMÉTRAGE</div><div class="cell-value">${analyse.kilometrage} <span style="font-size:10px;color:#5a7a9a;">km</span></div></div>
+    <div class="cell"><div class="cell-label">PRIX DEMANDÉ</div><div class="cell-value" style="color:#1a3a6e;">${analyse.prix} <span style="font-size:10px;">CHF</span></div></div>
+    <div class="cell"><div class="cell-label">PUISSANCE</div><div class="cell-value">${analyse.puissance} <span style="font-size:10px;color:#5a7a9a;">PS</span></div></div>
   </div>
 
-  <div class="grid-4" style="border-bottom: 1px solid #1a2540;">
+  <div class="grid-4 grid-light" style="border-bottom: 1px solid #d0e4f7;">
     <div class="cell"><div class="cell-label">CARBURANT</div><div class="cell-value-sm">${analyse.carburant}</div></div>
     <div class="cell"><div class="cell-label">BOÎTE</div><div class="cell-value-sm">${analyse.boite}</div></div>
     <div class="cell"><div class="cell-label">TRANSMISSION</div><div class="cell-value-sm">${analyse.transmission}</div></div>
     <div class="cell"><div class="cell-label">COULEUR</div><div class="cell-value-sm">${analyse.couleur}</div></div>
   </div>
 
-  <div class="section">
-    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">DESCRIPTION VENDEUR</div></div>
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">DESCRIPTION VENDEUR</div></div>
     <div class="description-box">${analyse.description_vendeur}</div>
   </div>
 
-  <div class="section">
+  <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">POINTS CLÉS</div></div>
     <div class="grid-2">
       ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745;">✓ ${p}</div>`).join('')}
-      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #ffc107;">⚠ ${p}</div>`).join('')}
+      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a;">⚠ ${p}</div>`).join('')}
     </div>
   </div>
 
   ${analyse.options?.length > 0 ? `
-  <div class="section">
-    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
     <div class="grid-2">
-      ${analyse.options.map(o => `<div class="point-card">⚙ ${o}</div>`).join('')}
+      ${analyse.options.map(o => `<div class="point-card-light">⚙ ${o}</div>`).join('')}
     </div>
   </div>` : ''}
 
-  <div class="section">
-    <div class="section-title"><div class="section-bar" style="background:#ffc107;"></div><div class="section-label" style="color:#ffc107;">COÛTS &amp; MARCHÉ</div></div>
+  <div class="section section-light">
+    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">COÛTS &amp; MARCHÉ</div></div>
     <div class="costs-grid">
-      <div class="cost-card" style="border-top:3px solid #ffc107;">
+      <div class="cost-card" style="border-top:3px solid #d4a00a;">
         <div class="cost-label">ENTRETIEN AN 1</div>
-        <div class="cost-value" style="color:#ffc107;">${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#d4a00a;">${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
       </div>
-      <div class="cost-card" style="border-top:3px solid #ffc107;">
+      <div class="cost-card" style="border-top:3px solid #d4a00a;">
         <div class="cost-label">TOTAL 3 ANS</div>
-        <div class="cost-value" style="color:#ffc107;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#d4a00a;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
       </div>
-      <div class="cost-card" style="border-top:3px solid #00B4D8;">
+      <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">TAXE GE / AN</div>
-        <div class="cost-value" style="color:#00B4D8;">${analyse.taxe_cantonale_ge?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#1a3a6e;">${analyse.taxe_cantonale_ge?.toLocaleString()} CHF</div>
       </div>
-      <div class="cost-card" style="border-top:3px solid #8fa8c8;">
+      <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">FOURCHETTE MARCHÉ</div>
-        <div class="cost-value" style="color:#8fa8c8;font-size:13px;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#5a7a9a;font-size:13px;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
       </div>
     </div>
   </div>
@@ -342,31 +343,31 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>` : ''}
 
   ${analyse.problemes_connus_modele?.length > 0 ? `
-  <div class="section" style="background:#0d1525;">
-    <div class="section-title"><div class="section-bar" style="background:#ffc107;"></div><div class="section-label" style="color:#ffc107;">PROBLÈMES CONNUS DU MODÈLE</div></div>
-    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item"><span style="color:#ffc107;font-weight:700;">⚠</span> ${p}</div>`).join('')}
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">PROBLÈMES CONNUS DU MODÈLE</div></div>
+    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white"><span style="color:#d4a00a;font-weight:700;">⚠</span> ${p}</div>`).join('')}
   </div>` : ''}
 
-  <div class="section">
+  <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">CHECKLIST VISITE</div></div>
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span style="color:#28a745;font-weight:700;">✓</span> ${c}</div>`).join('')}
   </div>
 
-  <div class="section">
-    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">QUESTIONS À POSER AU VENDEUR</div></div>
-    ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item"><span style="color:#00B4D8;font-weight:700;">?</span> ${q}</div>`).join('')}
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">QUESTIONS À POSER AU VENDEUR</div></div>
+    ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white"><span style="color:#1a3a6e;font-weight:700;">?</span> ${q}</div>`).join('')}
   </div>
 
   <div class="verdict-section">
     <div>
       <div class="verdict-label">🏆 VERDICT FINAL</div>
-      <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#ffc107'};">${analyse.verdict}</div>
+      <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${analyse.verdict}</div>
       <div class="verdict-desc">${analyse.resume_verdict}</div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:10px;color:#8fa8c8;margin-bottom:4px;">PRIX SUGGÉRÉ</div>
-      <div style="font-size:28px;font-weight:900;color:#00B4D8;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
-      <div style="font-size:10px;color:#28a745;margin-top:4px;">↓ Économie : ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
+      <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">PRIX SUGGÉRÉ</div>
+      <div style="font-size:28px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
+      <div style="font-size:10px;color:#00B4D8;margin-top:4px;">↓ Économie : ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
     </div>
   </div>
 
@@ -402,14 +403,14 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
     to: email,
     subject: `🚗 Votre rapport EasyCarCheck #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
     html: `
-      <div style="font-family:Arial;background:#0D1B2A;color:#fff;padding:30px;border-radius:10px;">
+      <div style="font-family:Arial;background:#1a3a6e;color:#fff;padding:30px;border-radius:10px;">
         <h1 style="color:#00B4D8;">🚗 EasyCarCheck</h1>
         <p>Votre rapport d'analyse est prêt !</p>
         <h2>${analyse.marque} ${analyse.modele} ${analyse.annee}</h2>
         <p>Verdict : <strong style="color:${analyse.verdict === 'ACHETER' ? '#28a745' : analyse.verdict === 'ÉVITER' ? '#dc3545' : '#ffc107'}">${analyse.verdict}</strong></p>
         <p>Score global : <strong>${analyse.score_global}/10</strong></p>
-        <p style="color:#aaa;font-size:12px;">Le rapport PDF complet est en pièce jointe.</p>
-        <p style="color:#aaa;font-size:11px;">EasyCarCheck · easycarcheck.ch</p>
+        <p style="color:#b8d0f0;font-size:12px;">Le rapport PDF complet est en pièce jointe.</p>
+        <p style="color:#b8d0f0;font-size:11px;">EasyCarCheck · easycarcheck.ch</p>
       </div>
     `,
     attachments: [{
@@ -428,7 +429,6 @@ app.post('/test-rapport', async (req, res) => {
   try {
     const { url, email, langue = 'fr' } = req.body;
     if (!url || !email) return res.status(400).json({ error: 'URL et email requis' });
-
     console.log('1. Démarrage analyse...');
     const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
     const scraped = await scrapeAnnonce(url);
@@ -439,7 +439,6 @@ app.post('/test-rapport', async (req, res) => {
     console.log('4. PDF OK');
     await envoyerEmail(email, pdf, analyse, reportNumber);
     console.log('5. Email envoyé !');
-
     res.json({ success: true, reportNumber, verdict: analyse.verdict, score: analyse.score_global });
   } catch (err) {
     console.error('ERREUR:', err.message);
@@ -451,18 +450,11 @@ app.post('/analyse-gratuite', async (req, res) => {
   try {
     const { url, langue = 'fr' } = req.body;
     if (!url) return res.status(400).json({ error: 'URL manquante' });
-
     const scraped = await scrapeAnnonce(url);
     const analyse = await analyserAvecGPT(scraped, langue, url);
-
     res.json({
-      marque: analyse.marque,
-      modele: analyse.modele,
-      annee: analyse.annee,
-      prix: analyse.prix,
-      score_global: analyse.score_global,
-      verdict: analyse.verdict,
-      teaser: true
+      marque: analyse.marque, modele: analyse.modele, annee: analyse.annee,
+      prix: analyse.prix, score_global: analyse.score_global, verdict: analyse.verdict, teaser: true
     });
   } catch (err) {
     console.error(err);
@@ -474,7 +466,6 @@ app.post('/create-checkout', async (req, res) => {
   try {
     const { url, email, langue = 'fr', pack = 'single' } = req.body;
     const prices = { single: 900, pack3: 2700, pack5: 4000 };
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       customer_email: email,
@@ -485,7 +476,7 @@ app.post('/create-checkout', async (req, res) => {
             name: pack === 'single' ? 'Rapport EasyCarCheck' : `Pack ${pack === 'pack3' ? '3' : '5'} rapports EasyCarCheck`,
             description: 'Analyse IA spécialisée marché suisse'
           },
-          unit_amount: prices[pack] || 1200
+          unit_amount: prices[pack] || 900
         },
         quantity: 1
       }],
@@ -494,7 +485,6 @@ app.post('/create-checkout', async (req, res) => {
       cancel_url: `https://easycarcheck.ch`,
       metadata: { url, email, langue, pack }
     });
-
     res.json({ url: session.url });
   } catch (err) {
     console.error(err);
@@ -505,17 +495,14 @@ app.post('/create-checkout', async (req, res) => {
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
-
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const { url, email, langue } = session.metadata;
-
     try {
       const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
       const scraped = await scrapeAnnonce(url);
@@ -527,7 +514,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       console.error('Erreur génération rapport:', err);
     }
   }
-
   res.json({ received: true });
 });
 
