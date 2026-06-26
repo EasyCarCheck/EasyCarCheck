@@ -6,173 +6,171 @@
 <title>EasyCarCheck — Analyse IA de voitures d'occasion en Suisse</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Arial', sans-serif; background: #0a0e1a; color: #fff; min-height: 100vh; }
+  body { font-family: 'Arial', sans-serif; background: #f0f6ff; color: #0d1b35; min-height: 100vh; }
 
   /* HEADER */
-  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 40px; border-bottom: 1px solid #1a2540; position: sticky; top: 0; background: rgba(10,14,26,0.95); backdrop-filter: blur(10px); z-index: 100; }
-  .logo { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 40px; border-bottom: 1px solid rgba(255,255,255,0.15); position: sticky; top: 0; background: #1a3a6e; z-index: 100; }
+  .logo { font-size: 22px; font-weight: bold; letter-spacing: 1px; color: #fff; }
   .logo span { color: #00B4D8; }
   nav { display: flex; align-items: center; gap: 20px; }
-  nav a { color: #aaa; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+  nav a { color: #b8d0f0; text-decoration: none; font-size: 14px; transition: color 0.2s; }
   nav a:hover { color: #fff; }
   .lang-select { display: flex; gap: 6px; }
-  .lang-btn { background: transparent; border: 1px solid #1a2540; color: #aaa; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+  .lang-btn { background: transparent; border: 1px solid rgba(184,208,240,0.4); color: #b8d0f0; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
   .lang-btn.active, .lang-btn:hover { border-color: #00B4D8; color: #00B4D8; background: rgba(0,180,216,0.1); }
 
   /* HERO */
-  .hero { text-align: center; padding: 90px 20px 70px; position: relative; overflow: hidden; }
-  .hero::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,180,216,0.08) 0%, transparent 70%); pointer-events: none; }
+  .hero { text-align: center; padding: 90px 20px 70px; background: #f0f6ff; }
   .badge { background: rgba(0,180,216,0.1); border: 1px solid rgba(0,180,216,0.3); color: #00B4D8; padding: 7px 18px; border-radius: 20px; font-size: 13px; display: inline-block; margin-bottom: 24px; }
-  .hero h1 { font-size: 56px; font-weight: 900; margin-bottom: 18px; line-height: 1.15; letter-spacing: -1px; }
+  .hero h1 { font-size: 52px; font-weight: 900; margin-bottom: 18px; line-height: 1.15; letter-spacing: -1px; color: #0d1b35; }
   .hero h1 span { color: #00B4D8; }
-  .hero p { color: #8fa8c8; font-size: 18px; margin-bottom: 0; max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+  .hero p { color: #5a7a9a; font-size: 18px; max-width: 560px; margin: 0 auto; line-height: 1.6; }
 
   /* FORM BOX */
-  .form-section { padding: 0 20px 70px; }
-  .form-box { background: linear-gradient(135deg, #0d1b35, #111827); border: 1px solid #1a2540; border-radius: 20px; padding: 40px; max-width: 680px; margin: 0 auto; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-  .form-box h2 { font-size: 20px; text-align: center; margin-bottom: 24px; color: #fff; }
+  .form-section { padding: 0 20px 70px; background: #f0f6ff; }
+  .form-box { background: #fff; border: 1px solid #d0e4f7; border-radius: 20px; padding: 40px; max-width: 680px; margin: 0 auto; box-shadow: 0 8px 40px rgba(26,58,110,0.1); }
+  .form-box h2 { font-size: 20px; text-align: center; margin-bottom: 24px; color: #0d1b35; }
   .url-input-wrapper { display: flex; gap: 10px; margin-bottom: 12px; }
-  .url-input-wrapper input { flex: 1; padding: 16px 20px; border-radius: 12px; border: 2px solid #1a2540; background: #060b14; color: #fff; font-size: 15px; outline: none; transition: border-color 0.2s; }
+  .url-input-wrapper input { flex: 1; padding: 16px 20px; border-radius: 12px; border: 2px solid #d0e4f7; background: #f0f6ff; color: #0d1b35; font-size: 15px; outline: none; transition: border-color 0.2s; }
   .url-input-wrapper input:focus { border-color: #00B4D8; }
-  .url-input-wrapper input::placeholder { color: #3a4a5c; }
+  .url-input-wrapper input::placeholder { color: #8fa8c8; }
   .btn-analyse { background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; border: none; padding: 16px 28px; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
   .btn-analyse:hover { opacity: 0.9; }
-  .form-hint { text-align: center; color: #3a4a5c; font-size: 12px; margin-bottom: 8px; }
+  .form-hint { text-align: center; color: #8fa8c8; font-size: 12px; margin-bottom: 8px; }
   .sites-logos { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
-  .site-pill { background: #0d1525; border: 1px solid #1a2540; color: #5a7a9a; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .site-pill { background: #f0f6ff; border: 1px solid #d0e4f7; color: #5a7a9a; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; }
 
   /* LOADING */
   .loading { display: none; text-align: center; padding: 30px; }
   .loading.show { display: block; }
-  .spinner { width: 48px; height: 48px; border: 3px solid #1a2540; border-top: 3px solid #00B4D8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  .spinner { width: 48px; height: 48px; border: 3px solid #d0e4f7; border-top: 3px solid #00B4D8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-steps { color: #5a7a9a; font-size: 13px; }
 
   /* RESULT */
-  .result-box { display: none; background: #060b14; border: 1px solid #1a2540; border-radius: 16px; padding: 28px; margin-top: 24px; }
+  .result-box { display: none; background: #f0f6ff; border: 1px solid #d0e4f7; border-radius: 16px; padding: 28px; margin-top: 24px; }
   .result-box.show { display: block; }
   .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .result-car { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .result-car { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #0d1b35; }
   .result-price { color: #00B4D8; font-size: 14px; }
   .score-circle { width: 72px; height: 72px; border-radius: 50%; border: 3px solid #00B4D8; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
   .score-num { font-size: 26px; font-weight: 900; color: #00B4D8; line-height: 1; }
   .score-label { font-size: 10px; color: #5a7a9a; }
   .verdict-badge { padding: 10px 24px; border-radius: 10px; font-size: 18px; font-weight: 900; display: inline-block; margin: 14px 0; letter-spacing: 1px; }
-  .verdict-ACHETER, .verdict-BUY, .verdict-KAUFEN, .verdict-ACQUISTARE { background: rgba(40,167,69,0.15); color: #28a745; border: 1px solid rgba(40,167,69,0.3); }
-  .verdict-NÉGOCIER, .verdict-NEGOTIATE, .verdict-VERHANDELN, .verdict-TRATTARE { background: rgba(255,193,7,0.15); color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
-  .verdict-ÉVITER, .verdict-AVOID, .verdict-MEIDEN, .verdict-EVITARE { background: rgba(220,53,69,0.15); color: #dc3545; border: 1px solid rgba(220,53,69,0.3); }
+  .verdict-ACHETER, .verdict-BUY, .verdict-KAUFEN, .verdict-ACQUISTARE { background: rgba(40,167,69,0.1); color: #28a745; border: 1px solid rgba(40,167,69,0.3); }
+  .verdict-NÉGOCIER, .verdict-NEGOTIATE, .verdict-VERHANDELN, .verdict-TRATTARE { background: rgba(255,193,7,0.1); color: #d4a00a; border: 1px solid rgba(255,193,7,0.3); }
+  .verdict-ÉVITER, .verdict-AVOID, .verdict-MEIDEN, .verdict-EVITARE { background: rgba(220,53,69,0.1); color: #dc3545; border: 1px solid rgba(220,53,69,0.3); }
   .blur-section { filter: blur(5px); user-select: none; pointer-events: none; margin-top: 14px; }
-  .blur-row { background: #0d1525; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .blur-row { background: #fff; border: 1px solid #d0e4f7; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
   .blur-label { color: #5a7a9a; font-size: 12px; }
-  .blur-val { color: #fff; font-size: 13px; font-weight: 600; }
-  .unlock-box { text-align: center; margin-top: 20px; padding: 24px; background: linear-gradient(135deg, #0d1b35, #0d1525); border-radius: 14px; border: 1px solid #1a2540; }
-  .unlock-box h3 { margin-bottom: 8px; font-size: 17px; }
+  .blur-val { color: #0d1b35; font-size: 13px; font-weight: 600; }
+  .unlock-box { text-align: center; margin-top: 20px; padding: 24px; background: #f0f6ff; border-radius: 14px; border: 1px solid #d0e4f7; }
+  .unlock-box h3 { margin-bottom: 8px; font-size: 17px; color: #0d1b35; }
   .unlock-box p { color: #5a7a9a; font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
   .pack-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .pack-btn { padding: 12px 22px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
   .pack-btn.primary { background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; }
-  .pack-btn.secondary { background: transparent; color: #00B4D8; border: 1.5px solid #00B4D8; }
+  .pack-btn.secondary { background: transparent; color: #1a3a6e; border: 1.5px solid #1a3a6e; }
   .pack-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
   /* PROMO BANNER */
-  .promo-banner { background: linear-gradient(135deg, #FF8C00, #FFD700); border-radius: 12px; padding: 14px 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(255,180,0,0.3); }
-  .promo-banner span { color: #1a0a00; font-weight: 900; font-size: 15px; letter-spacing: 0.3px; }
+  .promo-banner { background: linear-gradient(135deg, #FF8C00, #FFD700); border-radius: 12px; padding: 14px 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(255,180,0,0.2); }
+  .promo-banner span { color: #1a0a00; font-weight: 900; font-size: 15px; }
   .promo-banner small { color: rgba(0,0,0,0.6); font-size: 12px; display: block; margin-top: 3px; font-weight: 600; }
 
   /* STATS */
-  .stats { display: flex; justify-content: center; gap: 0; border-top: 1px solid #1a2540; border-bottom: 1px solid #1a2540; }
-  .stat { text-align: center; padding: 36px 50px; border-right: 1px solid #1a2540; flex: 1; max-width: 220px; }
+  .stats { display: flex; justify-content: center; background: #fff; border-top: 1px solid #d0e4f7; border-bottom: 1px solid #d0e4f7; }
+  .stat { text-align: center; padding: 36px 50px; border-right: 1px solid #d0e4f7; flex: 1; max-width: 220px; }
   .stat:last-child { border-right: none; }
   .stat-num { font-size: 38px; font-weight: 900; color: #00B4D8; }
   .stat-label { color: #5a7a9a; font-size: 13px; margin-top: 4px; }
 
   /* HOW IT WORKS */
-  .how { padding: 80px 20px; text-align: center; }
-  .how h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; }
+  .how { padding: 80px 20px; text-align: center; background: #f0f6ff; }
+  .how h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; color: #0d1b35; }
   .how p { color: #5a7a9a; margin-bottom: 50px; font-size: 16px; }
   .steps { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; max-width: 900px; margin: 0 auto; }
-  .step { flex: 1; min-width: 200px; max-width: 240px; text-align: center; }
+  .step { flex: 1; min-width: 200px; max-width: 240px; text-align: center; background: #fff; border-radius: 16px; padding: 30px 20px; border: 1px solid #d0e4f7; }
   .step-num { width: 52px; height: 52px; border-radius: 50%; background: rgba(0,180,216,0.1); border: 2px solid #00B4D8; color: #00B4D8; font-size: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
-  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #0d1b35; }
   .step p { color: #5a7a9a; font-size: 14px; line-height: 1.5; }
 
   /* TESTIMONIALS */
-  .testimonials { padding: 80px 20px; background: #060b14; border-top: 1px solid #1a2540; border-bottom: 1px solid #1a2540; }
-  .testimonials h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; }
+  .testimonials { padding: 80px 20px; background: #fff; border-top: 1px solid #d0e4f7; border-bottom: 1px solid #d0e4f7; }
+  .testimonials h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; color: #0d1b35; }
   .testimonials-sub { color: #5a7a9a; text-align: center; margin-bottom: 50px; font-size: 16px; }
   .testimonials-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
-  .testimonial-card { background: #0d1525; border: 1px solid #1a2540; border-radius: 16px; padding: 24px; max-width: 300px; flex: 1; min-width: 240px; }
+  .testimonial-card { background: #f0f6ff; border: 1px solid #d0e4f7; border-radius: 16px; padding: 24px; max-width: 300px; flex: 1; min-width: 240px; }
   .testimonial-stars { color: #ffc107; font-size: 16px; margin-bottom: 12px; }
-  .testimonial-text { color: #c8d8e8; font-size: 14px; line-height: 1.6; margin-bottom: 16px; font-style: italic; }
+  .testimonial-text { color: #3a5a7a; font-size: 14px; line-height: 1.6; margin-bottom: 16px; font-style: italic; }
   .testimonial-author { display: flex; align-items: center; gap: 10px; }
-  .testimonial-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,180,216,0.2); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #00B4D8; font-size: 14px; }
-  .testimonial-name { font-size: 13px; font-weight: 700; }
+  .testimonial-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,180,216,0.15); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1a3a6e; font-size: 14px; }
+  .testimonial-name { font-size: 13px; font-weight: 700; color: #0d1b35; }
   .testimonial-location { font-size: 12px; color: #5a7a9a; }
 
   /* FAQ */
   .faq { padding: 80px 20px; max-width: 720px; margin: 0 auto; }
-  .faq h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; }
+  .faq h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; color: #0d1b35; }
   .faq-sub { color: #5a7a9a; text-align: center; margin-bottom: 50px; font-size: 16px; }
-  .faq-item { border: 1px solid #1a2540; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
-  .faq-question { padding: 18px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; background: #0d1525; transition: background 0.2s; }
-  .faq-question:hover { background: #111e30; }
-  .faq-arrow { color: #00B4D8; font-size: 18px; transition: transform 0.3s; }
-  .faq-answer { display: none; padding: 0 20px 18px; color: #8fa8c8; font-size: 14px; line-height: 1.7; background: #0d1525; }
+  .faq-item { border: 1px solid #d0e4f7; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .faq-question { padding: 18px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; background: #fff; color: #0d1b35; transition: background 0.2s; }
+  .faq-question:hover { background: #f0f6ff; }
+  .faq-arrow { color: #1a3a6e; font-size: 18px; transition: transform 0.3s; }
+  .faq-answer { display: none; padding: 0 20px 18px; color: #5a7a9a; font-size: 14px; line-height: 1.7; background: #fff; }
   .faq-item.open .faq-answer { display: block; }
   .faq-item.open .faq-arrow { transform: rotate(180deg); }
 
   /* PRICING */
-  .pricing { padding: 80px 20px; text-align: center; }
-  .pricing h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; }
+  .pricing { padding: 80px 20px; text-align: center; background: #f0f6ff; }
+  .pricing h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; color: #0d1b35; }
   .pricing-sub { color: #5a7a9a; margin-bottom: 50px; font-size: 16px; }
   .pricing-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
-  .pricing-card { background: #0d1525; border: 1px solid #1a2540; border-radius: 20px; padding: 32px 24px; width: 220px; position: relative; transition: transform 0.2s; }
+  .pricing-card { background: #fff; border: 1px solid #d0e4f7; border-radius: 20px; padding: 32px 24px; width: 220px; position: relative; transition: transform 0.2s; box-shadow: 0 4px 16px rgba(26,58,110,0.06); }
   .pricing-card:hover { transform: translateY(-4px); }
-  .pricing-card.popular { border: 2px solid #00B4D8; background: linear-gradient(135deg, #0d1b35, #0d1525); }
-  .popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 12px; white-space: nowrap; font-weight: 700; }
+  .pricing-card.popular { border: 2px solid #1a3a6e; }
+  .popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #1a3a6e, #2952a3); color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 12px; white-space: nowrap; font-weight: 700; }
   .pricing-card h3 { font-size: 14px; margin-bottom: 16px; color: #5a7a9a; text-transform: uppercase; letter-spacing: 1px; }
-  .pricing-price { font-size: 42px; font-weight: 900; margin-bottom: 4px; }
+  .pricing-price { font-size: 42px; font-weight: 900; margin-bottom: 4px; color: #0d1b35; }
   .pricing-period { color: #5a7a9a; font-size: 12px; margin-bottom: 24px; }
   .pricing-features { list-style: none; text-align: left; margin-bottom: 28px; }
-  .pricing-features li { padding: 7px 0; font-size: 13px; color: #c8d8e8; border-bottom: 1px solid #1a2540; display: flex; align-items: center; gap: 8px; }
-  .pricing-features li::before { content: "✓"; color: #00B4D8; font-weight: 900; flex-shrink: 0; }
+  .pricing-features li { padding: 7px 0; font-size: 13px; color: #3a5a7a; border-bottom: 1px solid #d0e4f7; display: flex; align-items: center; gap: 8px; }
+  .pricing-features li::before { content: "✓"; color: #1a3a6e; font-weight: 900; flex-shrink: 0; }
   .pricing-btn { width: 100%; padding: 13px; border-radius: 10px; border: none; cursor: pointer; font-weight: 700; font-size: 14px; transition: all 0.2s; }
-  .pricing-btn.primary { background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; }
-  .pricing-btn.secondary { background: transparent; color: #00B4D8; border: 1.5px solid #00B4D8; }
+  .pricing-btn.primary { background: linear-gradient(135deg, #1a3a6e, #2952a3); color: #fff; }
+  .pricing-btn.secondary { background: transparent; color: #1a3a6e; border: 1.5px solid #1a3a6e; }
   .pricing-btn:hover { opacity: 0.85; }
 
-  /* FOOTER */
-  footer { background: #060b14; border-top: 1px solid #1a2540; padding: 40px 20px 30px; }
-  .footer-content { max-width: 800px; margin: 0 auto; text-align: center; }
-  .footer-logo { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 12px; }
-  .footer-logo span { color: #00B4D8; }
-  .footer-desc { color: #5a7a9a; font-size: 14px; margin-bottom: 24px; }
-  .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
-  .footer-links a { color: #5a7a9a; text-decoration: none; font-size: 13px; transition: color 0.2s; }
-  .footer-links a:hover { color: #00B4D8; }
-  .footer-bottom { color: #3a4a5c; font-size: 12px; border-top: 1px solid #1a2540; padding-top: 20px; }
-
   /* MODAL EMAIL */
-  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26,58,110,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
   .modal-overlay.show { display: flex; }
-  .modal { background: linear-gradient(135deg, #0d1b35, #111827); border: 1px solid #1a2540; border-radius: 20px; padding: 36px; width: 90%; max-width: 420px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
-  .modal h3 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+  .modal { background: #fff; border: 1px solid #d0e4f7; border-radius: 20px; padding: 36px; width: 90%; max-width: 420px; box-shadow: 0 20px 60px rgba(26,58,110,0.2); }
+  .modal h3 { font-size: 20px; font-weight: 900; margin-bottom: 8px; color: #0d1b35; }
   .modal p { color: #5a7a9a; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
-  .modal input[type="email"] { width: 100%; padding: 14px 16px; border-radius: 10px; border: 2px solid #1a2540; background: #060b14; color: #fff; font-size: 15px; outline: none; margin-bottom: 16px; transition: border-color 0.2s; }
-  .modal input[type="email"]:focus { border-color: #00B4D8; }
-  .modal input[type="email"]::placeholder { color: #3a4a5c; }
+  .modal input[type="email"] { width: 100%; padding: 14px 16px; border-radius: 10px; border: 2px solid #d0e4f7; background: #f0f6ff; color: #0d1b35; font-size: 15px; outline: none; margin-bottom: 16px; transition: border-color 0.2s; }
+  .modal input[type="email"]:focus { border-color: #1a3a6e; }
+  .modal input[type="email"]::placeholder { color: #8fa8c8; }
   .modal-buttons { display: flex; gap: 10px; }
-  .modal-confirm { flex: 1; padding: 14px; background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+  .modal-confirm { flex: 1; padding: 14px; background: linear-gradient(135deg, #1a3a6e, #2952a3); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
   .modal-confirm:hover { opacity: 0.9; }
-  .modal-cancel { padding: 14px 20px; background: transparent; color: #5a7a9a; border: 1px solid #1a2540; border-radius: 10px; font-size: 15px; cursor: pointer; transition: all 0.2s; }
-  .modal-cancel:hover { border-color: #5a7a9a; color: #fff; }
+  .modal-cancel { padding: 14px 20px; background: transparent; color: #5a7a9a; border: 1px solid #d0e4f7; border-radius: 10px; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+  .modal-cancel:hover { border-color: #1a3a6e; color: #1a3a6e; }
+
+  /* FOOTER */
+  footer { background: #1a3a6e; padding: 40px 20px 30px; }
+  .footer-content { max-width: 800px; margin: 0 auto; text-align: center; }
+  .footer-logo { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 12px; color: #fff; }
+  .footer-logo span { color: #00B4D8; }
+  .footer-desc { color: #b8d0f0; font-size: 14px; margin-bottom: 24px; }
+  .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+  .footer-links a { color: #8fa8c8; text-decoration: none; font-size: 13px; transition: color 0.2s; }
+  .footer-links a:hover { color: #00B4D8; }
+  .footer-bottom { color: #5a7a9a; font-size: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
 
   /* RESPONSIVE */
   @media (max-width: 700px) {
     .hero h1 { font-size: 34px; }
     .url-input-wrapper { flex-direction: column; }
     .stats { flex-wrap: wrap; }
-    .stat { border-right: none; border-bottom: 1px solid #1a2540; min-width: 45%; padding: 24px 10px; }
+    .stat { border-right: none; border-bottom: 1px solid #d0e4f7; min-width: 45%; padding: 24px 10px; }
     header { padding: 14px 20px; }
     .lang-select { display: none; }
     .hero { padding: 60px 20px 50px; }
@@ -226,7 +224,7 @@
 
     <div class="loading" id="loading">
       <div class="spinner"></div>
-      <div class="loading-steps" id="loading-text">Analyse en cours... ~30 secondes</div>
+      <div style="color:#5a7a9a;" id="loading-text">Analyse en cours... ~30 secondes</div>
     </div>
 
     <div class="result-box" id="resultBox">
@@ -247,7 +245,7 @@
       <div class="blur-section">
         <div class="blur-row"><span class="blur-label">SCORE PRIX VS MARCHÉ</span><span class="blur-val">7/10</span></div>
         <div class="blur-row"><span class="blur-label">RED FLAGS DÉTECTÉS</span><span class="blur-val" style="color:#dc3545;">2 problèmes</span></div>
-        <div class="blur-row"><span class="blur-label">PRIX DE NÉGOCIATION</span><span class="blur-val" style="color:#00B4D8;">— CHF</span></div>
+        <div class="blur-row"><span class="blur-label">PRIX DE NÉGOCIATION</span><span class="blur-val" style="color:#1a3a6e;">— CHF</span></div>
         <div class="blur-row"><span class="blur-label">FOURCHETTE MARCHÉ</span><span class="blur-val">— CHF</span></div>
       </div>
 
@@ -327,7 +325,6 @@
 <div class="faq" id="faq">
   <h2 id="faq-title">Questions fréquentes</h2>
   <p class="faq-sub" id="faq-sub">Tout ce que vous devez savoir</p>
-
   <div class="faq-item" onclick="toggleFaq(this)">
     <div class="faq-question"><span id="faq1-q">Comment fonctionne l'analyse ?</span><span class="faq-arrow">▾</span></div>
     <div class="faq-answer" id="faq1-a">Notre IA analyse automatiquement le contenu de l'annonce (prix, kilométrage, description, options) et le compare avec les données du marché suisse. Elle détecte les red flags, les problèmes connus du modèle et calcule un prix de négociation suggéré.</div>
@@ -372,7 +369,7 @@
     <div class="pricing-card popular">
       <div class="popular-badge" id="p1-badge">⭐ Le plus populaire</div>
       <h3 id="p1-title">Rapport complet</h3>
-      <div class="pricing-price" style="color:#00B4D8;">9 <span style="font-size:18px;text-decoration:line-through;color:#5a7a9a;">12</span></div>
+      <div class="pricing-price" style="color:#1a3a6e;">9 <span style="font-size:18px;text-decoration:line-through;color:#8fa8c8;">12</span></div>
       <div class="pricing-period" id="p1-period">CHF · Offre de lancement</div>
       <ul class="pricing-features">
         <li id="p1-f1">Rapport PDF complet</li>
@@ -386,7 +383,7 @@
     </div>
     <div class="pricing-card">
       <h3 id="p2-title">Pack 3 rapports</h3>
-      <div class="pricing-price">27</div>
+      <div class="pricing-price">27 <span style="font-size:18px;text-decoration:line-through;color:#8fa8c8;">30</span></div>
       <div class="pricing-period" id="p2-period">CHF · 9 CHF/rapport</div>
       <ul class="pricing-features">
         <li id="p2-f1">3 rapports complets PDF</li>
@@ -397,7 +394,7 @@
     </div>
     <div class="pricing-card">
       <h3 id="p3-title">Pack 5 rapports</h3>
-      <div class="pricing-price">40</div>
+      <div class="pricing-price">40 <span style="font-size:18px;text-decoration:line-through;color:#8fa8c8;">45</span></div>
       <div class="pricing-period" id="p3-period">CHF · 8 CHF/rapport</div>
       <ul class="pricing-features">
         <li id="p3-f1">5 rapports complets PDF</li>
@@ -442,11 +439,11 @@
   const BACKEND_URL = 'https://amused-perception-production-eaaf.up.railway.app';
   let selectedLangue = 'fr';
   let currentUrl = '';
+  let selectedPack = 'single';
 
   const translations = {
     fr: {
       'hero-badge': '⭐ Analyse IA · Marché Suisse · Résultat en 30 secondes',
-      'hero-h1': 'Analysez n\'importe quelle<br><span id="hero-span">voiture d\'occasion</span> en Suisse',
       'hero-p': 'Collez le lien de l\'annonce AutoScout24, Ricardo, Tutti ou Anibis et obtenez une analyse complète avec score, red flags et prix de négociation.',
       'promo-text': '🔥 Offre de lancement — 9 CHF au lieu de 12 CHF',
       'promo-sub': 'Pendant 7 jours seulement · Code automatiquement appliqué',
@@ -463,7 +460,7 @@
       't2-text': '"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."',
       't3-text': '"J\'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d\'occasion."',
       'faq-title': 'Questions fréquentes', 'faq-sub': 'Tout ce que vous devez savoir',
-      'faq1-q': 'Comment fonctionne l\'analyse ?', 'faq1-a': 'Notre IA analyse automatiquement le contenu de l\'annonce et le compare avec les données du marché suisse. Elle détecte les red flags et calcule un prix de négociation suggéré.',
+      'faq1-q': 'Comment fonctionne l\'analyse ?', 'faq1-a': 'Notre IA analyse automatiquement le contenu de l\'annonce et le compare avec les données du marché suisse.',
       'faq2-q': 'Quels sites sont compatibles ?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de et Leboncoin.fr.',
       'faq3-q': 'Combien de temps prend l\'analyse ?', 'faq3-a': 'L\'analyse gratuite s\'affiche en environ 30 secondes. Le rapport PDF est envoyé par email en 1 à 2 minutes.',
       'faq4-q': 'Quelle est la durée de validité ?', 'faq4-a': 'Chaque rapport ou pack est valable 6 mois à partir de la date d\'achat.',
@@ -499,9 +496,9 @@
       'test-title': 'Was unsere Kunden sagen', 'test-sub': 'Echte Einsparungen dank EasyCarCheck',
       't1-text': '"Ich wollte einen BMW M135i für 28\'000 CHF kaufen. EasyCarCheck warnte mich vor einem Steuerkettenproblem. Ich habe auf 25\'500 CHF verhandelt. 2\'500 CHF gespart!"',
       't2-text': '"Ultradetaillierter Bericht für 12 CHF. Das PDF ist wirklich professionell. Der Verkäufer hat den Preis nach meinem Bericht gesenkt."',
-      't3-text': '"Ich habe 5 Autos mit dem Pack verglichen. Analyse in 30 Sekunden, Red Flags klar angezeigt. Ich empfehle es jedem, der ein Gebrauchtfahrzeug kauft."',
+      't3-text': '"Ich habe 5 Autos mit dem Pack verglichen. Analyse in 30 Sekunden, Red Flags klar angezeigt. Ich empfehle es jedem Gebrauchtwagenkäufer."',
       'faq-title': 'Häufige Fragen', 'faq-sub': 'Alles was Sie wissen müssen',
-      'faq1-q': 'Wie funktioniert die Analyse?', 'faq1-a': 'Unsere KI analysiert automatisch den Inhalt der Anzeige und vergleicht ihn mit Schweizer Marktdaten. Sie erkennt Red Flags und berechnet einen empfohlenen Verhandlungspreis.',
+      'faq1-q': 'Wie funktioniert die Analyse?', 'faq1-a': 'Unsere KI analysiert automatisch den Inhalt der Anzeige und vergleicht ihn mit Schweizer Marktdaten.',
       'faq2-q': 'Welche Webseiten sind kompatibel?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de und Leboncoin.fr.',
       'faq3-q': 'Wie lange dauert die Analyse?', 'faq3-a': 'Die kostenlose Analyse wird in etwa 30 Sekunden angezeigt. Der PDF-Bericht wird per E-Mail in 1-2 Minuten gesendet.',
       'faq4-q': 'Wie lange sind Berichte gültig?', 'faq4-a': 'Jeder Bericht oder jedes Pack ist ab Kaufdatum 6 Monate gültig.',
@@ -537,9 +534,9 @@
       'test-title': 'Cosa dicono i nostri clienti', 'test-sub': 'Risparmi reali grazie a EasyCarCheck',
       't1-text': '"Stavo per comprare una BMW M135i a 28\'000 CHF. EasyCarCheck mi ha avvisato di un problema alla catena di distribuzione. Ho negoziato a 25\'500 CHF. 2\'500 CHF risparmiati!"',
       't2-text': '"Rapporto ultra completo per 12 CHF. Il PDF è davvero professionale. Il venditore ha accettato di abbassare il prezzo dopo che gli ho mostrato il rapporto."',
-      't3-text': '"Ho confrontato 5 auto con il pack. Analisi in 30 secondi per auto, red flag chiaramente indicati. Lo consiglio a chiunque acquisti un\'auto usata."',
+      't3-text': '"Ho confrontato 5 auto con il pack. Analisi in 30 secondi, red flag chiaramente indicati. Lo consiglio a chiunque acquisti un\'auto usata."',
       'faq-title': 'Domande frequenti', 'faq-sub': 'Tutto quello che devi sapere',
-      'faq1-q': 'Come funziona l\'analisi?', 'faq1-a': 'La nostra IA analizza automaticamente il contenuto dell\'annuncio e lo confronta con i dati del mercato svizzero. Rileva i red flag e calcola un prezzo di negoziazione suggerito.',
+      'faq1-q': 'Come funziona l\'analisi?', 'faq1-a': 'La nostra IA analizza automaticamente il contenuto dell\'annuncio e lo confronta con i dati del mercato svizzero.',
       'faq2-q': 'Quali siti sono compatibili?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de e Leboncoin.fr.',
       'faq3-q': 'Quanto tempo richiede l\'analisi?', 'faq3-a': 'L\'analisi gratuita viene visualizzata in circa 30 secondi. Il rapporto PDF viene inviato via email in 1-2 minuti.',
       'faq4-q': 'Quanto durano i rapporti?', 'faq4-a': 'Ogni rapporto o pack è valido 6 mesi dalla data di acquisto.',
@@ -575,9 +572,9 @@
       'test-title': 'What our customers say', 'test-sub': 'Real savings thanks to EasyCarCheck',
       't1-text': '"I was about to buy a BMW M135i for 28\'000 CHF. EasyCarCheck warned me about a timing chain issue. I negotiated down to 25\'500 CHF. 2\'500 CHF saved!"',
       't2-text': '"Ultra-complete report for 12 CHF. The PDF is truly professional. The seller agreed to lower the price after I showed them the report."',
-      't3-text': '"I compared 5 cars with the pack. Analysis in 30 seconds per car, red flags clearly indicated. I recommend it to anyone buying a used car."',
+      't3-text': '"I compared 5 cars with the pack. Analysis in 30 seconds, red flags clearly indicated. I recommend it to anyone buying a used car."',
       'faq-title': 'Frequently asked questions', 'faq-sub': 'Everything you need to know',
-      'faq1-q': 'How does the analysis work?', 'faq1-a': 'Our AI automatically analyzes the listing content and compares it with Swiss market data. It detects red flags and calculates a suggested negotiation price.',
+      'faq1-q': 'How does the analysis work?', 'faq1-a': 'Our AI automatically analyzes the listing content and compares it with Swiss market data.',
       'faq2-q': 'Which websites are compatible?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de and Leboncoin.fr.',
       'faq3-q': 'How long does the analysis take?', 'faq3-a': 'The free analysis is displayed in about 30 seconds. The PDF report is sent by email in 1-2 minutes.',
       'faq4-q': 'How long are reports valid?', 'faq4-a': 'Each report or pack is valid for 6 months from the purchase date.',
@@ -608,21 +605,18 @@
     Object.keys(t).forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        if (id === 'hero-h1') { el.innerHTML = t[id]; }
-        else if (id === 'placeholder') { document.getElementById('urlInput').placeholder = t[id]; }
+        if (id === 'placeholder') { document.getElementById('urlInput').placeholder = t[id]; }
         else { el.textContent = t[id]; }
       }
     });
     document.documentElement.lang = langue;
   }
 
-  function toggleFaq(item) {
-    item.classList.toggle('open');
-  }
+  function toggleFaq(item) { item.classList.toggle('open'); }
 
   async function analyserGratuit() {
     const url = document.getElementById('urlInput').value.trim();
-    if (!url) { alert(selectedLangue === 'fr' ? 'Veuillez coller un lien d\'annonce' : 'Please paste a listing URL'); return; }
+    if (!url) { alert('Veuillez coller un lien d\'annonce'); return; }
     currentUrl = url;
     document.getElementById('loading').classList.add('show');
     document.getElementById('resultBox').classList.remove('show');
@@ -637,9 +631,8 @@
       document.getElementById('resultTitle').textContent = `${data.marque} ${data.modele} ${data.annee}`;
       document.getElementById('resultPrice').textContent = data.prix ? `${data.prix} CHF` : '';
       document.getElementById('scoreNum').textContent = data.score_global;
-      const scoreCircle = document.getElementById('scoreCircle');
-      const c = data.score_global >= 8 ? '#28a745' : data.score_global >= 5 ? '#ffc107' : '#dc3545';
-      scoreCircle.style.borderColor = c;
+      const c = data.score_global >= 8 ? '#28a745' : data.score_global >= 5 ? '#d4a00a' : '#dc3545';
+      document.getElementById('scoreCircle').style.borderColor = c;
       document.getElementById('scoreNum').style.color = c;
       const verdictBadge = document.getElementById('verdictBadge');
       verdictBadge.textContent = data.verdict;
@@ -651,8 +644,6 @@
       alert('Erreur lors de l\'analyse. Vérifiez le lien et réessayez.');
     }
   }
-
-  let selectedPack = 'single';
 
   function payerRapport(pack) {
     const url = currentUrl || document.getElementById('urlInput').value.trim();
@@ -680,12 +671,9 @@
       });
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-    } catch (err) {
-      alert('Erreur lors du paiement. Réessayez.');
-    }
+    } catch (err) { alert('Erreur lors du paiement. Réessayez.'); }
   }
 
-  // Fermer modal en cliquant dehors
   document.getElementById('emailModal').addEventListener('click', function(e) {
     if (e.target === this) fermerModal();
   });
