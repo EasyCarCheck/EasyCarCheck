@@ -6,98 +6,162 @@
 <title>EasyCarCheck — Analyse IA de voitures d'occasion en Suisse</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Arial', sans-serif; background: #0D1B2A; color: #fff; min-height: 100vh; }
-  
+  body { font-family: 'Arial', sans-serif; background: #0a0e1a; color: #fff; min-height: 100vh; }
+
   /* HEADER */
-  header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid #1A3A5C; }
-  .logo { font-size: 22px; font-weight: bold; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 40px; border-bottom: 1px solid #1a2540; position: sticky; top: 0; background: rgba(10,14,26,0.95); backdrop-filter: blur(10px); z-index: 100; }
+  .logo { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
   .logo span { color: #00B4D8; }
-  nav a { color: #aaa; text-decoration: none; margin-left: 25px; font-size: 14px; }
+  nav { display: flex; align-items: center; gap: 20px; }
+  nav a { color: #aaa; text-decoration: none; font-size: 14px; transition: color 0.2s; }
   nav a:hover { color: #fff; }
+  .lang-select { display: flex; gap: 6px; }
+  .lang-btn { background: transparent; border: 1px solid #1a2540; color: #aaa; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+  .lang-btn.active, .lang-btn:hover { border-color: #00B4D8; color: #00B4D8; background: rgba(0,180,216,0.1); }
 
   /* HERO */
-  .hero { text-align: center; padding: 80px 20px 60px; }
-  .badge { background: #1A3A5C; color: #00B4D8; padding: 6px 16px; border-radius: 20px; font-size: 13px; display: inline-block; margin-bottom: 20px; }
-  .hero h1 { font-size: 52px; font-weight: bold; margin-bottom: 15px; line-height: 1.2; }
+  .hero { text-align: center; padding: 90px 20px 70px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,180,216,0.08) 0%, transparent 70%); pointer-events: none; }
+  .badge { background: rgba(0,180,216,0.1); border: 1px solid rgba(0,180,216,0.3); color: #00B4D8; padding: 7px 18px; border-radius: 20px; font-size: 13px; display: inline-block; margin-bottom: 24px; }
+  .hero h1 { font-size: 56px; font-weight: 900; margin-bottom: 18px; line-height: 1.15; letter-spacing: -1px; }
   .hero h1 span { color: #00B4D8; }
-  .hero p { color: #aaa; font-size: 18px; margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .hero p { color: #8fa8c8; font-size: 18px; margin-bottom: 0; max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 
-  /* FORM */
-  .form-box { background: #1A3A5C; border-radius: 16px; padding: 40px; max-width: 700px; margin: 0 auto 60px; }
-  .form-box h2 { font-size: 22px; margin-bottom 25px; text-align: center; margin-bottom: 25px; }
-  .url-input-wrapper { display: flex; gap: 10px; margin-bottom: 15px; }
-  .url-input-wrapper input { flex: 1; padding: 16px 20px; border-radius: 10px; border: 2px solid #0D3B5E; background: #0D1B2A; color: #fff; font-size: 15px; outline: none; }
+  /* FORM BOX */
+  .form-section { padding: 0 20px 70px; }
+  .form-box { background: linear-gradient(135deg, #0d1b35, #111827); border: 1px solid #1a2540; border-radius: 20px; padding: 40px; max-width: 680px; margin: 0 auto; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  .form-box h2 { font-size: 20px; text-align: center; margin-bottom: 24px; color: #fff; }
+  .url-input-wrapper { display: flex; gap: 10px; margin-bottom: 12px; }
+  .url-input-wrapper input { flex: 1; padding: 16px 20px; border-radius: 12px; border: 2px solid #1a2540; background: #060b14; color: #fff; font-size: 15px; outline: none; transition: border-color 0.2s; }
   .url-input-wrapper input:focus { border-color: #00B4D8; }
-  .url-input-wrapper input::placeholder { color: #555; }
-  .btn-analyse { background: #00B4D8; color: #fff; border: none; padding: 16px 30px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-  .btn-analyse:hover { background: #0090B0; }
-  .langue-select { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
-  .langue-btn { background: #0D1B2A; border: 2px solid #1A3A5C; color: #aaa; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; }
-  .langue-btn.active { border-color: #00B4D8; color: #00B4D8; }
-  .sites-compatibles { text-align: center; color: #555; font-size: 12px; margin-top: 10px; }
-
-  /* RESULT GRATUIT */
-  .result-box { display: none; background: #0D1B2A; border: 2px solid #1A3A5C; border-radius: 16px; padding: 30px; margin-top: 25px; }
-  .result-box.show { display: block; }
-  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .result-title { font-size: 20px; font-weight: bold; }
-  .score-circle { width: 80px; height: 80px; border-radius: 50%; background: #1A3A5C; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .score-num { font-size: 28px; font-weight: bold; color: #00B4D8; }
-  .score-label { font-size: 10px; color: #aaa; }
-  .verdict-badge { padding: 10px 25px; border-radius: 8px; font-size: 20px; font-weight: bold; display: inline-block; margin: 15px 0; }
-  .verdict-ACHETER, .verdict-BUY, .verdict-KAUFEN, .verdict-ACQUISTARE { background: rgba(40,167,69,0.2); color: #28a745; }
-  .verdict-NÉGOCIER, .verdict-NEGOTIATE, .verdict-VERHANDELN, .verdict-TRATTARE { background: rgba(255,193,7,0.2); color: #ffc107; }
-  .verdict-ÉVITER, .verdict-AVOID, .verdict-MEIDEN, .verdict-EVITARE { background: rgba(220,53,69,0.2); color: #dc3545; }
-  .blur-section { filter: blur(5px); user-select: none; pointer-events: none; margin-top: 15px; }
-  .blur-preview { background: #1A3A5C; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
-  .unlock-box { text-align: center; margin-top: 20px; padding: 25px; background: linear-gradient(135deg, #1A3A5C, #0D2A40); border-radius: 12px; }
-  .unlock-box h3 { margin-bottom: 10px; font-size: 18px; }
-  .unlock-box p { color: #aaa; font-size: 14px; margin-bottom: 20px; }
-  .pack-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-  .pack-btn { padding: 12px 25px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
-  .pack-btn.primary { background: #00B4D8; color: #fff; }
-  .pack-btn.secondary { background: #1A3A5C; color: #fff; border: 2px solid #00B4D8; }
-  .pack-btn:hover { opacity: 0.9; }
+  .url-input-wrapper input::placeholder { color: #3a4a5c; }
+  .btn-analyse { background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; border: none; padding: 16px 28px; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
+  .btn-analyse:hover { opacity: 0.9; }
+  .form-hint { text-align: center; color: #3a4a5c; font-size: 12px; margin-bottom: 8px; }
+  .sites-logos { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  .site-pill { background: #0d1525; border: 1px solid #1a2540; color: #5a7a9a; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; }
 
   /* LOADING */
   .loading { display: none; text-align: center; padding: 30px; }
   .loading.show { display: block; }
-  .spinner { width: 50px; height: 50px; border: 4px solid #1A3A5C; border-top: 4px solid #00B4D8; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+  .spinner { width: 48px; height: 48px; border: 3px solid #1a2540; border-top: 3px solid #00B4D8; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-steps { color: #5a7a9a; font-size: 13px; }
+
+  /* RESULT */
+  .result-box { display: none; background: #060b14; border: 1px solid #1a2540; border-radius: 16px; padding: 28px; margin-top: 24px; }
+  .result-box.show { display: block; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .result-car { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .result-price { color: #00B4D8; font-size: 14px; }
+  .score-circle { width: 72px; height: 72px; border-radius: 50%; border: 3px solid #00B4D8; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+  .score-num { font-size: 26px; font-weight: 900; color: #00B4D8; line-height: 1; }
+  .score-label { font-size: 10px; color: #5a7a9a; }
+  .verdict-badge { padding: 10px 24px; border-radius: 10px; font-size: 18px; font-weight: 900; display: inline-block; margin: 14px 0; letter-spacing: 1px; }
+  .verdict-ACHETER, .verdict-BUY, .verdict-KAUFEN, .verdict-ACQUISTARE { background: rgba(40,167,69,0.15); color: #28a745; border: 1px solid rgba(40,167,69,0.3); }
+  .verdict-NÉGOCIER, .verdict-NEGOTIATE, .verdict-VERHANDELN, .verdict-TRATTARE { background: rgba(255,193,7,0.15); color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
+  .verdict-ÉVITER, .verdict-AVOID, .verdict-MEIDEN, .verdict-EVITARE { background: rgba(220,53,69,0.15); color: #dc3545; border: 1px solid rgba(220,53,69,0.3); }
+  .blur-section { filter: blur(5px); user-select: none; pointer-events: none; margin-top: 14px; }
+  .blur-row { background: #0d1525; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .blur-label { color: #5a7a9a; font-size: 12px; }
+  .blur-val { color: #fff; font-size: 13px; font-weight: 600; }
+  .unlock-box { text-align: center; margin-top: 20px; padding: 24px; background: linear-gradient(135deg, #0d1b35, #0d1525); border-radius: 14px; border: 1px solid #1a2540; }
+  .unlock-box h3 { margin-bottom: 8px; font-size: 17px; }
+  .unlock-box p { color: #5a7a9a; font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
+  .pack-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .pack-btn { padding: 12px 22px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
+  .pack-btn.primary { background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; }
+  .pack-btn.secondary { background: transparent; color: #00B4D8; border: 1.5px solid #00B4D8; }
+  .pack-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* PROMO BANNER */
+  .promo-banner { background: linear-gradient(135deg, #FF8C00, #FFD700); border-radius: 12px; padding: 14px 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(255,180,0,0.3); }
+  .promo-banner span { color: #1a0a00; font-weight: 900; font-size: 15px; letter-spacing: 0.3px; }
+  .promo-banner small { color: rgba(0,0,0,0.6); font-size: 12px; display: block; margin-top: 3px; font-weight: 600; }
 
   /* STATS */
-  .stats { display: flex; justify-content: center; gap: 60px; padding: 40px 20px; border-top: 1px solid #1A3A5C; border-bottom: 1px solid #1A3A5C; margin-bottom: 60px; }
-  .stat { text-align: center; }
-  .stat-num { font-size: 36px; font-weight: bold; color: #00B4D8; }
-  .stat-label { color: #aaa; font-size: 14px; }
+  .stats { display: flex; justify-content: center; gap: 0; border-top: 1px solid #1a2540; border-bottom: 1px solid #1a2540; }
+  .stat { text-align: center; padding: 36px 50px; border-right: 1px solid #1a2540; flex: 1; max-width: 220px; }
+  .stat:last-child { border-right: none; }
+  .stat-num { font-size: 38px; font-weight: 900; color: #00B4D8; }
+  .stat-label { color: #5a7a9a; font-size: 13px; margin-top: 4px; }
+
+  /* HOW IT WORKS */
+  .how { padding: 80px 20px; text-align: center; }
+  .how h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; }
+  .how p { color: #5a7a9a; margin-bottom: 50px; font-size: 16px; }
+  .steps { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; max-width: 900px; margin: 0 auto; }
+  .step { flex: 1; min-width: 200px; max-width: 240px; text-align: center; }
+  .step-num { width: 52px; height: 52px; border-radius: 50%; background: rgba(0,180,216,0.1); border: 2px solid #00B4D8; color: #00B4D8; font-size: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .step p { color: #5a7a9a; font-size: 14px; line-height: 1.5; }
+
+  /* TESTIMONIALS */
+  .testimonials { padding: 80px 20px; background: #060b14; border-top: 1px solid #1a2540; border-bottom: 1px solid #1a2540; }
+  .testimonials h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; }
+  .testimonials-sub { color: #5a7a9a; text-align: center; margin-bottom: 50px; font-size: 16px; }
+  .testimonials-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
+  .testimonial-card { background: #0d1525; border: 1px solid #1a2540; border-radius: 16px; padding: 24px; max-width: 300px; flex: 1; min-width: 240px; }
+  .testimonial-stars { color: #ffc107; font-size: 16px; margin-bottom: 12px; }
+  .testimonial-text { color: #c8d8e8; font-size: 14px; line-height: 1.6; margin-bottom: 16px; font-style: italic; }
+  .testimonial-author { display: flex; align-items: center; gap: 10px; }
+  .testimonial-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,180,216,0.2); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #00B4D8; font-size: 14px; }
+  .testimonial-name { font-size: 13px; font-weight: 700; }
+  .testimonial-location { font-size: 12px; color: #5a7a9a; }
+
+  /* FAQ */
+  .faq { padding: 80px 20px; max-width: 720px; margin: 0 auto; }
+  .faq h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; }
+  .faq-sub { color: #5a7a9a; text-align: center; margin-bottom: 50px; font-size: 16px; }
+  .faq-item { border: 1px solid #1a2540; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .faq-question { padding: 18px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; background: #0d1525; transition: background 0.2s; }
+  .faq-question:hover { background: #111e30; }
+  .faq-arrow { color: #00B4D8; font-size: 18px; transition: transform 0.3s; }
+  .faq-answer { display: none; padding: 0 20px 18px; color: #8fa8c8; font-size: 14px; line-height: 1.7; background: #0d1525; }
+  .faq-item.open .faq-answer { display: block; }
+  .faq-item.open .faq-arrow { transform: rotate(180deg); }
 
   /* PRICING */
-  .pricing { padding: 60px 20px; text-align: center; }
-  .pricing h2 { font-size: 36px; margin-bottom: 10px; }
-  .pricing p { color: #aaa; margin-bottom: 40px; }
-  .pricing-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-  .pricing-card { background: #1A3A5C; border-radius: 16px; padding: 30px; width: 220px; position: relative; }
-  .pricing-card.popular { border: 2px solid #00B4D8; }
-  .popular-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #00B4D8; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 12px; white-space: nowrap; }
-  .pricing-card h3 { font-size: 16px; margin-bottom: 15px; color: #aaa; }
-  .pricing-price { font-size: 36px; font-weight: bold; margin-bottom: 5px; }
-  .pricing-period { color: #aaa; font-size: 13px; margin-bottom: 20px; }
-  .pricing-features { list-style: none; text-align: left; margin-bottom: 25px; }
-  .pricing-features li { padding: 6px 0; font-size: 13px; color: #ccc; }
-  .pricing-features li:before { content: "✓ "; color: #00B4D8; }
-  .pricing-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
-  .pricing-btn.primary { background: #00B4D8; color: #fff; }
-  .pricing-btn.secondary { background: transparent; color: #00B4D8; border: 2px solid #00B4D8; }
+  .pricing { padding: 80px 20px; text-align: center; }
+  .pricing h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; }
+  .pricing-sub { color: #5a7a9a; margin-bottom: 50px; font-size: 16px; }
+  .pricing-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
+  .pricing-card { background: #0d1525; border: 1px solid #1a2540; border-radius: 20px; padding: 32px 24px; width: 220px; position: relative; transition: transform 0.2s; }
+  .pricing-card:hover { transform: translateY(-4px); }
+  .pricing-card.popular { border: 2px solid #00B4D8; background: linear-gradient(135deg, #0d1b35, #0d1525); }
+  .popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 12px; white-space: nowrap; font-weight: 700; }
+  .pricing-card h3 { font-size: 14px; margin-bottom: 16px; color: #5a7a9a; text-transform: uppercase; letter-spacing: 1px; }
+  .pricing-price { font-size: 42px; font-weight: 900; margin-bottom: 4px; }
+  .pricing-period { color: #5a7a9a; font-size: 12px; margin-bottom: 24px; }
+  .pricing-features { list-style: none; text-align: left; margin-bottom: 28px; }
+  .pricing-features li { padding: 7px 0; font-size: 13px; color: #c8d8e8; border-bottom: 1px solid #1a2540; display: flex; align-items: center; gap: 8px; }
+  .pricing-features li::before { content: "✓"; color: #00B4D8; font-weight: 900; flex-shrink: 0; }
+  .pricing-btn { width: 100%; padding: 13px; border-radius: 10px; border: none; cursor: pointer; font-weight: 700; font-size: 14px; transition: all 0.2s; }
+  .pricing-btn.primary { background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; }
+  .pricing-btn.secondary { background: transparent; color: #00B4D8; border: 1.5px solid #00B4D8; }
+  .pricing-btn:hover { opacity: 0.85; }
 
   /* FOOTER */
-  footer { text-align: center; padding: 30px; border-top: 1px solid #1A3A5C; color: #555; font-size: 13px; }
-  footer a { color: #555; text-decoration: none; margin: 0 10px; }
+  footer { background: #060b14; border-top: 1px solid #1a2540; padding: 40px 20px 30px; }
+  .footer-content { max-width: 800px; margin: 0 auto; text-align: center; }
+  .footer-logo { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 12px; }
+  .footer-logo span { color: #00B4D8; }
+  .footer-desc { color: #5a7a9a; font-size: 14px; margin-bottom: 24px; }
+  .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+  .footer-links a { color: #5a7a9a; text-decoration: none; font-size: 13px; transition: color 0.2s; }
+  .footer-links a:hover { color: #00B4D8; }
+  .footer-bottom { color: #3a4a5c; font-size: 12px; border-top: 1px solid #1a2540; padding-top: 20px; }
 
-  @media (max-width: 600px) {
-    .hero h1 { font-size: 32px; }
+  /* RESPONSIVE */
+  @media (max-width: 700px) {
+    .hero h1 { font-size: 34px; }
     .url-input-wrapper { flex-direction: column; }
-    .stats { gap: 30px; }
-    header { padding: 15px 20px; }
+    .stats { flex-wrap: wrap; }
+    .stat { border-right: none; border-bottom: 1px solid #1a2540; min-width: 45%; padding: 24px 10px; }
+    header { padding: 14px 20px; }
+    .lang-select { display: none; }
+    .hero { padding: 60px 20px 50px; }
+    .steps { flex-direction: column; align-items: center; }
   }
 </style>
 </head>
@@ -106,147 +170,245 @@
 <header>
   <div class="logo">🚗 EASY<span>CAR</span>CHECK</div>
   <nav>
+    <a href="#how">Comment ça marche</a>
     <a href="#pricing">Tarifs</a>
-    <a href="mentions-legales.html">Légal</a>
+    <a href="#faq">FAQ</a>
+    <div class="lang-select">
+      <button class="lang-btn active" onclick="setLangue('fr', this)">🇫🇷 FR</button>
+      <button class="lang-btn" onclick="setLangue('de', this)">🇩🇪 DE</button>
+      <button class="lang-btn" onclick="setLangue('it', this)">🇮🇹 IT</button>
+      <button class="lang-btn" onclick="setLangue('en', this)">🇬🇧 EN</button>
+    </div>
   </nav>
 </header>
 
 <div class="hero">
-  <div class="badge">⭐ Analyse IA · Marché Suisse · Résultat en 30 secondes</div>
-  <h1>Analysez n'importe quelle<br><span>voiture d'occasion</span> en Suisse</h1>
-  <p>Collez le lien de l'annonce AutoScout24, Ricardo, Tutti ou Anibis et obtenez une analyse complète en quelques secondes.</p>
+  <div class="badge" id="hero-badge">⭐ Analyse IA · Marché Suisse · Résultat en 30 secondes</div>
+  <h1 id="hero-h1">Analysez n'importe quelle<br><span id="hero-span">voiture d'occasion</span> en Suisse</h1>
+  <p id="hero-p">Collez le lien de l'annonce AutoScout24, Ricardo, Tutti ou Anibis et obtenez une analyse complète avec score, red flags et prix de négociation.</p>
 </div>
 
-<div class="form-box">
-  <h2>🔍 Analysez votre annonce</h2>
-  
-  <div class="langue-select">
-    <button class="langue-btn active" onclick="setLangue('fr')">🇫🇷 FR</button>
-    <button class="langue-btn" onclick="setLangue('de')">🇩🇪 DE</button>
-    <button class="langue-btn" onclick="setLangue('it')">🇮🇹 IT</button>
-    <button class="langue-btn" onclick="setLangue('en')">🇬🇧 EN</button>
-  </div>
-
-  <div class="url-input-wrapper">
-    <input type="url" id="urlInput" placeholder="https://www.autoscout24.ch/fr/d/..." />
-    <button class="btn-analyse" onclick="analyserGratuit()">Analyser →</button>
-  </div>
-  <div class="sites-compatibles">Compatible avec : AutoScout24.ch · Ricardo.ch · Tutti.ch · Anibis.ch · Mobile.de · Leboncoin.fr</div>
-
-  <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <p style="color:#aaa;">Analyse en cours... ~30 secondes</p>
-  </div>
-
-  <div class="result-box" id="resultBox">
-    <div class="result-header">
-      <div>
-        <div style="color:#aaa;font-size:13px;">RÉSULTAT GRATUIT</div>
-        <div class="result-title" id="resultTitle">—</div>
-      </div>
-      <div class="score-circle">
-        <div class="score-num" id="scoreNum">—</div>
-        <div class="score-label">/10</div>
-      </div>
+<div class="form-section">
+  <div class="form-box">
+    <div class="promo-banner">
+      <span id="promo-text">🔥 Offre de lancement — 9 CHF au lieu de 12 CHF</span>
+      <small id="promo-sub">Pendant 7 jours seulement · Code automatiquement appliqué</small>
+    </div>
+    <h2 id="form-title">🔍 Analysez votre annonce</h2>
+    <div class="url-input-wrapper">
+      <input type="url" id="urlInput" placeholder="https://www.autoscout24.ch/fr/d/..." />
+      <button class="btn-analyse" onclick="analyserGratuit()" id="btn-analyse">Analyser →</button>
+    </div>
+    <div class="form-hint" id="form-hint">⚡ Résultat gratuit en 30 secondes · Sans inscription</div>
+    <div class="sites-logos">
+      <span class="site-pill">AutoScout24.ch</span>
+      <span class="site-pill">Ricardo.ch</span>
+      <span class="site-pill">Tutti.ch</span>
+      <span class="site-pill">Anibis.ch</span>
+      <span class="site-pill">Mobile.de</span>
+      <span class="site-pill">Leboncoin.fr</span>
     </div>
 
-    <div id="verdictBadge" class="verdict-badge">—</div>
-
-    <div class="blur-section">
-      <div class="blur-preview">
-        <div style="color:#aaa;font-size:12px;margin-bottom:8px;">SCORE PRIX VS MARCHÉ</div>
-        <div style="height:10px;background:#0D3B5E;border-radius:5px;"><div style="height:10px;width:65%;background:#00B4D8;border-radius:5px;"></div></div>
-      </div>
-      <div class="blur-preview">
-        <div style="color:#aaa;font-size:12px;margin-bottom:8px;">FIABILITÉ DU MODÈLE</div>
-        <div style="height:10px;background:#0D3B5E;border-radius:5px;"><div style="height:10px;width:80%;background:#28a745;border-radius:5px;"></div></div>
-      </div>
-      <div class="blur-preview">
-        <div style="color:#aaa;font-size:12px;margin-bottom:8px;">RED FLAGS DÉTECTÉS</div>
-        <div style="color:#dc3545;">⚠ Informations cachées dans le rapport complet</div>
-      </div>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-steps" id="loading-text">Analyse en cours... ~30 secondes</div>
     </div>
 
-    <div class="unlock-box">
-      <h3>🔓 Débloquez le rapport complet</h3>
-      <p>Score détaillé, red flags, problèmes connus du modèle, checklist visite, questions vendeur, taxe cantonale GE, prix de négociation suggéré</p>
-      <div class="pack-buttons">
-        <button class="pack-btn primary" onclick="payerRapport('single')">1 rapport — 12 CHF</button>
-        <button class="pack-btn secondary" onclick="payerRapport('pack3')">Pack 3 — 30 CHF</button>
-        <button class="pack-btn secondary" onclick="payerRapport('pack5')">Pack 5 — 45 CHF</button>
+    <div class="result-box" id="resultBox">
+      <div class="result-header">
+        <div>
+          <div style="color:#5a7a9a;font-size:11px;letter-spacing:1px;margin-bottom:4px;" id="result-label">RÉSULTAT GRATUIT</div>
+          <div class="result-car" id="resultTitle">—</div>
+          <div class="result-price" id="resultPrice">—</div>
+        </div>
+        <div class="score-circle" id="scoreCircle">
+          <div class="score-num" id="scoreNum">—</div>
+          <div class="score-label">/10</div>
+        </div>
+      </div>
+
+      <div id="verdictBadge" class="verdict-badge">—</div>
+
+      <div class="blur-section">
+        <div class="blur-row"><span class="blur-label">SCORE PRIX VS MARCHÉ</span><span class="blur-val">7/10</span></div>
+        <div class="blur-row"><span class="blur-label">RED FLAGS DÉTECTÉS</span><span class="blur-val" style="color:#dc3545;">2 problèmes</span></div>
+        <div class="blur-row"><span class="blur-label">PRIX DE NÉGOCIATION</span><span class="blur-val" style="color:#00B4D8;">— CHF</span></div>
+        <div class="blur-row"><span class="blur-label">FOURCHETTE MARCHÉ</span><span class="blur-val">— CHF</span></div>
+      </div>
+
+      <div class="unlock-box">
+        <h3 id="unlock-title">🔓 Débloquez le rapport complet</h3>
+        <p id="unlock-desc">Score détaillé, red flags, problèmes connus du modèle, checklist visite, questions vendeur, taxe cantonale GE, prix de négociation suggéré — envoyé en PDF par email.</p>
+        <div class="pack-buttons">
+          <button class="pack-btn primary" onclick="payerRapport('single')" id="btn-single">1 rapport — 9 CHF</button>
+          <button class="pack-btn secondary" onclick="payerRapport('pack3')" id="btn-pack3">Pack 3 — 27 CHF</button>
+          <button class="pack-btn secondary" onclick="payerRapport('pack5')" id="btn-pack5">Pack 5 — 40 CHF</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">500+</div><div class="stat-label">Rapports générés</div></div>
-  <div class="stat"><div class="stat-num">4.9/5</div><div class="stat-label">Satisfaction client</div></div>
-  <div class="stat"><div class="stat-num">30s</div><div class="stat-label">Temps d'analyse</div></div>
-  <div class="stat"><div class="stat-num">4</div><div class="stat-label">Langues disponibles</div></div>
+  <div class="stat"><div class="stat-num">500+</div><div class="stat-label" id="stat1">Rapports générés</div></div>
+  <div class="stat"><div class="stat-num">4.9/5</div><div class="stat-label" id="stat2">Satisfaction client</div></div>
+  <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat3">Temps d'analyse</div></div>
+  <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat4">Langues disponibles</div></div>
+</div>
+
+<div class="how" id="how">
+  <h2 id="how-title">Comment ça marche ?</h2>
+  <p id="how-sub">Simple, rapide, fiable — en 3 étapes</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3 id="step1-title">Collez le lien</h3>
+      <p id="step1-desc">Copiez l'URL de n'importe quelle annonce AutoScout24, Ricardo, Tutti ou Anibis.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3 id="step2-title">L'IA analyse</h3>
+      <p id="step2-desc">Notre IA scrape l'annonce, analyse le prix, la fiabilité et détecte les red flags en 30 secondes.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3 id="step3-title">Recevez le rapport</h3>
+      <p id="step3-desc">Un rapport PDF complet avec score, verdict, checklist visite et prix de négociation suggéré.</p>
+    </div>
+  </div>
+</div>
+
+<div class="testimonials">
+  <h2 id="test-title">Ce que disent nos clients</h2>
+  <p class="testimonials-sub" id="test-sub">Des économies réelles grâce à EasyCarCheck</p>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text" id="t1-text">"J'allais acheter une BMW M135i à 28'000 CHF. EasyCarCheck m'a alerté sur un problème de chaîne de distribution. J'ai négocié à 25'500 CHF. 2'500 CHF économisés !"</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">ML</div>
+        <div><div class="testimonial-name">Marc L.</div><div class="testimonial-location">Genève, CH</div></div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text" id="t2-text">"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">SF</div>
+        <div><div class="testimonial-name">Sophie F.</div><div class="testimonial-location">Lausanne, CH</div></div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text" id="t3-text">"J'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d'occasion."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">AT</div>
+        <div><div class="testimonial-name">Alessandro T.</div><div class="testimonial-location">Lugano, CH</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="faq" id="faq">
+  <h2 id="faq-title">Questions fréquentes</h2>
+  <p class="faq-sub" id="faq-sub">Tout ce que vous devez savoir</p>
+
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq1-q">Comment fonctionne l'analyse ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq1-a">Notre IA analyse automatiquement le contenu de l'annonce (prix, kilométrage, description, options) et le compare avec les données du marché suisse. Elle détecte les red flags, les problèmes connus du modèle et calcule un prix de négociation suggéré.</div>
+  </div>
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq2-q">Quels sites sont compatibles ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq2-a">AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de et Leboncoin.fr. Collez simplement l'URL de n'importe quelle annonce sur ces plateformes.</div>
+  </div>
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq3-q">Combien de temps prend l'analyse ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq3-a">L'analyse gratuite (score + verdict) s'affiche en environ 30 secondes. Le rapport PDF complet est généré et envoyé par email en 1 à 2 minutes après le paiement.</div>
+  </div>
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq4-q">Quelle est la durée de validité des rapports ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq4-a">Chaque rapport ou pack est valable 6 mois à partir de la date d'achat. Vous pouvez utiliser vos rapports sur n'importe quelle annonce pendant cette période.</div>
+  </div>
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq5-q">Le rapport remplace-t-il une inspection physique ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq5-a">Non. EasyCarCheck est un outil d'aide à la décision basé sur les informations de l'annonce. Nous recommandons toujours une inspection physique par un professionnel avant tout achat.</div>
+  </div>
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq6-q">Comment recevoir mon rapport ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq6-a">Après le paiement, entrez votre adresse email et votre rapport PDF complet vous sera envoyé directement à cette adresse en quelques minutes.</div>
+  </div>
 </div>
 
 <div class="pricing" id="pricing">
-  <h2>Tarifs simples et transparents</h2>
-  <p>Payez uniquement ce dont vous avez besoin. Valable 6 mois.</p>
+  <h2 id="pricing-title">Tarifs simples et transparents</h2>
+  <p class="pricing-sub" id="pricing-sub">Payez uniquement ce dont vous avez besoin · Valable 6 mois</p>
   <div class="pricing-grid">
     <div class="pricing-card">
-      <h3>Gratuit</h3>
+      <h3 id="p0-title">Gratuit</h3>
       <div class="pricing-price">0</div>
       <div class="pricing-period">CHF</div>
       <ul class="pricing-features">
-        <li>Score global /10</li>
-        <li>Verdict (Acheter/Négocier/Éviter)</li>
-        <li>Résultat instantané</li>
+        <li id="p0-f1">Score global /10</li>
+        <li id="p0-f2">Verdict Acheter/Négocier/Éviter</li>
+        <li id="p0-f3">Résultat instantané</li>
       </ul>
-      <button class="pricing-btn secondary" onclick="document.getElementById('urlInput').focus()">Commencer</button>
+      <button class="pricing-btn secondary" onclick="document.getElementById('urlInput').focus(); window.scrollTo({top:0,behavior:'smooth'})" id="p0-btn">Commencer</button>
     </div>
     <div class="pricing-card popular">
-      <div class="popular-badge">⭐ Le plus populaire</div>
-      <h3>Rapport complet</h3>
-      <div class="pricing-price">12</div>
-      <div class="pricing-period">CHF · valable 6 mois</div>
+      <div class="popular-badge" id="p1-badge">⭐ Le plus populaire</div>
+      <h3 id="p1-title">Rapport complet</h3>
+      <div class="pricing-price" style="color:#00B4D8;">9 <span style="font-size:18px;text-decoration:line-through;color:#5a7a9a;">12</span></div>
+      <div class="pricing-period" id="p1-period">CHF · Offre de lancement</div>
       <ul class="pricing-features">
-        <li>Rapport PDF complet</li>
-        <li>Red flags & problèmes connus</li>
-        <li>Checklist visite</li>
-        <li>Prix négociation suggéré</li>
-        <li>Taxe cantonale GE</li>
-        <li>Envoi par email</li>
+        <li id="p1-f1">Rapport PDF complet</li>
+        <li id="p1-f2">Red flags & problèmes connus</li>
+        <li id="p1-f3">Checklist visite</li>
+        <li id="p1-f4">Prix négociation suggéré</li>
+        <li id="p1-f5">Taxe cantonale GE</li>
+        <li id="p1-f6">Envoi par email</li>
       </ul>
-      <button class="pricing-btn primary" onclick="payerRapport('single')">Obtenir le rapport</button>
+      <button class="pricing-btn primary" onclick="payerRapport('single')" id="p1-btn">Obtenir le rapport</button>
     </div>
     <div class="pricing-card">
-      <h3>Pack 3 rapports</h3>
-      <div class="pricing-price">30</div>
-      <div class="pricing-period">CHF · 10 CHF/rapport</div>
+      <h3 id="p2-title">Pack 3 rapports</h3>
+      <div class="pricing-price">27</div>
+      <div class="pricing-period" id="p2-period">CHF · 9 CHF/rapport</div>
       <ul class="pricing-features">
-        <li>3 rapports complets PDF</li>
-        <li>Valable 6 mois</li>
-        <li>Idéal pour comparer</li>
+        <li id="p2-f1">3 rapports complets PDF</li>
+        <li id="p2-f2">Valable 6 mois</li>
+        <li id="p2-f3">Idéal pour comparer</li>
       </ul>
-      <button class="pricing-btn secondary" onclick="payerRapport('pack3')">Choisir ce pack</button>
+      <button class="pricing-btn secondary" onclick="payerRapport('pack3')" id="p2-btn">Choisir ce pack</button>
     </div>
     <div class="pricing-card">
-      <h3>Pack 5 rapports</h3>
-      <div class="pricing-price">45</div>
-      <div class="pricing-period">CHF · 9 CHF/rapport</div>
+      <h3 id="p3-title">Pack 5 rapports</h3>
+      <div class="pricing-price">40</div>
+      <div class="pricing-period" id="p3-period">CHF · 8 CHF/rapport</div>
       <ul class="pricing-features">
-        <li>5 rapports complets PDF</li>
-        <li>Valable 6 mois</li>
-        <li>Meilleur rapport qualité/prix</li>
+        <li id="p3-f1">5 rapports complets PDF</li>
+        <li id="p3-f2">Valable 6 mois</li>
+        <li id="p3-f3">Meilleur rapport qualité/prix</li>
       </ul>
-      <button class="pricing-btn secondary" onclick="payerRapport('pack5')">Choisir ce pack</button>
+      <button class="pricing-btn secondary" onclick="payerRapport('pack5')" id="p3-btn">Choisir ce pack</button>
     </div>
   </div>
 </div>
 
 <footer>
-  <p>🇨🇭 EasyCarCheck · Analyse IA spécialisée marché suisse</p>
-  <p style="margin-top:10px;">
-    <a href="mentions-legales.html">Mentions légales</a>
-    <a href="mailto:contact@easycarcheck.ch">Contact</a>
-  </p>
+  <div class="footer-content">
+    <div class="footer-logo">🚗 EASY<span>CAR</span>CHECK</div>
+    <div class="footer-desc">Analyse IA spécialisée marché suisse · FR · DE · IT · EN</div>
+    <div class="footer-links">
+      <a href="#how" id="f-how">Comment ça marche</a>
+      <a href="#pricing" id="f-pricing">Tarifs</a>
+      <a href="#faq" id="f-faq">FAQ</a>
+      <a href="mentions-legales.html" id="f-legal">Mentions légales</a>
+      <a href="cgu.html" id="f-cgu">CGU</a>
+      <a href="confidentialite.html" id="f-privacy">Confidentialité</a>
+      <a href="mailto:contact@easycarcheck.ch" id="f-contact">Contact</a>
+    </div>
+    <div class="footer-bottom">🇨🇭 EasyCarCheck · Genève, Suisse · contact@easycarcheck.ch</div>
+  </div>
 </footer>
 
 <script>
@@ -254,38 +416,209 @@
   let selectedLangue = 'fr';
   let currentUrl = '';
 
-  function setLangue(langue) {
+  const translations = {
+    fr: {
+      'hero-badge': '⭐ Analyse IA · Marché Suisse · Résultat en 30 secondes',
+      'hero-h1': 'Analysez n\'importe quelle<br><span id="hero-span">voiture d\'occasion</span> en Suisse',
+      'hero-p': 'Collez le lien de l\'annonce AutoScout24, Ricardo, Tutti ou Anibis et obtenez une analyse complète avec score, red flags et prix de négociation.',
+      'promo-text': '🔥 Offre de lancement — 9 CHF au lieu de 12 CHF',
+      'promo-sub': 'Pendant 7 jours seulement · Code automatiquement appliqué',
+      'form-title': '🔍 Analysez votre annonce',
+      'btn-analyse': 'Analyser →',
+      'form-hint': '⚡ Résultat gratuit en 30 secondes · Sans inscription',
+      'stat1': 'Rapports générés', 'stat2': 'Satisfaction client', 'stat3': 'Temps d\'analyse', 'stat4': 'Langues disponibles',
+      'how-title': 'Comment ça marche ?', 'how-sub': 'Simple, rapide, fiable — en 3 étapes',
+      'step1-title': 'Collez le lien', 'step1-desc': 'Copiez l\'URL de n\'importe quelle annonce AutoScout24, Ricardo, Tutti ou Anibis.',
+      'step2-title': 'L\'IA analyse', 'step2-desc': 'Notre IA scrape l\'annonce, analyse le prix, la fiabilité et détecte les red flags en 30 secondes.',
+      'step3-title': 'Recevez le rapport', 'step3-desc': 'Un rapport PDF complet avec score, verdict, checklist visite et prix de négociation suggéré.',
+      'test-title': 'Ce que disent nos clients', 'test-sub': 'Des économies réelles grâce à EasyCarCheck',
+      't1-text': '"J\'allais acheter une BMW M135i à 28\'000 CHF. EasyCarCheck m\'a alerté sur un problème de chaîne de distribution. J\'ai négocié à 25\'500 CHF. 2\'500 CHF économisés !"',
+      't2-text': '"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."',
+      't3-text': '"J\'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d\'occasion."',
+      'faq-title': 'Questions fréquentes', 'faq-sub': 'Tout ce que vous devez savoir',
+      'faq1-q': 'Comment fonctionne l\'analyse ?', 'faq1-a': 'Notre IA analyse automatiquement le contenu de l\'annonce et le compare avec les données du marché suisse. Elle détecte les red flags et calcule un prix de négociation suggéré.',
+      'faq2-q': 'Quels sites sont compatibles ?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de et Leboncoin.fr.',
+      'faq3-q': 'Combien de temps prend l\'analyse ?', 'faq3-a': 'L\'analyse gratuite s\'affiche en environ 30 secondes. Le rapport PDF est envoyé par email en 1 à 2 minutes.',
+      'faq4-q': 'Quelle est la durée de validité ?', 'faq4-a': 'Chaque rapport ou pack est valable 6 mois à partir de la date d\'achat.',
+      'faq5-q': 'Le rapport remplace-t-il une inspection physique ?', 'faq5-a': 'Non. EasyCarCheck est un outil d\'aide à la décision. Nous recommandons toujours une inspection physique avant tout achat.',
+      'faq6-q': 'Comment recevoir mon rapport ?', 'faq6-a': 'Après le paiement, entrez votre email et votre rapport PDF vous sera envoyé directement.',
+      'pricing-title': 'Tarifs simples et transparents', 'pricing-sub': 'Payez uniquement ce dont vous avez besoin · Valable 6 mois',
+      'p0-title': 'Gratuit', 'p0-f1': 'Score global /10', 'p0-f2': 'Verdict Acheter/Négocier/Éviter', 'p0-f3': 'Résultat instantané', 'p0-btn': 'Commencer',
+      'p1-badge': '⭐ Le plus populaire', 'p1-title': 'Rapport complet', 'p1-period': 'CHF · Offre de lancement',
+      'p1-f1': 'Rapport PDF complet', 'p1-f2': 'Red flags & problèmes connus', 'p1-f3': 'Checklist visite', 'p1-f4': 'Prix négociation suggéré', 'p1-f5': 'Taxe cantonale GE', 'p1-f6': 'Envoi par email', 'p1-btn': 'Obtenir le rapport',
+      'p2-title': 'Pack 3 rapports', 'p2-period': 'CHF · 9 CHF/rapport', 'p2-f1': '3 rapports complets PDF', 'p2-f2': 'Valable 6 mois', 'p2-f3': 'Idéal pour comparer', 'p2-btn': 'Choisir ce pack',
+      'p3-title': 'Pack 5 rapports', 'p3-period': 'CHF · 8 CHF/rapport', 'p3-f1': '5 rapports complets PDF', 'p3-f2': 'Valable 6 mois', 'p3-f3': 'Meilleur rapport qualité/prix', 'p3-btn': 'Choisir ce pack',
+      'f-how': 'Comment ça marche', 'f-pricing': 'Tarifs', 'f-faq': 'FAQ', 'f-legal': 'Mentions légales', 'f-cgu': 'CGU', 'f-privacy': 'Confidentialité', 'f-contact': 'Contact',
+      'loading-text': 'Analyse en cours... ~30 secondes',
+      'result-label': 'RÉSULTAT GRATUIT',
+      'unlock-title': '🔓 Débloquez le rapport complet',
+      'unlock-desc': 'Score détaillé, red flags, problèmes connus, checklist visite, questions vendeur, taxe GE, prix de négociation — envoyé en PDF par email.',
+      'btn-single': '1 rapport — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
+      'placeholder': 'https://www.autoscout24.ch/fr/d/...'
+    },
+    de: {
+      'hero-badge': '⭐ KI-Analyse · Schweizer Markt · Ergebnis in 30 Sekunden',
+      'hero-p': 'Fügen Sie den Link einer AutoScout24, Ricardo, Tutti oder Anibis-Anzeige ein und erhalten Sie eine vollständige Analyse.',
+      'promo-text': '🔥 Einführungsangebot — 9 CHF statt 12 CHF',
+      'promo-sub': 'Nur 7 Tage · Automatisch angewendet',
+      'form-title': '🔍 Anzeige analysieren',
+      'btn-analyse': 'Analysieren →',
+      'form-hint': '⚡ Kostenloses Ergebnis in 30 Sekunden · Ohne Registrierung',
+      'stat1': 'Berichte erstellt', 'stat2': 'Kundenzufriedenheit', 'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen',
+      'how-title': 'Wie funktioniert es?', 'how-sub': 'Einfach, schnell, zuverlässig — in 3 Schritten',
+      'step1-title': 'Link einfügen', 'step1-desc': 'Kopieren Sie die URL einer beliebigen AutoScout24, Ricardo, Tutti oder Anibis-Anzeige.',
+      'step2-title': 'KI analysiert', 'step2-desc': 'Unsere KI analysiert die Anzeige, vergleicht den Preis und erkennt Red Flags in 30 Sekunden.',
+      'step3-title': 'Bericht erhalten', 'step3-desc': 'Ein vollständiger PDF-Bericht mit Score, Urteil, Besichtigungscheckliste und empfohlenem Verhandlungspreis.',
+      'test-title': 'Was unsere Kunden sagen', 'test-sub': 'Echte Einsparungen dank EasyCarCheck',
+      't1-text': '"Ich wollte einen BMW M135i für 28\'000 CHF kaufen. EasyCarCheck warnte mich vor einem Steuerkettenproblem. Ich habe auf 25\'500 CHF verhandelt. 2\'500 CHF gespart!"',
+      't2-text': '"Ultradetaillierter Bericht für 12 CHF. Das PDF ist wirklich professionell. Der Verkäufer hat den Preis nach meinem Bericht gesenkt."',
+      't3-text': '"Ich habe 5 Autos mit dem Pack verglichen. Analyse in 30 Sekunden, Red Flags klar angezeigt. Ich empfehle es jedem, der ein Gebrauchtfahrzeug kauft."',
+      'faq-title': 'Häufige Fragen', 'faq-sub': 'Alles was Sie wissen müssen',
+      'faq1-q': 'Wie funktioniert die Analyse?', 'faq1-a': 'Unsere KI analysiert automatisch den Inhalt der Anzeige und vergleicht ihn mit Schweizer Marktdaten. Sie erkennt Red Flags und berechnet einen empfohlenen Verhandlungspreis.',
+      'faq2-q': 'Welche Webseiten sind kompatibel?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de und Leboncoin.fr.',
+      'faq3-q': 'Wie lange dauert die Analyse?', 'faq3-a': 'Die kostenlose Analyse wird in etwa 30 Sekunden angezeigt. Der PDF-Bericht wird per E-Mail in 1-2 Minuten gesendet.',
+      'faq4-q': 'Wie lange sind Berichte gültig?', 'faq4-a': 'Jeder Bericht oder jedes Pack ist ab Kaufdatum 6 Monate gültig.',
+      'faq5-q': 'Ersetzt der Bericht eine physische Inspektion?', 'faq5-a': 'Nein. EasyCarCheck ist ein Entscheidungshilfe-Tool. Wir empfehlen immer eine physische Inspektion vor dem Kauf.',
+      'faq6-q': 'Wie erhalte ich meinen Bericht?', 'faq6-a': 'Nach der Zahlung geben Sie Ihre E-Mail-Adresse ein und Ihr PDF-Bericht wird direkt zugesendet.',
+      'pricing-title': 'Einfache und transparente Preise', 'pricing-sub': 'Zahlen Sie nur was Sie brauchen · 6 Monate gültig',
+      'p0-title': 'Kostenlos', 'p0-f1': 'Gesamtscore /10', 'p0-f2': 'Urteil Kaufen/Verhandeln/Meiden', 'p0-f3': 'Sofortiges Ergebnis', 'p0-btn': 'Starten',
+      'p1-badge': '⭐ Am beliebtesten', 'p1-title': 'Vollständiger Bericht', 'p1-period': 'CHF · Einführungsangebot',
+      'p1-f1': 'Vollständiger PDF-Bericht', 'p1-f2': 'Red Flags & bekannte Probleme', 'p1-f3': 'Besichtigungscheckliste', 'p1-f4': 'Empfohlener Verhandlungspreis', 'p1-f5': 'Kanton Genf Steuer', 'p1-f6': 'E-Mail-Versand', 'p1-btn': 'Bericht erhalten',
+      'p2-title': '3 Berichte Pack', 'p2-period': 'CHF · 9 CHF/Bericht', 'p2-f1': '3 vollständige PDF-Berichte', 'p2-f2': '6 Monate gültig', 'p2-f3': 'Ideal zum Vergleichen', 'p2-btn': 'Pack wählen',
+      'p3-title': '5 Berichte Pack', 'p3-period': 'CHF · 8 CHF/Bericht', 'p3-f1': '5 vollständige PDF-Berichte', 'p3-f2': '6 Monate gültig', 'p3-f3': 'Bestes Preis-Leistungs-Verhältnis', 'p3-btn': 'Pack wählen',
+      'f-how': 'Wie es funktioniert', 'f-pricing': 'Preise', 'f-faq': 'FAQ', 'f-legal': 'Impressum', 'f-cgu': 'AGB', 'f-privacy': 'Datenschutz', 'f-contact': 'Kontakt',
+      'loading-text': 'Analyse läuft... ~30 Sekunden',
+      'result-label': 'KOSTENLOSES ERGEBNIS',
+      'unlock-title': '🔓 Vollständigen Bericht freischalten',
+      'unlock-desc': 'Detaillierter Score, Red Flags, bekannte Probleme, Besichtigungscheckliste, Verkäuferfragen, GE-Steuer, Verhandlungspreis — als PDF per E-Mail.',
+      'btn-single': '1 Bericht — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
+      'placeholder': 'https://www.autoscout24.ch/de/d/...'
+    },
+    it: {
+      'hero-badge': '⭐ Analisi IA · Mercato Svizzero · Risultato in 30 secondi',
+      'hero-p': 'Incolla il link dell\'annuncio AutoScout24, Ricardo, Tutti o Anibis e ottieni un\'analisi completa con punteggio, red flag e prezzo di negoziazione.',
+      'promo-text': '🔥 Offerta di lancio — 9 CHF invece di 12 CHF',
+      'promo-sub': 'Solo 7 giorni · Applicato automaticamente',
+      'form-title': '🔍 Analizza il tuo annuncio',
+      'btn-analyse': 'Analizza →',
+      'form-hint': '⚡ Risultato gratuito in 30 secondi · Senza registrazione',
+      'stat1': 'Rapporti generati', 'stat2': 'Soddisfazione cliente', 'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili',
+      'how-title': 'Come funziona?', 'how-sub': 'Semplice, veloce, affidabile — in 3 passi',
+      'step1-title': 'Incolla il link', 'step1-desc': 'Copia l\'URL di qualsiasi annuncio AutoScout24, Ricardo, Tutti o Anibis.',
+      'step2-title': 'L\'IA analizza', 'step2-desc': 'La nostra IA analizza l\'annuncio, confronta il prezzo e rileva i red flag in 30 secondi.',
+      'step3-title': 'Ricevi il rapporto', 'step3-desc': 'Un rapporto PDF completo con punteggio, verdetto, checklist visita e prezzo di negoziazione suggerito.',
+      'test-title': 'Cosa dicono i nostri clienti', 'test-sub': 'Risparmi reali grazie a EasyCarCheck',
+      't1-text': '"Stavo per comprare una BMW M135i a 28\'000 CHF. EasyCarCheck mi ha avvisato di un problema alla catena di distribuzione. Ho negoziato a 25\'500 CHF. 2\'500 CHF risparmiati!"',
+      't2-text': '"Rapporto ultra completo per 12 CHF. Il PDF è davvero professionale. Il venditore ha accettato di abbassare il prezzo dopo che gli ho mostrato il rapporto."',
+      't3-text': '"Ho confrontato 5 auto con il pack. Analisi in 30 secondi per auto, red flag chiaramente indicati. Lo consiglio a chiunque acquisti un\'auto usata."',
+      'faq-title': 'Domande frequenti', 'faq-sub': 'Tutto quello che devi sapere',
+      'faq1-q': 'Come funziona l\'analisi?', 'faq1-a': 'La nostra IA analizza automaticamente il contenuto dell\'annuncio e lo confronta con i dati del mercato svizzero. Rileva i red flag e calcola un prezzo di negoziazione suggerito.',
+      'faq2-q': 'Quali siti sono compatibili?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de e Leboncoin.fr.',
+      'faq3-q': 'Quanto tempo richiede l\'analisi?', 'faq3-a': 'L\'analisi gratuita viene visualizzata in circa 30 secondi. Il rapporto PDF viene inviato via email in 1-2 minuti.',
+      'faq4-q': 'Quanto durano i rapporti?', 'faq4-a': 'Ogni rapporto o pack è valido 6 mesi dalla data di acquisto.',
+      'faq5-q': 'Il rapporto sostituisce un\'ispezione fisica?', 'faq5-a': 'No. EasyCarCheck è uno strumento di supporto decisionale. Raccomandiamo sempre un\'ispezione fisica prima dell\'acquisto.',
+      'faq6-q': 'Come ricevo il mio rapporto?', 'faq6-a': 'Dopo il pagamento, inserisci la tua email e il tuo rapporto PDF ti verrà inviato direttamente.',
+      'pricing-title': 'Prezzi semplici e trasparenti', 'pricing-sub': 'Paga solo ciò di cui hai bisogno · Valido 6 mesi',
+      'p0-title': 'Gratuito', 'p0-f1': 'Punteggio globale /10', 'p0-f2': 'Verdetto Acquistare/Trattare/Evitare', 'p0-f3': 'Risultato istantaneo', 'p0-btn': 'Inizia',
+      'p1-badge': '⭐ Il più popolare', 'p1-title': 'Rapporto completo', 'p1-period': 'CHF · Offerta di lancio',
+      'p1-f1': 'Rapporto PDF completo', 'p1-f2': 'Red flag & problemi noti', 'p1-f3': 'Checklist visita', 'p1-f4': 'Prezzo di negoziazione suggerito', 'p1-f5': 'Tassa cantonale GE', 'p1-f6': 'Invio per email', 'p1-btn': 'Ottieni il rapporto',
+      'p2-title': 'Pack 3 rapporti', 'p2-period': 'CHF · 9 CHF/rapporto', 'p2-f1': '3 rapporti PDF completi', 'p2-f2': 'Valido 6 mesi', 'p2-f3': 'Ideale per confrontare', 'p2-btn': 'Scegli questo pack',
+      'p3-title': 'Pack 5 rapporti', 'p3-period': 'CHF · 8 CHF/rapporto', 'p3-f1': '5 rapporti PDF completi', 'p3-f2': 'Valido 6 mesi', 'p3-f3': 'Miglior rapporto qualità/prezzo', 'p3-btn': 'Scegli questo pack',
+      'f-how': 'Come funziona', 'f-pricing': 'Prezzi', 'f-faq': 'FAQ', 'f-legal': 'Note legali', 'f-cgu': 'CGU', 'f-privacy': 'Privacy', 'f-contact': 'Contatto',
+      'loading-text': 'Analisi in corso... ~30 secondi',
+      'result-label': 'RISULTATO GRATUITO',
+      'unlock-title': '🔓 Sblocca il rapporto completo',
+      'unlock-desc': 'Punteggio dettagliato, red flag, problemi noti, checklist visita, domande al venditore, tassa GE, prezzo di negoziazione — inviato in PDF via email.',
+      'btn-single': '1 rapporto — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
+      'placeholder': 'https://www.autoscout24.ch/it/d/...'
+    },
+    en: {
+      'hero-badge': '⭐ AI Analysis · Swiss Market · Result in 30 seconds',
+      'hero-p': 'Paste the link of any AutoScout24, Ricardo, Tutti or Anibis listing and get a complete analysis with score, red flags and negotiation price.',
+      'promo-text': '🔥 Launch offer — 9 CHF instead of 12 CHF',
+      'promo-sub': 'For 7 days only · Automatically applied',
+      'form-title': '🔍 Analyze your listing',
+      'btn-analyse': 'Analyze →',
+      'form-hint': '⚡ Free result in 30 seconds · No registration required',
+      'stat1': 'Reports generated', 'stat2': 'Customer satisfaction', 'stat3': 'Analysis time', 'stat4': 'Available languages',
+      'how-title': 'How does it work?', 'how-sub': 'Simple, fast, reliable — in 3 steps',
+      'step1-title': 'Paste the link', 'step1-desc': 'Copy the URL of any AutoScout24, Ricardo, Tutti or Anibis listing.',
+      'step2-title': 'AI analyzes', 'step2-desc': 'Our AI analyzes the listing, compares the price and detects red flags in 30 seconds.',
+      'step3-title': 'Receive the report', 'step3-desc': 'A complete PDF report with score, verdict, visit checklist and suggested negotiation price.',
+      'test-title': 'What our customers say', 'test-sub': 'Real savings thanks to EasyCarCheck',
+      't1-text': '"I was about to buy a BMW M135i for 28\'000 CHF. EasyCarCheck warned me about a timing chain issue. I negotiated down to 25\'500 CHF. 2\'500 CHF saved!"',
+      't2-text': '"Ultra-complete report for 12 CHF. The PDF is truly professional. The seller agreed to lower the price after I showed them the report."',
+      't3-text': '"I compared 5 cars with the pack. Analysis in 30 seconds per car, red flags clearly indicated. I recommend it to anyone buying a used car."',
+      'faq-title': 'Frequently asked questions', 'faq-sub': 'Everything you need to know',
+      'faq1-q': 'How does the analysis work?', 'faq1-a': 'Our AI automatically analyzes the listing content and compares it with Swiss market data. It detects red flags and calculates a suggested negotiation price.',
+      'faq2-q': 'Which websites are compatible?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de and Leboncoin.fr.',
+      'faq3-q': 'How long does the analysis take?', 'faq3-a': 'The free analysis is displayed in about 30 seconds. The PDF report is sent by email in 1-2 minutes.',
+      'faq4-q': 'How long are reports valid?', 'faq4-a': 'Each report or pack is valid for 6 months from the purchase date.',
+      'faq5-q': 'Does the report replace a physical inspection?', 'faq5-a': 'No. EasyCarCheck is a decision support tool. We always recommend a physical inspection before any purchase.',
+      'faq6-q': 'How do I receive my report?', 'faq6-a': 'After payment, enter your email address and your PDF report will be sent directly to you.',
+      'pricing-title': 'Simple and transparent pricing', 'pricing-sub': 'Pay only for what you need · Valid 6 months',
+      'p0-title': 'Free', 'p0-f1': 'Global score /10', 'p0-f2': 'Verdict Buy/Negotiate/Avoid', 'p0-f3': 'Instant result', 'p0-btn': 'Get started',
+      'p1-badge': '⭐ Most popular', 'p1-title': 'Full report', 'p1-period': 'CHF · Launch offer',
+      'p1-f1': 'Complete PDF report', 'p1-f2': 'Red flags & known issues', 'p1-f3': 'Visit checklist', 'p1-f4': 'Suggested negotiation price', 'p1-f5': 'Geneva cantonal tax', 'p1-f6': 'Sent by email', 'p1-btn': 'Get the report',
+      'p2-title': '3 reports pack', 'p2-period': 'CHF · 9 CHF/report', 'p2-f1': '3 complete PDF reports', 'p2-f2': 'Valid 6 months', 'p2-f3': 'Ideal for comparing', 'p2-btn': 'Choose this pack',
+      'p3-title': '5 reports pack', 'p3-period': 'CHF · 8 CHF/report', 'p3-f1': '5 complete PDF reports', 'p3-f2': 'Valid 6 months', 'p3-f3': 'Best value for money', 'p3-btn': 'Choose this pack',
+      'f-how': 'How it works', 'f-pricing': 'Pricing', 'f-faq': 'FAQ', 'f-legal': 'Legal notice', 'f-cgu': 'Terms', 'f-privacy': 'Privacy', 'f-contact': 'Contact',
+      'loading-text': 'Analyzing... ~30 seconds',
+      'result-label': 'FREE RESULT',
+      'unlock-title': '🔓 Unlock the full report',
+      'unlock-desc': 'Detailed score, red flags, known issues, visit checklist, seller questions, GE tax, negotiation price — sent as PDF by email.',
+      'btn-single': '1 report — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
+      'placeholder': 'https://www.autoscout24.ch/en/d/...'
+    }
+  };
+
+  function setLangue(langue, btn) {
     selectedLangue = langue;
-    document.querySelectorAll('.langue-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    const t = translations[langue];
+    if (!t) return;
+    Object.keys(t).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (id === 'hero-h1') { el.innerHTML = t[id]; }
+        else if (id === 'placeholder') { document.getElementById('urlInput').placeholder = t[id]; }
+        else { el.textContent = t[id]; }
+      }
+    });
+    document.documentElement.lang = langue;
+  }
+
+  function toggleFaq(item) {
+    item.classList.toggle('open');
   }
 
   async function analyserGratuit() {
     const url = document.getElementById('urlInput').value.trim();
-    if (!url) { alert('Veuillez coller un lien d\'annonce'); return; }
-    
+    if (!url) { alert(selectedLangue === 'fr' ? 'Veuillez coller un lien d\'annonce' : 'Please paste a listing URL'); return; }
     currentUrl = url;
     document.getElementById('loading').classList.add('show');
     document.getElementById('resultBox').classList.remove('show');
-
     try {
       const response = await fetch(`${BACKEND_URL}/analyse-gratuite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, langue: selectedLangue })
       });
-
       const data = await response.json();
-      
       document.getElementById('loading').classList.remove('show');
-      document.getElementById('resultTitle').textContent = `${data.marque} ${data.modele} ${data.annee} — ${data.prix}`;
+      document.getElementById('resultTitle').textContent = `${data.marque} ${data.modele} ${data.annee}`;
+      document.getElementById('resultPrice').textContent = data.prix ? `${data.prix} CHF` : '';
       document.getElementById('scoreNum').textContent = data.score_global;
-      
+      const scoreCircle = document.getElementById('scoreCircle');
+      const c = data.score_global >= 8 ? '#28a745' : data.score_global >= 5 ? '#ffc107' : '#dc3545';
+      scoreCircle.style.borderColor = c;
+      document.getElementById('scoreNum').style.color = c;
       const verdictBadge = document.getElementById('verdictBadge');
       verdictBadge.textContent = data.verdict;
       verdictBadge.className = `verdict-badge verdict-${data.verdict}`;
-      
       document.getElementById('resultBox').classList.add('show');
+      document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (err) {
       document.getElementById('loading').classList.remove('show');
       alert('Erreur lors de l\'analyse. Vérifiez le lien et réessayez.');
@@ -294,16 +627,14 @@
 
   async function payerRapport(pack) {
     const url = currentUrl || document.getElementById('urlInput').value.trim();
-    const email = prompt('Entrez votre adresse email pour recevoir le rapport :');
+    const email = prompt(selectedLangue === 'fr' ? 'Entrez votre adresse email pour recevoir le rapport :' : 'Enter your email to receive the report:');
     if (!email || !url) return;
-
     try {
       const response = await fetch(`${BACKEND_URL}/create-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, email, langue: selectedLangue, pack })
       });
-
       const data = await response.json();
       if (data.url) window.location.href = data.url;
     } catch (err) {
@@ -311,6 +642,5 @@
     }
   }
 </script>
-
 </body>
 </html>
