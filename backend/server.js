@@ -15,15 +15,15 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 async function scrapeAnnonce(url) {
   try {
     const response = await axios.get('https://api.zenrows.com/v1/', {
-  params: {
-    apikey: process.env.ZENROWS_API_KEY,
-    url: url,
-    js_render: 'true',
-    premium_proxy: 'true',
-    wait: '5000'
-  },
-  timeout: 90000
-});
+      params: {
+        apikey: process.env.ZENROWS_API_KEY,
+        url: url,
+        js_render: 'true',
+        premium_proxy: 'true',
+        wait: '5000'
+      },
+      timeout: 90000
+    });
 
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
@@ -40,6 +40,7 @@ async function scrapeAnnonce(url) {
     return { html: `URL: ${url}`, url: url };
   }
 }
+
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
@@ -66,11 +67,13 @@ Contenu: ${scrapedData.html}
 - Détecte les red flags dans la description vendeur
 - Si "Zylinderkopf" mentionné → red flag majeur : "Culasse remplacée" (traduis TOUJOURS en français)
 - Traduis TOUS les termes techniques allemands ou italiens en français dans le rapport
+- Traduis la description du vendeur dans la langue du rapport, même si elle est en allemand ou italien
 - Pour évaluer le kilométrage : kilométrage NORMAL = moins de 20000 km/an. Ne qualifier de "élevé" que si plus de 25000 km/an
 - La boîte "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
 - Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur
 - Calcule une fourchette prix marché suisse réaliste (min et max)
 - Estime le coût entretien année 1 et total sur 3 ans
+
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
 RÈGLES ABSOLUES :
@@ -113,8 +116,9 @@ RÈGLES ABSOLUES :
   "cout_entretien_annee1": 0,
   "cout_total_3ans": 0,
   "taxe_cantonale_ge": 0,
-"resume_verdict": ""
+  "resume_verdict": ""
 }`;
+
   const response = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
@@ -161,7 +165,8 @@ async function genererPDF(analyse, reportNumber, url) {
     'NEGOTIATE': '#ffc107', 'BUY': '#28a745', 'AVOID': '#dc3545',
     'ACQUISTARE': '#28a745', 'TRATTARE': '#ffc107', 'EVITARE': '#dc3545'
   };
-  const color = verdictColor[analyse.verdict] || '#ffc107';
+  const colour = (score) => score >= 8 ? '#28a745' : score >= 5 ? '#ffc107' : '#dc3545';
+  const badge = (score) => score >= 8 ? 'EXCELLENT' : score >= 5 ? 'MOYEN' : 'À ÉVITER';
 
   const html = `<!DOCTYPE html>
 <html>
@@ -169,135 +174,204 @@ async function genererPDF(analyse, reportNumber, url) {
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #0D1B2A; color: #fff; }
-  .page { padding: 40px; min-height: 297mm; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-  .logo { font-size: 24px; font-weight: bold; color: #fff; }
+  body { font-family: Arial, sans-serif; background: #0a0e1a; color: #fff; }
+  .page { padding: 0; }
+  .header { background: linear-gradient(135deg, #0d1b35 0%, #162040 50%, #0d1b35 100%); padding: 24px; border-bottom: 2px solid #00B4D8; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .logo { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #fff; }
   .logo span { color: #00B4D8; }
-  .report-num { color: #aaa; font-size: 12px; }
-  .title { font-size: 48px; font-weight: bold; margin-bottom: 5px; }
-  .subtitle { color: #00B4D8; font-size: 32px; font-weight: bold; margin-bottom: 30px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-  .card { background: #1A3A5C; border-radius: 8px; padding: 15px; }
-  .card-label { font-size: 10px; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
-  .card-value { font-size: 18px; font-weight: bold; }
-  .verdict-box { background: #1A3A5C; border-radius: 8px; padding: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-  .verdict-value { font-size: 36px; font-weight: bold; color: ${color}; }
-  .scores { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-  .score-card { background: #1A3A5C; border-radius: 8px; padding: 15px; text-align: center; }
-  .score-num { font-size: 48px; font-weight: bold; color: ${color}; }
-  .score-label { font-size: 10px; color: #aaa; text-transform: uppercase; }
-  .section { margin-bottom: 30px; }
-  .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #00B4D8; }
-  .item { padding: 8px 0; border-bottom: 1px solid #1A3A5C; font-size: 13px; }
-  .item:before { content: "✓ "; color: #28a745; }
-  .item.negative:before { content: "⚠ "; color: #ffc107; }
-  .item.redflag:before { content: "✗ "; color: #dc3545; }
-  .footer { text-align: center; color: #aaa; font-size: 10px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #1A3A5C; }
+  .report-num { font-size: 11px; color: #8fa8c8; }
+  .header-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .car-brand-label { font-size: 11px; color: #8fa8c8; letter-spacing: 3px; margin-bottom: 4px; }
+  .car-brand { font-size: 28px; font-weight: 900; letter-spacing: 2px; line-height: 1.1; }
+  .car-model { font-size: 18px; color: #00B4D8; font-weight: 700; margin-top: 4px; }
+  .score-box { display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px 20px; min-width: 110px; }
+  .score-label { font-size: 9px; color: #8fa8c8; letter-spacing: 2px; margin-bottom: 4px; }
+  .score-num { font-size: 52px; font-weight: 900; line-height: 1; }
+  .score-denom { font-size: 12px; color: #8fa8c8; }
+  .score-badge { margin-top: 6px; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #000; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #1a2540; }
+  .cell { padding: 14px; border-right: 1px solid #1a2540; }
+  .cell:last-child { border-right: none; }
+  .cell-label { font-size: 9px; color: #8fa8c8; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+  .cell-value { font-size: 15px; font-weight: 700; }
+  .cell-value-sm { font-size: 13px; font-weight: 600; }
+  .scores-bar { padding: 14px 20px; background: #0d1525; border-bottom: 1px solid #1a2540; }
+  .scores-bar-title { font-size: 10px; color: #8fa8c8; letter-spacing: 1px; margin-bottom: 10px; }
+  .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .score-item { text-align: center; }
+  .score-item-label { font-size: 9px; color: #8fa8c8; margin-bottom: 4px; }
+  .score-item-num { font-size: 22px; font-weight: 800; }
+  .score-bar-bg { height: 4px; background: #1a2540; border-radius: 2px; margin-top: 4px; }
+  .score-bar-fill { height: 4px; border-radius: 2px; }
+  .section { padding: 20px; border-bottom: 1px solid #1a2540; }
+  .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 4px; height: 18px; border-radius: 2px; }
+  .section-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+  .description-box { background: #0d1525; border-radius: 8px; padding: 12px; font-size: 12px; color: #c8d8e8; line-height: 1.6; border-left: 3px solid #00B4D8; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .point-card { background: #0d1525; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #c8d8e8; }
+  .checklist-item { background: #0d1525; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #c8d8e8; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .costs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .cost-card { background: #0d1525; border-radius: 8px; padding: 14px; text-align: center; }
+  .cost-label { font-size: 9px; color: #8fa8c8; letter-spacing: 1px; margin-bottom: 6px; }
+  .cost-value { font-size: 20px; font-weight: 800; }
+  .cost-unit { font-size: 10px; color: #8fa8c8; }
+  .redflag-section { padding: 20px; background: linear-gradient(135deg, #1a0a0a 0%, #2a0f0f 100%); border-bottom: 1px solid #dc3545; }
+  .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; display: inline-block; margin-bottom: 10px; }
+  .redflag-card { background: rgba(220,53,69,0.1); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.4); margin-bottom: 6px; }
+  .redflag-title { font-size: 12px; font-weight: 600; color: #ff6b6b; }
+  .verdict-section { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #0d1b35 0%, #162040 100%); }
+  .verdict-label { font-size: 10px; color: #8fa8c8; letter-spacing: 2px; margin-bottom: 6px; }
+  .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
+  .verdict-desc { font-size: 11px; color: #8fa8c8; margin-top: 6px; max-width: 300px; line-height: 1.5; }
+  .footer { margin-top: 16px; padding: 12px 20px 20px; border-top: 1px solid #1a2540; font-size: 9px; color: #8fa8c8; text-align: center; line-height: 1.6; }
 </style>
 </head>
 <body>
 <div class="page">
+
   <div class="header">
-    <div class="logo">🚗 EASY<span>CAR</span>CHECK</div>
-    <div class="report-num">Rapport #${reportNumber} · JUIN 2026</div>
-  </div>
-  <div class="title">${analyse.marque?.toUpperCase()}</div>
-  <div class="subtitle">${analyse.modele}</div>
- <div class="grid">
-    <div class="card"><div class="card-label">ANNÉE</div><div class="card-value">${analyse.annee}</div></div>
-    <div class="card"><div class="card-label">KILOMÉTRAGE</div><div class="card-value">${analyse.kilometrage}</div></div>
-    <div class="card"><div class="card-label">PRIX DEMANDÉ</div><div class="card-value">${analyse.prix} CHF</div></div>
-    <div class="card"><div class="card-label">CARBURANT</div><div class="card-value">${analyse.carburant}</div></div>
-    <div class="card"><div class="card-label">BOÎTE</div><div class="card-value">${analyse.boite}</div></div>
-    <div class="card"><div class="card-label">PUISSANCE</div><div class="card-value">${analyse.puissance}</div></div>
-    <div class="card"><div class="card-label">COULEUR</div><div class="card-value">${analyse.couleur}</div></div>
-    <div class="card"><div class="card-label">TRANSMISSION</div><div class="card-value">${analyse.transmission}</div></div>
-    <div class="card"><div class="card-label">FOURCHETTE MARCHÉ</div><div class="card-value">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div></div>
-  </div>
-  <div class="verdict-box">
-    <div>
-      <div style="font-size:10px;color:#aaa;">⭐ VERDICT EASYCARCHECK</div>
-      <div class="verdict-value">${analyse.verdict}</div>
-      <div style="color:#aaa;font-size:12px;">Analyse spécialisée marché suisse</div>
+    <div class="header-top">
+      <div class="logo">🚗 EASY<span>CAR</span>CHECK</div>
+      <div class="report-num">Rapport #${reportNumber} · JUIN 2026</div>
     </div>
-    <div style="text-align:right;">
-      <div style="font-size:10px;color:#aaa;">ÉCONOMIE POTENTIELLE</div>
-      <div style="font-size:20px;font-weight:bold;color:#00B4D8;">${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
+    <div class="header-main">
+      <div>
+        <div class="car-brand-label">MARQUE & MODÈLE</div>
+        <div class="car-brand">${analyse.marque?.toUpperCase()}</div>
+        <div class="car-model">${analyse.modele?.toUpperCase()}</div>
+      </div>
+      <div class="score-box" style="border: 2px solid ${colour(analyse.score_global)};">
+        <div class="score-label">SCORE GLOBAL</div>
+        <div class="score-num" style="color: ${colour(analyse.score_global)};">${analyse.score_global}</div>
+        <div class="score-denom">/10</div>
+        <div class="score-badge" style="background: ${colour(analyse.score_global)};">${badge(analyse.score_global)}</div>
+      </div>
     </div>
   </div>
-  <div class="scores">
-    <div class="score-card"><div class="score-num">${analyse.score_prix}</div><div>/10</div><div class="score-label">PRIX</div></div>
-    <div class="score-card"><div class="score-num">${analyse.score_fiabilite}</div><div>/10</div><div class="score-label">FIABILITÉ</div></div>
-    <div class="score-card"><div class="score-num">${analyse.score_entretien}</div><div>/10</div><div class="score-label">ENTRETIEN</div></div>
-    <div class="score-card"><div class="score-num">${analyse.score_global}</div><div>/10</div><div class="score-label">GLOBAL</div></div>
+
+  <div class="scores-bar">
+    <div class="scores-bar-title">DÉTAIL DES SCORES</div>
+    <div class="scores-grid">
+      <div class="score-item">
+        <div class="score-item-label">PRIX</div>
+        <div class="score-item-num" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix}</div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_prix * 10}%; background: ${colour(analyse.score_prix)};"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="score-item-label">FIABILITÉ</div>
+        <div class="score-item-num" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_fiabilite * 10}%; background: ${colour(analyse.score_fiabilite)};"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="score-item-label">ENTRETIEN</div>
+        <div class="score-item-num" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_entretien * 10}%; background: ${colour(analyse.score_entretien)};"></div></div>
+      </div>
+    </div>
   </div>
+
+  <div class="grid-4">
+    <div class="cell"><div class="cell-label">ANNÉE</div><div class="cell-value">${analyse.annee}</div></div>
+    <div class="cell"><div class="cell-label">KILOMÉTRAGE</div><div class="cell-value">${analyse.kilometrage} <span style="font-size:10px;color:#8fa8c8;">km</span></div></div>
+    <div class="cell"><div class="cell-label">PRIX DEMANDÉ</div><div class="cell-value" style="color:#00B4D8;">${analyse.prix} <span style="font-size:10px;">CHF</span></div></div>
+    <div class="cell"><div class="cell-label">PUISSANCE</div><div class="cell-value">${analyse.puissance} <span style="font-size:10px;color:#8fa8c8;">PS</span></div></div>
+  </div>
+
+  <div class="grid-4" style="border-bottom: 1px solid #1a2540;">
+    <div class="cell"><div class="cell-label">CARBURANT</div><div class="cell-value-sm">${analyse.carburant}</div></div>
+    <div class="cell"><div class="cell-label">BOÎTE</div><div class="cell-value-sm">${analyse.boite}</div></div>
+    <div class="cell"><div class="cell-label">TRANSMISSION</div><div class="cell-value-sm">${analyse.transmission}</div></div>
+    <div class="cell"><div class="cell-label">COULEUR</div><div class="cell-value-sm">${analyse.couleur}</div></div>
+  </div>
+
   <div class="section">
-    <div class="section-title">📋 DESCRIPTION VENDEUR</div>
-    <div class="item">${analyse.description_vendeur}</div>
+    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">DESCRIPTION VENDEUR</div></div>
+    <div class="description-box">${analyse.description_vendeur}</div>
   </div>
+
   <div class="section">
-    <div class="section-title">🔧 POINTS CLÉS</div>
-    ${(analyse.points_positifs || []).map(p => `<div class="item">${p}</div>`).join('')}
-    ${(analyse.points_negatifs || []).map(p => `<div class="item negative">${p}</div>`).join('')}
+    <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">POINTS CLÉS</div></div>
+    <div class="grid-2">
+      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745;">✓ ${p}</div>`).join('')}
+      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #ffc107;">⚠ ${p}</div>`).join('')}
+    </div>
   </div>
+
   ${analyse.options?.length > 0 ? `
   <div class="section">
-    <div class="section-title">⚙️ ÉQUIPEMENTS & OPTIONS</div>
-    ${analyse.options.map(o => `<div class="item">${o}</div>`).join('')}
-  </div>` : ''}
-  <div class="section">
-    <div class="section-title">💰 COÛTS ESTIMÉS</div>
-    <div class="card" style="display:inline-block;min-width:200px;margin-right:15px;">
-      <div class="card-label">ENTRETIEN ANNÉE 1</div>
-      <div class="card-value" style="color:#00B4D8;">${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
+    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">ÉQUIPEMENTS & OPTIONS</div></div>
+    <div class="grid-2">
+      ${analyse.options.map(o => `<div class="point-card">⚙ ${o}</div>`).join('')}
     </div>
-    <div class="card" style="display:inline-block;min-width:200px;">
-      <div class="card-label">COÛT TOTAL 3 ANS</div>
-      <div class="card-value" style="color:#00B4D8;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
+  </div>` : ''}
+
+  <div class="section">
+    <div class="section-title"><div class="section-bar" style="background:#ffc107;"></div><div class="section-label" style="color:#ffc107;">COÛTS ESTIMÉS</div></div>
+    <div class="costs-grid">
+      <div class="cost-card" style="border-top:3px solid #ffc107;">
+        <div class="cost-label">ENTRETIEN AN 1</div>
+        <div class="cost-value" style="color:#ffc107;">${analyse.cout_entretien_annee1?.toLocaleString()}</div>
+        <div class="cost-unit">CHF</div>
+      </div>
+      <div class="cost-card" style="border-top:3px solid #ffc107;">
+        <div class="cost-label">TOTAL 3 ANS</div>
+        <div class="cost-value" style="color:#ffc107;">${analyse.cout_total_3ans?.toLocaleString()}</div>
+        <div class="cost-unit">CHF</div>
+      </div>
+      <div class="cost-card" style="border-top:3px solid #00B4D8;">
+        <div class="cost-label">TAXE GE / AN</div>
+        <div class="cost-value" style="color:#00B4D8;">${analyse.taxe_cantonale_ge?.toLocaleString()}</div>
+        <div class="cost-unit">CHF</div>
+      </div>
     </div>
   </div>
+
   ${analyse.red_flags?.length > 0 ? `
-  <div class="section">
-    <div class="section-title">🚨 RED FLAGS</div>
-    ${analyse.red_flags.map(r => `<div class="item redflag">${r}</div>`).join('')}
+  <div class="redflag-section">
+    <div class="redflag-badge">🚨 RED FLAGS</div>
+    ${analyse.red_flags.map(r => `
+    <div class="redflag-card">
+      <div class="redflag-title">✗ ${r}</div>
+    </div>`).join('')}
   </div>` : ''}
+
   ${analyse.problemes_connus_modele?.length > 0 ? `
-  <div class="section">
-    <div class="section-title">⚠️ PROBLÈMES CONNUS DU MODÈLE</div>
-    ${analyse.problemes_connus_modele.map(p => `<div class="item negative">${p}</div>`).join('')}
+  <div class="section" style="background:#0d1525;">
+    <div class="section-title"><div class="section-bar" style="background:#ffc107;"></div><div class="section-label" style="color:#ffc107;">PROBLÈMES CONNUS DU MODÈLE</div></div>
+    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item"><span style="color:#ffc107;font-weight:700;">⚠</span> ${p}</div>`).join('')}
   </div>` : ''}
+
   <div class="section">
-    <div class="section-title">✅ CHECKLIST VISITE</div>
-    ${(analyse.checklist_visite || []).map(c => `<div class="item">${c}</div>`).join('')}
+    <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">CHECKLIST VISITE</div></div>
+    ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span style="color:#28a745;font-weight:700;">✓</span> ${c}</div>`).join('')}
   </div>
+
   <div class="section">
-    <div class="section-title">❓ QUESTIONS À POSER AU VENDEUR</div>
-    ${(analyse.questions_vendeur || []).map(q => `<div class="item">${q}</div>`).join('')}
+    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">QUESTIONS À POSER AU VENDEUR</div></div>
+    ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item"><span style="color:#00B4D8;font-weight:700;">?</span> ${q}</div>`).join('')}
   </div>
-  <div class="section">
-    <div class="section-title">🗺 TAXE CANTONALE GENÈVE ESTIMÉE</div>
-    <div class="card" style="display:inline-block;min-width:200px;">
-      <div class="card-label">GENÈVE</div>
-      <div class="card-value" style="color:#00B4D8;">${analyse.taxe_cantonale_ge?.toLocaleString()} CHF/an</div>
-    </div>
-  </div>
-  <div class="verdict-box">
+
+  <div class="verdict-section">
     <div>
-      <div style="font-size:10px;color:#aaa;">🏆 VERDICT FINAL</div>
-      <div class="verdict-value">${analyse.verdict}</div>
-      <div style="color:#aaa;font-size:13px;margin-top:10px;max-width:500px;">${analyse.resume_verdict}</div>
+      <div class="verdict-label">🏆 VERDICT FINAL</div>
+      <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#ffc107'};">${analyse.verdict}</div>
+      <div class="verdict-desc">${analyse.resume_verdict}</div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:10px;color:#aaa;">PRIX SUGGÉRÉ</div>
-      <div style="font-size:24px;font-weight:bold;color:#00B4D8;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
+      <div style="font-size:10px;color:#8fa8c8;margin-bottom:4px;">PRIX SUGGÉRÉ</div>
+      <div style="font-size:28px;font-weight:900;color:#00B4D8;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
+      <div style="font-size:10px;color:#28a745;margin-top:4px;">↓ Économie : ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
     </div>
   </div>
-  <div style="font-size:10px;color:#aaa;word-break:break-all;">Source : ${url}</div>
+
   <div class="footer">
+    Source : ${url}<br>
     Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel.<br>
     EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · 🇨🇭 Suisse
   </div>
+
 </div>
 </body>
 </html>`;
@@ -346,7 +420,6 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
 
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK 🚗' }));
 
-// Route test rapport sans paiement
 app.post('/test-rapport', async (req, res) => {
   try {
     const { url, email, langue = 'fr' } = req.body;
@@ -370,7 +443,6 @@ app.post('/test-rapport', async (req, res) => {
   }
 });
 
-// Analyse gratuite
 app.post('/analyse-gratuite', async (req, res) => {
   try {
     const { url, langue = 'fr' } = req.body;
@@ -394,7 +466,6 @@ app.post('/analyse-gratuite', async (req, res) => {
   }
 });
 
-// Créer session Stripe
 app.post('/create-checkout', async (req, res) => {
   try {
     const { url, email, langue = 'fr', pack = 'single' } = req.body;
@@ -427,7 +498,6 @@ app.post('/create-checkout', async (req, res) => {
   }
 });
 
-// Webhook Stripe
 app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
