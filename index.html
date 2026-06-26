@@ -152,6 +152,21 @@
   .footer-links a:hover { color: #00B4D8; }
   .footer-bottom { color: #3a4a5c; font-size: 12px; border-top: 1px solid #1a2540; padding-top: 20px; }
 
+  /* MODAL EMAIL */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay.show { display: flex; }
+  .modal { background: linear-gradient(135deg, #0d1b35, #111827); border: 1px solid #1a2540; border-radius: 20px; padding: 36px; width: 90%; max-width: 420px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+  .modal h3 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+  .modal p { color: #5a7a9a; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+  .modal input[type="email"] { width: 100%; padding: 14px 16px; border-radius: 10px; border: 2px solid #1a2540; background: #060b14; color: #fff; font-size: 15px; outline: none; margin-bottom: 16px; transition: border-color 0.2s; }
+  .modal input[type="email"]:focus { border-color: #00B4D8; }
+  .modal input[type="email"]::placeholder { color: #3a4a5c; }
+  .modal-buttons { display: flex; gap: 10px; }
+  .modal-confirm { flex: 1; padding: 14px; background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+  .modal-confirm:hover { opacity: 0.9; }
+  .modal-cancel { padding: 14px 20px; background: transparent; color: #5a7a9a; border: 1px solid #1a2540; border-radius: 10px; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+  .modal-cancel:hover { border-color: #5a7a9a; color: #fff; }
+
   /* RESPONSIVE */
   @media (max-width: 700px) {
     .hero h1 { font-size: 34px; }
@@ -394,6 +409,18 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="emailModal">
+  <div class="modal">
+    <h3>📧 Recevoir le rapport</h3>
+    <p>Entrez votre adresse email pour recevoir votre rapport PDF complet.</p>
+    <input type="email" id="emailInput" placeholder="votre@email.com" />
+    <div class="modal-buttons">
+      <button class="modal-cancel" onclick="fermerModal()">Annuler</button>
+      <button class="modal-confirm" onclick="confirmerPaiement()">Continuer →</button>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div class="footer-content">
     <div class="footer-logo">🚗 EASY<span>CAR</span>CHECK</div>
@@ -625,15 +652,31 @@
     }
   }
 
-  async function payerRapport(pack) {
+  let selectedPack = 'single';
+
+  function payerRapport(pack) {
     const url = currentUrl || document.getElementById('urlInput').value.trim();
-    const email = prompt(selectedLangue === 'fr' ? 'Entrez votre adresse email pour recevoir le rapport :' : 'Enter your email to receive the report:');
-    if (!email || !url) return;
+    if (!url) { alert('Veuillez d\'abord coller un lien d\'annonce.'); return; }
+    selectedPack = pack;
+    document.getElementById('emailModal').classList.add('show');
+    setTimeout(() => document.getElementById('emailInput').focus(), 100);
+  }
+
+  function fermerModal() {
+    document.getElementById('emailModal').classList.remove('show');
+    document.getElementById('emailInput').value = '';
+  }
+
+  async function confirmerPaiement() {
+    const email = document.getElementById('emailInput').value.trim();
+    const url = currentUrl || document.getElementById('urlInput').value.trim();
+    if (!email || !email.includes('@')) { alert('Veuillez entrer une adresse email valide.'); return; }
+    fermerModal();
     try {
       const response = await fetch(`${BACKEND_URL}/create-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, email, langue: selectedLangue, pack })
+        body: JSON.stringify({ url, email, langue: selectedLangue, pack: selectedPack })
       });
       const data = await response.json();
       if (data.url) window.location.href = data.url;
@@ -641,6 +684,11 @@
       alert('Erreur lors du paiement. Réessayez.');
     }
   }
+
+  // Fermer modal en cliquant dehors
+  document.getElementById('emailModal').addEventListener('click', function(e) {
+    if (e.target === this) fermerModal();
+  });
 </script>
 </body>
 </html>
