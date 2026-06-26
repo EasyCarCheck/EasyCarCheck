@@ -74,6 +74,10 @@ Contenu: ${scrapedData.html}
 - La boîte "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
 - Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur traduite
 - Estime le coût entretien année 1 et total sur 3 ans
+- Génère TOUJOURS au minimum 5 points positifs/négatifs combinés dans points_positifs et points_negatifs
+- Génère TOUJOURS au minimum 5 éléments dans checklist_visite
+- Génère TOUJOURS au minimum 4 questions dans questions_vendeur
+- Génère TOUJOURS au minimum 3 problèmes connus dans problemes_connus_modele
 - La taxe cantonale genevoise dépend du CO2 du véhicule. Estime TOUJOURS un montant réaliste entre 400 et 1200 CHF/an, JAMAIS 0
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
