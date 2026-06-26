@@ -66,19 +66,18 @@ Contenu: ${scrapedData.html}
 - Identifie TOUS les problèmes connus de ce modèle
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent, remplacement 5000-8000 CHF hors garantie, boîte DCT fragile
 - Détecte les red flags dans la description vendeur
-- Si "Zylinderkopf" ou "culasse" mentionné → red flag majeur : "Culasse remplacée" — utilise TOUJOURS le féminin "nouvelle culasse" jamais "nouveau culasse"
-- Traduis INTÉGRALEMENT la description du vendeur en ${langues[langue] || 'français'}, mot par mot, sans laisser aucun mot en allemand ou italien
-- La description vendeur doit être rédigée en phrases claires et lisibles, PAS en liste de mots-clés bruts. Reformule si nécessaire pour que ce soit lisible et professionnel.
-- Traduis TOUS les termes techniques allemands ou italiens en français dans le rapport
-- Pour évaluer le kilométrage : kilométrage NORMAL = moins de 20000 km/an. Ne qualifier de "élevé" que si plus de 25000 km/an
-- La boîte "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
+- Si "Zylinderkopf" ou "culasse" ou "Zylinderkopf" mentionné → red flag OBLIGATOIRE "Culasse remplacée" dans red_flags ET dans points_negatifs
+- Ne jamais mentionner "consommation de carburant élevée" comme point négatif
+- Ne jamais qualifier le kilométrage d'élevé" sauf si plus de 25000 km/an. 54500 km en 2021 = ~13000 km/an = NORMAL
+- Si free service Mercedes actif : cout_entretien_annee1 = 200-300 CHF (liquides uniquement: huile moteur, huile boite, liquide de frein). cout_total_3ans = 600-900 CHF. Mentionner dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes"
+- La boite "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
 - Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur traduite
-- Estime le coût entretien année 1 et total sur 3 ans
-- Génère TOUJOURS au minimum 4 points positifs/négatifs combinés dans points_positifs et points_negatifs
+- Ne jamais inventer des points négatifs absents de l'annonce
+- Génère TOUJOURS au minimum 4 points positifs/négatifs combinés
 - Génère TOUJOURS exactement 4 éléments dans checklist_visite, pas plus
 - Génère TOUJOURS exactement 3 questions dans questions_vendeur, pas plus
 - Génère TOUJOURS au minimum 2 problèmes connus dans problemes_connus_modele, pas plus de 3
-- La taxe cantonale genevoise dépend du CO2 du véhicule. Estime TOUJOURS un montant réaliste entre 400 et 1200 CHF/an, JAMAIS 0
+- La taxe cantonale genevoise entre 400 et 1200 CHF/an, JAMAIS 0
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
@@ -168,7 +167,7 @@ async function genererPDF(analyse, reportNumber, url) {
     'NEGOTIATE': '#d4a00a', 'BUY': '#28a745', 'AVOID': '#dc3545',
     'ACQUISTARE': '#28a745', 'TRATTARE': '#d4a00a', 'EVITARE': '#dc3545'
   };
-  const colour = (score) => score >= 8 ? '#28a745' : score >= 5 ? '#d4a00a' : '#dc3545';
+  const colour = (score) => score >= 7 ? '#28a745' : score >= 5 ? '#d4a00a' : '#dc3545';
   const badge = (score) => score >= 8 ? 'EXCELLENT' : score >= 5 ? 'MOYEN' : 'À ÉVITER';
 
   const html = `<!DOCTYPE html>
@@ -268,19 +267,19 @@ async function genererPDF(analyse, reportNumber, url) {
         <div class="score-item-label">PRIX</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_prix * 10}%; background: ${colour(analyse.score_prix)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix >= 8 ? 'EXCELLENT' : analyse.score_prix >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix >= 8 ? 'EXCELLENT' : analyse.score_prix >= 7 ? 'BIEN ÉVALUÉ' : analyse.score_prix >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">FIABILITÉ</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_fiabilite * 10}%; background: ${colour(analyse.score_fiabilite)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite >= 8 ? 'EXCELLENT' : analyse.score_fiabilite >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite >= 8 ? 'EXCELLENT' : analyse.score_fiabilite >= 7 ? 'BIEN ÉVALUÉ' : analyse.score_fiabilite >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">ENTRETIEN</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_entretien * 10}%; background: ${colour(analyse.score_entretien)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien >= 8 ? 'EXCELLENT' : analyse.score_entretien >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien >= 8 ? 'EXCELLENT' : analyse.score_entretien >= 7 ? 'BIEN ÉVALUÉ' : analyse.score_entretien >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
       </div>
     </div>
   </div>
