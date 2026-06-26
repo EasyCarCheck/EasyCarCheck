@@ -61,18 +61,18 @@ Contenu: ${scrapedData.html}
 - Options listées
 
 ÉTAPE 2 - Analyse approfondie :
-- Compare le prix avec le marché suisse actuel
+- Compare le prix avec le marché suisse actuel et calcule TOUJOURS une fourchette marché min et max réaliste
 - Identifie TOUS les problèmes connus de ce modèle
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent, remplacement 5000-8000 CHF hors garantie, boîte DCT fragile
 - Détecte les red flags dans la description vendeur
 - Si "Zylinderkopf" mentionné → red flag majeur : "Culasse remplacée" (traduis TOUJOURS en français)
+- Traduis INTÉGRALEMENT la description du vendeur en ${langues[langue] || 'français'}, mot par mot, sans laisser aucun mot en allemand ou italien
 - Traduis TOUS les termes techniques allemands ou italiens en français dans le rapport
-- Traduis la description du vendeur dans la langue du rapport, même si elle est en allemand ou italien
 - Pour évaluer le kilométrage : kilométrage NORMAL = moins de 20000 km/an. Ne qualifier de "élevé" que si plus de 25000 km/an
 - La boîte "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
-- Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur
-- Calcule une fourchette prix marché suisse réaliste (min et max)
+- Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur traduite
 - Estime le coût entretien année 1 et total sur 3 ans
+- La taxe cantonale genevoise dépend du CO2 du véhicule. Estime TOUJOURS un montant réaliste entre 400 et 1200 CHF/an, JAMAIS 0
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
@@ -83,6 +83,8 @@ RÈGLES ABSOLUES :
 4. Utilise uniquement des guillemets doubles dans le JSON
 5. Pas de virgule après le dernier élément d'un tableau ou objet
 6. Traduis TOUJOURS tout en ${langues[langue] || 'français'}, aucun mot en allemand ou italien
+7. taxe_cantonale_ge doit TOUJOURS être un nombre entre 400 et 1200, JAMAIS 0
+8. fourchette_marche_min et fourchette_marche_max doivent TOUJOURS être des nombres réalistes
 
 {
   "marque": "",
@@ -206,17 +208,17 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-bar-fill { height: 4px; border-radius: 2px; }
   .section { padding: 20px; border-bottom: 1px solid #1a2540; }
   .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-  .section-bar { width: 4px; height: 18px; border-radius: 2px; }
+  .section-bar { width: 4px; height: 18px; border-radius: 2px; flex-shrink: 0; }
   .section-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
   .description-box { background: #0d1525; border-radius: 8px; padding: 12px; font-size: 12px; color: #c8d8e8; line-height: 1.6; border-left: 3px solid #00B4D8; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .point-card { background: #0d1525; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #c8d8e8; }
   .checklist-item { background: #0d1525; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #c8d8e8; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .costs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .cost-card { background: #0d1525; border-radius: 8px; padding: 14px; text-align: center; }
   .cost-label { font-size: 9px; color: #8fa8c8; letter-spacing: 1px; margin-bottom: 6px; }
-  .cost-value { font-size: 20px; font-weight: 800; }
-  .cost-unit { font-size: 10px; color: #8fa8c8; }
+  .cost-value { font-size: 18px; font-weight: 800; }
+  .cost-unit { font-size: 10px; color: #8fa8c8; margin-top: 2px; }
   .redflag-section { padding: 20px; background: linear-gradient(135deg, #1a0a0a 0%, #2a0f0f 100%); border-bottom: 1px solid #dc3545; }
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; display: inline-block; margin-bottom: 10px; }
   .redflag-card { background: rgba(220,53,69,0.1); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.4); margin-bottom: 6px; }
@@ -225,7 +227,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .verdict-label { font-size: 10px; color: #8fa8c8; letter-spacing: 2px; margin-bottom: 6px; }
   .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
   .verdict-desc { font-size: 11px; color: #8fa8c8; margin-top: 6px; max-width: 300px; line-height: 1.5; }
-  .footer { margin-top: 16px; padding: 12px 20px 20px; border-top: 1px solid #1a2540; font-size: 9px; color: #8fa8c8; text-align: center; line-height: 1.6; }
+  .footer { padding: 12px 20px 20px; border-top: 1px solid #1a2540; font-size: 9px; color: #8fa8c8; text-align: center; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -238,7 +240,7 @@ async function genererPDF(analyse, reportNumber, url) {
     </div>
     <div class="header-main">
       <div>
-        <div class="car-brand-label">MARQUE & MODÈLE</div>
+        <div class="car-brand-label">MARQUE &amp; MODÈLE</div>
         <div class="car-brand">${analyse.marque?.toUpperCase()}</div>
         <div class="car-model">${analyse.modele?.toUpperCase()}</div>
       </div>
@@ -301,29 +303,30 @@ async function genererPDF(analyse, reportNumber, url) {
 
   ${analyse.options?.length > 0 ? `
   <div class="section">
-    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">ÉQUIPEMENTS & OPTIONS</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#00B4D8;"></div><div class="section-label" style="color:#00B4D8;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
     <div class="grid-2">
       ${analyse.options.map(o => `<div class="point-card">⚙ ${o}</div>`).join('')}
     </div>
   </div>` : ''}
 
   <div class="section">
-    <div class="section-title"><div class="section-bar" style="background:#ffc107;"></div><div class="section-label" style="color:#ffc107;">COÛTS ESTIMÉS</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#ffc107;"></div><div class="section-label" style="color:#ffc107;">COÛTS &amp; MARCHÉ</div></div>
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #ffc107;">
         <div class="cost-label">ENTRETIEN AN 1</div>
-        <div class="cost-value" style="color:#ffc107;">${analyse.cout_entretien_annee1?.toLocaleString()}</div>
-        <div class="cost-unit">CHF</div>
+        <div class="cost-value" style="color:#ffc107;">${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #ffc107;">
         <div class="cost-label">TOTAL 3 ANS</div>
-        <div class="cost-value" style="color:#ffc107;">${analyse.cout_total_3ans?.toLocaleString()}</div>
-        <div class="cost-unit">CHF</div>
+        <div class="cost-value" style="color:#ffc107;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #00B4D8;">
         <div class="cost-label">TAXE GE / AN</div>
-        <div class="cost-value" style="color:#00B4D8;">${analyse.taxe_cantonale_ge?.toLocaleString()}</div>
-        <div class="cost-unit">CHF</div>
+        <div class="cost-value" style="color:#00B4D8;">${analyse.taxe_cantonale_ge?.toLocaleString()} CHF</div>
+      </div>
+      <div class="cost-card" style="border-top:3px solid #8fa8c8;">
+        <div class="cost-label">FOURCHETTE MARCHÉ</div>
+        <div class="cost-value" style="color:#8fa8c8;font-size:13px;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
       </div>
     </div>
   </div>
