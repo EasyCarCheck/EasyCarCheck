@@ -66,7 +66,7 @@ Contenu: ${scrapedData.html}
 - Identifie TOUS les problèmes connus de ce modèle
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent, remplacement 5000-8000 CHF hors garantie, boîte DCT fragile
 - Détecte les red flags dans la description vendeur
-- Si "Zylinderkopf" mentionné → red flag majeur : "Culasse remplacée" (traduis TOUJOURS en français)
+- Si "Zylinderkopf" ou "culasse" mentionné → red flag majeur : "Culasse remplacée" — utilise TOUJOURS le féminin "nouvelle culasse" jamais "nouveau culasse"
 - Traduis INTÉGRALEMENT la description du vendeur en ${langues[langue] || 'français'}, mot par mot, sans laisser aucun mot en allemand ou italien
 - La description vendeur doit être rédigée en phrases claires et lisibles, PAS en liste de mots-clés bruts. Reformule si nécessaire pour que ce soit lisible et professionnel.
 - Traduis TOUS les termes techniques allemands ou italiens en français dans le rapport
@@ -193,14 +193,15 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-num { font-size: 52px; font-weight: 900; line-height: 1; }
   .score-denom { font-size: 12px; color: #b8d0f0; }
   .score-badge { margin-top: 6px; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #000; }
-  .scores-bar { padding: 14px 20px; background: #fff; border-bottom: 1px solid #d0e4f7; }
-  .scores-bar-title { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
-  .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .scores-bar { padding: 14px 20px; background: #fff; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .scores-bar-title { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 14px; }
+  .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .score-item { text-align: center; }
-  .score-item-label { font-size: 9px; color: #5a7a9a; margin-bottom: 4px; }
-  .score-item-num { font-size: 22px; font-weight: 800; }
-  .score-bar-bg { height: 4px; background: #d0e4f7; border-radius: 2px; margin-top: 4px; }
-  .score-bar-fill { height: 4px; border-radius: 2px; }
+  .score-item-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; }
+  .score-item-num { font-size: 46px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+  .score-bar-bg { height: 8px; background: #d0e4f7; border-radius: 4px; }
+  .score-bar-fill { height: 8px; border-radius: 4px; }
+  .score-item-tag { font-size: 10px; font-weight: 700; margin-top: 4px; }
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; }
   .cell { padding: 14px; border-right: 1px solid #d0e4f7; }
   .cell:last-child { border-right: none; }
@@ -267,16 +268,19 @@ async function genererPDF(analyse, reportNumber, url) {
         <div class="score-item-label">PRIX</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_prix * 10}%; background: ${colour(analyse.score_prix)};"></div></div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix >= 8 ? 'EXCELLENT' : analyse.score_prix >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">FIABILITÉ</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_fiabilite * 10}%; background: ${colour(analyse.score_fiabilite)};"></div></div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite >= 8 ? 'EXCELLENT' : analyse.score_fiabilite >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">ENTRETIEN</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_entretien * 10}%; background: ${colour(analyse.score_entretien)};"></div></div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien >= 8 ? 'EXCELLENT' : analyse.score_entretien >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
       </div>
     </div>
   </div>
