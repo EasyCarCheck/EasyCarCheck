@@ -113,8 +113,8 @@ RÈGLES ABSOLUES :
   "cout_entretien_annee1": 0,
   "cout_total_3ans": 0,
   "taxe_cantonale_ge": 0,
-  "resume_verdict": ""
-}
+"resume_verdict": ""
+}`;
   const response = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
