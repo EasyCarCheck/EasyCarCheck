@@ -311,7 +311,7 @@ async function genererPDF(analyse, reportNumber, url) {
     </div>
   </div>` : ''}
 
-  <div class="section section-light">
+  <div class="section section-light" style="page-break-before: always;">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">COÛTS &amp; MARCHÉ</div></div>
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
