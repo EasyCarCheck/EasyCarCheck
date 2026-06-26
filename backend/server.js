@@ -66,8 +66,11 @@ Contenu: ${scrapedData.html}
 - Détecte les red flags dans la description vendeur
 - Si "Zylinderkopf" mentionné → red flag majeur : "Culasse remplacée" (traduis TOUJOURS en français)
 - Traduis TOUS les termes techniques allemands ou italiens en français dans le rapport
-- Pour évaluer le kilométrage : kilométrage NORMAL = moins de 20000 km/an. Ne qualifier de "élevé" que si plus de 25000 km/an. Un véhicule de 2021 avec 54500 km = environ 13600 km/an = parfaitement normal
-
+- Pour évaluer le kilométrage : kilométrage NORMAL = moins de 20000 km/an. Ne qualifier de "élevé" que si plus de 25000 km/an
+- La boîte "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
+- Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur
+- Calcule une fourchette prix marché suisse réaliste (min et max)
+- Estime le coût entretien année 1 et total sur 3 ans
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
 RÈGLES ABSOLUES :
@@ -88,6 +91,7 @@ RÈGLES ABSOLUES :
   "boite": "",
   "puissance": "",
   "couleur": "",
+  "transmission": "",
   "options": [],
   "description_vendeur": "",
   "score_prix": 0,
@@ -110,8 +114,7 @@ RÈGLES ABSOLUES :
   "cout_total_3ans": 0,
   "taxe_cantonale_ge": 0,
   "resume_verdict": ""
-}`;
-
+}
   const response = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
@@ -201,13 +204,16 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>
   <div class="title">${analyse.marque?.toUpperCase()}</div>
   <div class="subtitle">${analyse.modele}</div>
-  <div class="grid">
+ <div class="grid">
     <div class="card"><div class="card-label">ANNÉE</div><div class="card-value">${analyse.annee}</div></div>
     <div class="card"><div class="card-label">KILOMÉTRAGE</div><div class="card-value">${analyse.kilometrage}</div></div>
-    <div class="card"><div class="card-label">PRIX DEMANDÉ</div><div class="card-value">${analyse.prix}</div></div>
+    <div class="card"><div class="card-label">PRIX DEMANDÉ</div><div class="card-value">${analyse.prix} CHF</div></div>
     <div class="card"><div class="card-label">CARBURANT</div><div class="card-value">${analyse.carburant}</div></div>
     <div class="card"><div class="card-label">BOÎTE</div><div class="card-value">${analyse.boite}</div></div>
     <div class="card"><div class="card-label">PUISSANCE</div><div class="card-value">${analyse.puissance}</div></div>
+    <div class="card"><div class="card-label">COULEUR</div><div class="card-value">${analyse.couleur}</div></div>
+    <div class="card"><div class="card-label">TRANSMISSION</div><div class="card-value">${analyse.transmission}</div></div>
+    <div class="card"><div class="card-label">FOURCHETTE MARCHÉ</div><div class="card-value">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div></div>
   </div>
   <div class="verdict-box">
     <div>
@@ -227,9 +233,29 @@ async function genererPDF(analyse, reportNumber, url) {
     <div class="score-card"><div class="score-num">${analyse.score_global}</div><div>/10</div><div class="score-label">GLOBAL</div></div>
   </div>
   <div class="section">
+    <div class="section-title">📋 DESCRIPTION VENDEUR</div>
+    <div class="item">${analyse.description_vendeur}</div>
+  </div>
+  <div class="section">
     <div class="section-title">🔧 POINTS CLÉS</div>
     ${(analyse.points_positifs || []).map(p => `<div class="item">${p}</div>`).join('')}
     ${(analyse.points_negatifs || []).map(p => `<div class="item negative">${p}</div>`).join('')}
+  </div>
+  ${analyse.options?.length > 0 ? `
+  <div class="section">
+    <div class="section-title">⚙️ ÉQUIPEMENTS & OPTIONS</div>
+    ${analyse.options.map(o => `<div class="item">${o}</div>`).join('')}
+  </div>` : ''}
+  <div class="section">
+    <div class="section-title">💰 COÛTS ESTIMÉS</div>
+    <div class="card" style="display:inline-block;min-width:200px;margin-right:15px;">
+      <div class="card-label">ENTRETIEN ANNÉE 1</div>
+      <div class="card-value" style="color:#00B4D8;">${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
+    </div>
+    <div class="card" style="display:inline-block;min-width:200px;">
+      <div class="card-label">COÛT TOTAL 3 ANS</div>
+      <div class="card-value" style="color:#00B4D8;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
+    </div>
   </div>
   ${analyse.red_flags?.length > 0 ? `
   <div class="section">
