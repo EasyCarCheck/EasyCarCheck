@@ -473,7 +473,7 @@ app.post('/analyse-gratuite', async (req, res) => {
 app.post('/create-checkout', async (req, res) => {
   try {
     const { url, email, langue = 'fr', pack = 'single' } = req.body;
-    const prices = { single: 1200, pack3: 3000, pack5: 4500 };
+    const prices = { single: 900, pack3: 2700, pack5: 4000 };
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
