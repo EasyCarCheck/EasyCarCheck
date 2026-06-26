@@ -57,6 +57,7 @@ Contenu: ${scrapedData.html}
 - Année exacte
 - Marque et modèle exacts
 - Carburant, boîte, puissance
+- Couleur exacte du véhicule — cherche dans toute la page (titre, description, caractéristiques). Si introuvable, mets "Non communiquée"
 - Description du vendeur
 - Options listées
 
