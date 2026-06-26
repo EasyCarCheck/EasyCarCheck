@@ -11,7 +11,6 @@ app.use(express.json());
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
     const response = await axios.get('https://api.zenrows.com/v1/', {
@@ -24,7 +23,6 @@ async function scrapeAnnonce(url) {
       },
       timeout: 90000
     });
-
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
     html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
@@ -32,7 +30,6 @@ async function scrapeAnnonce(url) {
     html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
     html = html.replace(/<[^>]+>/g, ' ');
     html = html.replace(/\s+/g, ' ').trim();
-
     console.log('ZENROWS OK:', html.substring(0, 2000));
     return { html: html.substring(0, 15000), url: url };
   } catch (err) {
@@ -41,7 +38,6 @@ async function scrapeAnnonce(url) {
   }
 }
 
-// ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
@@ -57,39 +53,43 @@ Contenu: ${scrapedData.html}
 - Année exacte
 - Marque et modèle exacts
 - Carburant, boîte, puissance
-- Couleur exacte du véhicule — cherche dans toute la page (titre, description, caractéristiques). Si introuvable, mets "Non communiquée"
+- Couleur exacte — cherche dans toute la page. Si introuvable, mets "Non communiquée"
 - Description du vendeur
 - Options listées
 
 ÉTAPE 2 - Analyse approfondie :
 - Compare le prix avec le marché suisse actuel et calcule TOUJOURS une fourchette marché min et max réaliste
 - Identifie TOUS les problèmes connus de ce modèle
-- Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent, remplacement 5000-8000 CHF hors garantie, boîte DCT fragile
+- Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent (remplacement 5000-8000 CHF hors garantie), boîte DCT fragile
 - Détecte les red flags dans la description vendeur
-- Si "Zylinderkopf" ou "culasse" ou "Zylinderkopf" mentionné → red flag OBLIGATOIRE "Culasse remplacée" dans red_flags ET dans points_negatifs
+- Si "Zylinderkopf" ou "culasse" ou "cylindre" ou "Zylinderkopf" mentionné dans l'annonce → red flag OBLIGATOIRE : ajoute "Culasse remplacée" dans red_flags ET dans points_negatifs. JAMAIS dans points_positifs. Utilise TOUJOURS le terme exact "Culasse remplacée", jamais "cylindre tête" ou autre
+- Si culasse remplacée → baisser score_fiabilite de 2 points par rapport à la normale
 - Ne jamais mentionner "consommation de carburant élevée" comme point négatif
-- Ne jamais qualifier le kilométrage d'élevé" sauf si plus de 25000 km/an. 54500 km en 2021 = ~13000 km/an = NORMAL
-- Si free service Mercedes actif : cout_entretien_annee1 = 200-300 CHF (liquides uniquement: huile moteur, huile boite, liquide de frein). cout_total_3ans = 600-900 CHF. Mentionner dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes"
-- La boite "Manuelle robotisée" sur AutoScout24 = toujours traduire en "Automatique (DCT)" pour les Mercedes AMG
-- Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options, description exacte du vendeur traduite
+- Ne jamais qualifier le kilométrage d'élevé sauf si plus de 25000 km/an. Ex: 54500 km en 2021 = ~13000 km/an = NORMAL, ne pas mentionner
+- Si free service Mercedes actif (service gratuit jusqu'à X km ou X ans) : cout_entretien_annee1 = 250 CHF (liquides uniquement: huile moteur, huile boite, liquide de frein). cout_total_3ans = 750 CHF. Ajouter dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
+- Si pas de free service : estimer cout_entretien_annee1 et cout_total_3ans selon le modèle
+- La boite "Manuelle robotisée" sur AutoScout24 = toujours "Automatique (DCT)" pour les Mercedes AMG
+- Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options
+- Traduis INTÉGRALEMENT la description du vendeur en ${langues[langue] || 'français'} en phrases claires et lisibles. PAS de liste de mots-clés bruts. Reformule proprement
+- Traduis TOUS les termes techniques en ${langues[langue] || 'français'}
 - Ne jamais inventer des points négatifs absents de l'annonce
-- Génère TOUJOURS au minimum 4 points positifs/négatifs combinés
-- Génère TOUJOURS exactement 4 éléments dans checklist_visite, pas plus
-- Génère TOUJOURS exactement 3 questions dans questions_vendeur, pas plus
-- Génère TOUJOURS au minimum 2 problèmes connus dans problemes_connus_modele, pas plus de 3
-- La taxe cantonale genevoise entre 400 et 1200 CHF/an, JAMAIS 0
+- Génère TOUJOURS au minimum 3 points dans points_positifs et 2 dans points_negatifs
+- Génère TOUJOURS exactement 4 éléments dans checklist_visite
+- Génère TOUJOURS exactement 3 questions dans questions_vendeur
+- Génère TOUJOURS 2 à 3 problèmes connus dans problemes_connus_modele
+- La taxe cantonale genevoise : montant réaliste entre 400 et 1200 CHF/an, JAMAIS 0
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
 RÈGLES ABSOLUES :
-1. Réponds UNIQUEMENT avec du JSON valide sans apostrophes dans les chaînes
-2. Le champ verdict = UNIQUEMENT ACHETER, NÉGOCIER ou ÉVITER
+1. Réponds UNIQUEMENT avec du JSON valide
+2. verdict = UNIQUEMENT ACHETER, NÉGOCIER ou ÉVITER
 3. prix_negocie_suggere doit être un nombre réaliste jamais 0
 4. Utilise uniquement des guillemets doubles dans le JSON
 5. Pas de virgule après le dernier élément d'un tableau ou objet
-6. Traduis TOUJOURS tout en ${langues[langue] || 'français'}, aucun mot en allemand ou italien
-7. taxe_cantonale_ge doit TOUJOURS être un nombre entre 400 et 1200, JAMAIS 0
-8. fourchette_marche_min et fourchette_marche_max doivent TOUJOURS être des nombres réalistes
+6. Traduis TOUJOURS tout en ${langues[langue] || 'français'}
+7. taxe_cantonale_ge entre 400 et 1200, JAMAIS 0
+8. fourchette_marche_min et fourchette_marche_max toujours réalistes
 
 {
   "marque": "",
@@ -159,7 +159,6 @@ RÈGLES ABSOLUES :
   }
 }
 
-// ─── GÉNÉRATION PDF ──────────────────────────────────────
 async function genererPDF(analyse, reportNumber, url) {
   const verdictColor = {
     'ACHETER': '#28a745', 'NÉGOCIER': '#d4a00a', 'ÉVITER': '#dc3545',
@@ -168,7 +167,8 @@ async function genererPDF(analyse, reportNumber, url) {
     'ACQUISTARE': '#28a745', 'TRATTARE': '#d4a00a', 'EVITARE': '#dc3545'
   };
   const colour = (score) => score >= 7 ? '#28a745' : score >= 5 ? '#d4a00a' : '#dc3545';
-  const badge = (score) => score >= 8 ? 'EXCELLENT' : score >= 5 ? 'MOYEN' : 'À ÉVITER';
+  const badge = (score) => score >= 8 ? 'EXCELLENT' : score >= 7 ? 'BIEN ÉVALUÉ' : score >= 5 ? 'MOYEN' : 'À ÉVITER';
+  const scoreTag = (score) => score >= 8 ? 'EXCELLENT' : score >= 7 ? 'BIEN ÉVALUÉ' : score >= 5 ? 'MOYEN' : 'À SURVEILLER';
 
   const html = `<!DOCTYPE html>
 <html>
@@ -177,8 +177,7 @@ async function genererPDF(analyse, reportNumber, url) {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: #f0f6ff; color: #0d1b35; }
-  .page { padding: 0; }
-  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 24px; border-bottom: 2px solid #00B4D8; }
+  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 24px; border-bottom: 2px solid #00B4D8; page-break-inside: avoid; }
   .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .logo { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #fff; }
   .logo span { color: #00B4D8; }
@@ -192,7 +191,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-num { font-size: 52px; font-weight: 900; line-height: 1; }
   .score-denom { font-size: 12px; color: #b8d0f0; }
   .score-badge { margin-top: 6px; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #000; }
-  .scores-bar { padding: 14px 20px; background: #fff; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .scores-bar { padding: 16px 20px; background: #fff; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
   .scores-bar-title { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 14px; }
   .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .score-item { text-align: center; }
@@ -201,12 +200,11 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-bar-bg { height: 8px; background: #d0e4f7; border-radius: 4px; }
   .score-bar-fill { height: 8px; border-radius: 4px; }
   .score-item-tag { font-size: 10px; font-weight: 700; margin-top: 4px; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
   .cell { padding: 14px; border-right: 1px solid #d0e4f7; }
   .cell:last-child { border-right: none; }
-  .cell-label { font-size: 11px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+  .cell-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
   .cell-value { font-size: 15px; font-weight: 700; color: #0d1b35; }
-  .cell-value-sm { font-size: 15px; font-weight: 700; color: #0d1b35; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
   .section { padding: 20px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
@@ -214,31 +212,29 @@ async function genererPDF(analyse, reportNumber, url) {
   .section-light { background: #f0f6ff; }
   .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
   .section-bar { width: 4px; height: 18px; border-radius: 2px; flex-shrink: 0; }
-  .section-label { font-size: 14px; font-weight: 700; letter-spacing: 1px; }
-  .description-box { background: #f0f6ff; border-radius: 8px; padding: 12px; font-size: 13px; color: #3a5a7a; line-height: 1.6; border-left: 3px solid #1a3a6e; }
+  .section-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+  .description-box { background: #f0f6ff; border-radius: 8px; padding: 14px; font-size: 13px; color: #3a5a7a; line-height: 1.6; border-left: 3px solid #1a3a6e; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .point-card { background: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #0d1b35; }
-  .point-card-light { background: #f0f6ff; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #0d1b35; }
-  .checklist-item { background: #f0f6ff; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .checklist-item-white { background: #fff; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .point-card { background: #fff; border-radius: 6px; padding: 9px 12px; font-size: 13px; color: #0d1b35; }
+  .point-card-light { background: #f0f6ff; border-radius: 6px; padding: 9px 12px; font-size: 13px; color: #0d1b35; }
+  .checklist-item { background: #f0f6ff; border-radius: 6px; padding: 11px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .checklist-item-white { background: #fff; border-radius: 6px; padding: 11px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; page-break-inside: avoid; }
   .cost-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; page-break-inside: avoid; }
-  .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 6px; }
+  .cost-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 6px; }
   .cost-value { font-size: 16px; font-weight: 800; }
   .redflag-section { padding: 20px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; page-break-inside: avoid; }
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 10px; }
   .redflag-card { background: rgba(220,53,69,0.06); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 6px; }
-  .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; margin-bottom: 4px; }
-  .redflag-desc { font-size: 11px; color: #5a7a9a; }
-  .verdict-section { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); }
+  .redflag-title { font-size: 13px; font-weight: 600; color: #dc3545; }
+  .verdict-section { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; }
   .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 6px; }
   .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
-  .verdict-desc { font-size: 11px; color: #b8d0f0; margin-top: 6px; max-width: 300px; line-height: 1.5; }
+  .verdict-desc { font-size: 12px; color: #b8d0f0; margin-top: 6px; max-width: 300px; line-height: 1.5; }
   .footer { padding: 14px 20px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; }
 </style>
 </head>
 <body>
-<div class="page">
 
   <div class="header">
     <div class="header-top">
@@ -267,19 +263,19 @@ async function genererPDF(analyse, reportNumber, url) {
         <div class="score-item-label">PRIX</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_prix * 10}%; background: ${colour(analyse.score_prix)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix >= 8 ? 'EXCELLENT' : analyse.score_prix >= 7 ? 'BIEN ÉVALUÉ' : analyse.score_prix >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_prix)};">${scoreTag(analyse.score_prix)}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">FIABILITÉ</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_fiabilite * 10}%; background: ${colour(analyse.score_fiabilite)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite >= 8 ? 'EXCELLENT' : analyse.score_fiabilite >= 7 ? 'BIEN ÉVALUÉ' : analyse.score_fiabilite >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_fiabilite)};">${scoreTag(analyse.score_fiabilite)}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">ENTRETIEN</div>
         <div class="score-item-num" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_entretien * 10}%; background: ${colour(analyse.score_entretien)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien >= 8 ? 'EXCELLENT' : analyse.score_entretien >= 7 ? 'BIEN ÉVALUÉ' : analyse.score_entretien >= 5 ? 'MOYEN' : 'À SURVEILLER'}</div>
+        <div class="score-item-tag" style="color: ${colour(analyse.score_entretien)};">${scoreTag(analyse.score_entretien)}</div>
       </div>
     </div>
   </div>
@@ -292,10 +288,10 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>
 
   <div class="grid-4 grid-light" style="border-bottom: 1px solid #d0e4f7;">
-    <div class="cell"><div class="cell-label">CARBURANT</div><div class="cell-value-sm">${analyse.carburant}</div></div>
-    <div class="cell"><div class="cell-label">BOÎTE</div><div class="cell-value-sm">${analyse.boite}</div></div>
-    <div class="cell"><div class="cell-label">TRANSMISSION</div><div class="cell-value-sm">${analyse.transmission}</div></div>
-    <div class="cell"><div class="cell-label">COULEUR</div><div class="cell-value-sm">${analyse.couleur}</div></div>
+    <div class="cell"><div class="cell-label">CARBURANT</div><div class="cell-value">${analyse.carburant}</div></div>
+    <div class="cell"><div class="cell-label">BOÎTE</div><div class="cell-value">${analyse.boite}</div></div>
+    <div class="cell"><div class="cell-label">TRANSMISSION</div><div class="cell-value">${analyse.transmission}</div></div>
+    <div class="cell"><div class="cell-label">COULEUR</div><div class="cell-value">${analyse.couleur}</div></div>
   </div>
 
   <div class="section section-white">
@@ -344,10 +340,7 @@ async function genererPDF(analyse, reportNumber, url) {
   ${analyse.red_flags?.length > 0 ? `
   <div class="redflag-section">
     <div class="redflag-badge">🚨 RED FLAGS</div>
-    ${analyse.red_flags.map(r => `
-    <div class="redflag-card">
-      <div class="redflag-title">✗ ${r}</div>
-    </div>`).join('')}
+    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title">✗ ${r}</div></div>`).join('')}
   </div>` : ''}
 
   ${analyse.problemes_connus_modele?.length > 0 ? `
@@ -385,7 +378,6 @@ async function genererPDF(analyse, reportNumber, url) {
     EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · 🇨🇭 Suisse
   </div>
 
-</div>
 </body>
 </html>`;
 
@@ -404,7 +396,6 @@ async function genererPDF(analyse, reportNumber, url) {
   return Buffer.from(pdfResponse.data);
 }
 
-// ─── ENVOI EMAIL ─────────────────────────────────────────
 async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
   const result = await resend.emails.send({
     from: 'EasyCarCheck <contact@easycarcheck.ch>',
@@ -415,7 +406,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
         <h1 style="color:#00B4D8;">🚗 EasyCarCheck</h1>
         <p>Votre rapport d'analyse est prêt !</p>
         <h2>${analyse.marque} ${analyse.modele} ${analyse.annee}</h2>
-        <p>Verdict : <strong style="color:${analyse.verdict === 'ACHETER' ? '#28a745' : analyse.verdict === 'ÉVITER' ? '#dc3545' : '#ffc107'}">${analyse.verdict}</strong></p>
+        <p>Verdict : <strong style="color:${analyse.verdict === 'ACHETER' ? '#28a745' : analyse.verdict === 'ÉVITER' ? '#dc3545' : '#d4a00a'}">${analyse.verdict}</strong></p>
         <p>Score global : <strong>${analyse.score_global}/10</strong></p>
         <p style="color:#b8d0f0;font-size:12px;">Le rapport PDF complet est en pièce jointe.</p>
         <p style="color:#b8d0f0;font-size:11px;">EasyCarCheck · easycarcheck.ch</p>
@@ -428,8 +419,6 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
   });
   console.log('RESEND RESULT:', JSON.stringify(result));
 }
-
-// ─── ROUTES ──────────────────────────────────────────────
 
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK 🚗' }));
 
