@@ -48,29 +48,22 @@ async function scrapeAnnonce(url) {
           }
           return name;
         });
-        equipmentData += "
-OPTIONS (" + names.length + "): " + names.join(" | ");
+        equipmentData += "\nOPTIONS (" + names.length + "): " + names.join(" | ");
       }
 
       if (standardMatch) {
         const standard = JSON.parse(standardMatch[1]);
         const names = standard.map(s => s.name)
           .filter(n => !n.includes("Aucune garantie") && !n.includes("Details") && !n.includes("Detai"));
-        equipmentData += "
-SERIE (" + names.length + "): " + names.join(" | ");
+        equipmentData += "\nSERIE (" + names.length + "): " + names.join(" | ");
       }
 
-      if (co2Match) equipmentData += "
-CO2: " + co2Match[1] + " g/km";
-      if (weightMatch) equipmentData += "
-POIDS TOTAL: " + weightMatch[1] + " kg";
-      if (listPriceMatch) equipmentData += "
-PRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
+      if (co2Match) equipmentData += "\nCO2: " + co2Match[1] + " g/km";
+      if (weightMatch) equipmentData += "\nPOIDS TOTAL: " + weightMatch[1] + " kg";
+      if (listPriceMatch) equipmentData += "\nPRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
       if (descMatch) {
-        const desc = descMatch[1].replace(/\n/g, "
-").replace(/\"/g, """);
-        equipmentData += "
-DESCRIPTION: " + desc.substring(0, 2000);
+        const desc = descMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
+        equipmentData += "\nDESCRIPTION: " + desc.substring(0, 2000);
       }
 
       console.log("EQUIPEMENTS EXTRAITS:", equipmentData.substring(0, 300));
@@ -85,10 +78,7 @@ DESCRIPTION: " + desc.substring(0, 2000);
     cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
 
-    const finalContent = (cleanHtml.substring(0, 14000) + "
-
---- DONNEES STRUCTUREES ---
-" + equipmentData).substring(0, 20000);
+    const finalContent = (cleanHtml.substring(0, 14000) + "\n\n--- DONNEES STRUCTUREES ---\n" + equipmentData).substring(0, 20000);
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
     return { html: finalContent, url: url };
   } catch (err) {
