@@ -500,9 +500,23 @@ async function genererPDF(analyse, reportNumber, url) {
   ${analyse.options?.length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
-    <div style="columns:3; column-gap:16px; font-size:11px; color:#0d1b35; line-height:1.9;">
-      ${analyse.options.map(o => `<div style="break-inside:avoid; padding:1px 0; border-bottom:0.5px solid #e8f0f8;">· ${o}</div>`).join('')}
-    </div>
+    <table style="width:100%; border-collapse:collapse;">
+      ${(() => {
+        const opts = analyse.options || [];
+        const rows = [];
+        for (let i = 0; i < opts.length; i += 2) {
+          const a = opts[i] || '';
+          const b = opts[i+1] || '';
+          rows.push(`<tr>
+            <td style="width:50%; padding:5px 8px; background:#f0f6ff; border-radius:4px; margin:2px; font-size:12px; color:#0d1b35;">⚙ ${a}</td>
+            <td style="width:4px;"></td>
+            <td style="width:50%; padding:5px 8px; background:#f0f6ff; border-radius:4px; font-size:12px; color:#0d1b35;">${b ? '⚙ ' + b : ''}</td>
+          </tr>
+          <tr><td colspan="3" style="height:4px;"></td></tr>`);
+        }
+        return rows.join('');
+      })()}
+    </table>
   </div>` : ''}
 
   <div class="section section-light">
