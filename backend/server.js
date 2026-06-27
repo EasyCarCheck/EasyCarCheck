@@ -86,7 +86,7 @@ async function scrapeAnnonce(url) {
     cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
 
-    const finalContent = (cleanHtml.substring(0, 14000) + "\n\n--- DONNEES STRUCTUREES ---\n" + equipmentData).substring(0, 20000);
+    const finalContent = cleanHtml.substring(0, 35000);
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
     return { html: finalContent, url: url };
   } catch (err) {
