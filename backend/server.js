@@ -344,8 +344,8 @@ async function genererPDF(analyse, reportNumber, url) {
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; }
-  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 18px 22px; border-bottom: 2px solid #00B4D8; page-break-inside: avoid; }
+  body { font-family: Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; min-height: 0 !important; }
+  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 18px 22px; border-bottom: 2px solid #00B4D8; }
   .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .logo { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #fff; }
   .logo span { color: #00B4D8; }
@@ -359,7 +359,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-num { font-size: 46px; font-weight: 900; line-height: 1; }
   .score-denom { font-size: 11px; color: #b8d0f0; }
   .score-badge { margin-top: 5px; border-radius: 4px; padding: 2px 7px; font-size: 9px; font-weight: 700; color: #000; }
-  .scores-bar { padding: 11px 22px; background: #fff; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .scores-bar { padding: 11px 22px; background: #fff; border-bottom: 1px solid #d0e4f7; }
   .scores-bar-title { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
   .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .score-item { text-align: center; }
@@ -368,7 +368,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-bar-bg { height: 7px; background: #d0e4f7; border-radius: 4px; }
   .score-bar-fill { height: 7px; border-radius: 4px; }
   .score-item-tag { font-size: 9px; font-weight: 700; margin-top: 3px; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; }
   .cell { padding: 10px 12px; border-right: 1px solid #d0e4f7; }
   .cell:last-child { border-right: none; }
   .cell-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 3px; text-transform: uppercase; }
@@ -376,7 +376,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .cell-unit { font-size: 12px; color: #5a7a9a; font-weight: 600; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
-  .section { padding: 12px 22px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .section { padding: 12px 22px; border-bottom: 1px solid #d0e4f7; }
   .section-white { background: #fff; }
   .section-light { background: #f0f6ff; }
   .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -389,20 +389,20 @@ async function genererPDF(analyse, reportNumber, url) {
   .point-card-light { background: #f0f6ff; border-radius: 5px; padding: 6px 9px; font-size: 11px; color: #0d1b35; }
   .checklist-item { background: #f0f6ff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
   .checklist-item-white { background: #fff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
-  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; page-break-inside: avoid; }
+  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .cost-card { background: #fff; border-radius: 7px; padding: 11px; text-align: center; }
   .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 5px; }
   .cost-value { font-size: 15px; font-weight: 800; }
   .cost-note { font-size: 8px; color: #5a7a9a; margin-top: 3px; }
-  .redflag-section { padding: 12px 22px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; page-break-inside: avoid; }
+  .redflag-section { padding: 12px 22px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; }
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 8px; }
   .redflag-card { background: rgba(220,53,69,0.06); border-radius: 7px; padding: 10px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 5px; }
   .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; }
-  .verdict-section { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; }
+  .verdict-section { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); }
   .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 5px; }
   .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
   .verdict-desc { font-size: 11px; color: #b8d0f0; margin-top: 6px; max-width: 280px; line-height: 1.5; }
-  .footer { padding: 10px 22px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; page-break-inside: avoid; page-break-before: avoid; }
+  .footer { padding: 10px 22px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -556,7 +556,10 @@ async function genererPDF(analyse, reportNumber, url) {
   const pdfResponse = await axios.post('https://api.pdfshift.io/v3/convert/pdf', {
     source: html,
     landscape: false,
-    use_print: false
+    use_print: false,
+    format: 'A4',
+    margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' },
+    disable_smart_shrinking: false
   }, {
     headers: {
       'Authorization': `Basic ${Buffer.from(`api:${process.env.PDFSHIFT_API_KEY}`).toString('base64')}`,
