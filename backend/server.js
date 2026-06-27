@@ -603,18 +603,12 @@ async function genererPDF(analyse, reportNumber, url) {
 </body>
 </html>`;
 
-  const headerHtml = `<div style="width:100%; background:linear-gradient(135deg,#1a3a6e,#2952a3); padding:8px 22px; display:flex; justify-content:space-between; align-items:center; font-family:'Plus Jakarta Sans',Arial,sans-serif;">
-    <div style="font-size:14px; font-weight:700; color:#fff; letter-spacing:2px;">🚗 EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
-    <div style="font-size:11px; color:#b8d0f0;">${analyse.marque?.toUpperCase()} ${analyse.modele?.toUpperCase()} · Rapport #${reportNumber}</div>
-  </div>`;
-
   const pdfResponse = await axios.post('https://api.pdfshift.io/v3/convert/pdf', {
     source: html,
     landscape: false,
     use_print: false,
     format: 'A4',
-    margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' },
-    header: headerHtml
+    margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
   }, {
     headers: {
       'Authorization': `Basic ${Buffer.from(`api:${process.env.PDFSHIFT_API_KEY}`).toString('base64')}`,
