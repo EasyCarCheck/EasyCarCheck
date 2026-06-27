@@ -557,9 +557,7 @@ async function genererPDF(analyse, reportNumber, url) {
     source: html,
     landscape: false,
     use_print: false,
-    format: 'A4',
-    margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' },
-    disable_smart_shrinking: false
+    margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
   }, {
     headers: {
       'Authorization': `Basic ${Buffer.from(`api:${process.env.PDFSHIFT_API_KEY}`).toString('base64')}`,
