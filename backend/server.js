@@ -45,7 +45,6 @@ function estimerTaxe(co2, carburant) {
   const isElectric = carburant.toLowerCase().includes('électr');
   if (isElectric) return 120;
   if (!co2 || co2 === 0) return 600;
-  // Estimation basée sur le CO2 (approximation multi-cantons)
   if (co2 <= 100) return 200;
   if (co2 <= 120) return 300;
   if (co2 <= 140) return 450;
@@ -60,7 +59,6 @@ function estimerTaxe(co2, carburant) {
 // ─── NETTOYAGE PUISSANCE ────────────────────────────────
 function nettoyerPuissance(puissance) {
   if (!puissance) return puissance;
-  // Supprimer les doublons comme "306 PS (225 kW) PS"
   return puissance.replace(/\s*\([\d\s\w]+\)\s*/g, '').replace(/PS\s*PS/g, 'PS').trim();
 }
 
@@ -81,43 +79,43 @@ Contenu: ${scrapedData.html}
 - Marque et modèle exacts
 - Carburant (Essence / Diesel / Électrique / Hybride)
 - Boîte de vitesses
-- Puissance en PS uniquement (ex: "306 PS") - rien d'autre
+- Puissance en PS uniquement (ex: "306 PS")
 - CO2 en g/km si disponible (nombre entier, sinon null)
 - Couleur exacte — cherche dans toute la page. Si introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur
-- Toutes les options listées
+- TOUTES les options listées sans exception
 
 ÉTAPE 2 - Analyse approfondie :
 - Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent (remplacement 5000-8000 CHF hors garantie), boîte DCT fragile
-- DÉTECTION CULASSE : Si "Zylinderkopf" ou "culasse" ou "cylindre" ou "Kopf" mentionné → ajouter EXACTEMENT "Culasse remplacée" dans red_flags ET dans points_negatifs. JAMAIS dans points_positifs. Le terme exact est TOUJOURS "Culasse remplacée", jamais "cylindre de tête", "cylindre tête" ou autre
+- CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné → ajouter EXACTEMENT "Culasse remplacée" dans red_flags ET points_negatifs. JAMAIS dans points_positifs. Toujours "Culasse remplacée" comme terme exact
 - Si culasse remplacée → baisser score_fiabilite de 2 points et score_global de 1 point
 - INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée"
-- KILOMÉTRAGE : qualifier d'élevé SEULEMENT si >25000 km/an. 54500 km en 2021 = ~13000 km/an = NORMAL
-- FREE SERVICE : Si service gratuit Mercedes actif → cout_entretien_annee1 = 250, cout_total_3ans = 750. Ajouter dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
+- KILOMÉTRAGE : Ne qualifier d'élevé QUE si >25000 km/an. 54500 km en 2021 = ~13000 km/an = NORMAL, ne pas mentionner
+- FREE SERVICE Mercedes : cout_entretien_annee1 = 250, cout_total_3ans = 750. Mentionner dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
+- Sans free service : estimer les coûts selon le modèle
 - BOÎTE : "Manuelle robotisée" = "Automatique (DCT)" pour Mercedes AMG
-- DESCRIPTION : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. JAMAIS de liste de mots-clés bruts. Le terme "Zylinderkopf" ou "cylindre de tête" doit TOUJOURS être traduit par "culasse"
+- DESCRIPTION VENDEUR : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. "Zylinderkopf" = "culasse". Jamais "cylindre de tête" ou "cylindre tête"
 - Ne jamais inventer des points négatifs absents de l'annonce
-- score_global = ENTIER arrondi (ex: 6 pas 6.7)
+- score_global = ENTIER arrondi (jamais décimal)
+- taxe_cantonale_ge = mettre 0 (calculé automatiquement par le système)
 
-QUANTITÉS OBLIGATOIRES :
-- points_positifs : minimum 3 éléments
-- points_negatifs : minimum 2 éléments
+QUANTITÉS STRICTES — NE PAS DÉPASSER :
+- points_positifs : exactement 3 éléments
+- points_negatifs : exactement 3 éléments
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
-- problemes_connus_modele : 2 à 3 éléments
+- problemes_connus_modele : exactement 2 éléments
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
-RÈGLES JSON ABSOLUES :
-1. Réponds UNIQUEMENT avec du JSON valide
-2. verdict = UNIQUEMENT "ACHETER", "NÉGOCIER" ou "ÉVITER"
-3. prix_negocie_suggere = nombre réaliste, jamais 0
-4. Guillemets doubles uniquement
-5. Pas de virgule après le dernier élément
-6. score_global = entier arrondi
-7. taxe_cantonale_ge = mettre 0 (calculé automatiquement)
+RÈGLES JSON :
+1. JSON valide uniquement, rien d'autre
+2. verdict = "ACHETER", "NÉGOCIER" ou "ÉVITER"
+3. Guillemets doubles uniquement
+4. score_global = entier arrondi
+5. taxe_cantonale_ge = 0
 
 {
   "marque": "",
@@ -192,11 +190,18 @@ RÈGLES JSON ABSOLUES :
   parsed.score_fiabilite = Math.round(parsed.score_fiabilite || 0);
   parsed.score_entretien = Math.round(parsed.score_entretien || 0);
 
-  // Calcul taxe estimation multi-cantons
+  // Calcul taxe estimation
   parsed.taxe_cantonale_ge = estimerTaxe(parsed.co2, parsed.carburant);
 
-  // Nettoyer la puissance
+  // Nettoyer puissance
   parsed.puissance = nettoyerPuissance(parsed.puissance);
+
+  // Limiter strictement les quantités
+  if (parsed.points_positifs?.length > 3) parsed.points_positifs = parsed.points_positifs.slice(0, 3);
+  if (parsed.points_negatifs?.length > 3) parsed.points_negatifs = parsed.points_negatifs.slice(0, 3);
+  if (parsed.checklist_visite?.length > 4) parsed.checklist_visite = parsed.checklist_visite.slice(0, 4);
+  if (parsed.questions_vendeur?.length > 3) parsed.questions_vendeur = parsed.questions_vendeur.slice(0, 3);
+  if (parsed.problemes_connus_modele?.length > 2) parsed.problemes_connus_modele = parsed.problemes_connus_modele.slice(0, 2);
 
   return parsed;
 }
@@ -219,64 +224,65 @@ async function genererPDF(analyse, reportNumber, url) {
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #f0f6ff; color: #0d1b35; }
-  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 24px; border-bottom: 2px solid #00B4D8; page-break-inside: avoid; }
-  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .logo { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #fff; }
+  body { font-family: Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; }
+  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 18px 22px; border-bottom: 2px solid #00B4D8; page-break-inside: avoid; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #fff; }
   .logo span { color: #00B4D8; }
   .report-num { font-size: 11px; color: #b8d0f0; }
   .header-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-  .car-brand-label { font-size: 11px; color: #b8d0f0; letter-spacing: 3px; margin-bottom: 4px; }
-  .car-brand { font-size: 28px; font-weight: 900; letter-spacing: 2px; line-height: 1.1; color: #fff; }
-  .car-model { font-size: 18px; color: #00B4D8; font-weight: 700; margin-top: 4px; }
-  .score-box { display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px 20px; min-width: 110px; }
-  .score-label { font-size: 9px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 4px; }
-  .score-num { font-size: 52px; font-weight: 900; line-height: 1; }
-  .score-denom { font-size: 12px; color: #b8d0f0; }
-  .score-badge { margin-top: 6px; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #000; }
-  .scores-bar { padding: 16px 20px; background: #fff; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
-  .scores-bar-title { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 14px; }
-  .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .car-brand-label { font-size: 10px; color: #b8d0f0; letter-spacing: 3px; margin-bottom: 3px; }
+  .car-brand { font-size: 26px; font-weight: 900; letter-spacing: 2px; line-height: 1.1; color: #fff; }
+  .car-model { font-size: 16px; color: #00B4D8; font-weight: 700; margin-top: 3px; }
+  .score-box { display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 18px; min-width: 100px; }
+  .score-label { font-size: 9px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 3px; }
+  .score-num { font-size: 46px; font-weight: 900; line-height: 1; }
+  .score-denom { font-size: 11px; color: #b8d0f0; }
+  .score-badge { margin-top: 5px; border-radius: 4px; padding: 2px 7px; font-size: 9px; font-weight: 700; color: #000; }
+  .scores-bar { padding: 11px 22px; background: #fff; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .scores-bar-title { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
+  .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .score-item { text-align: center; }
-  .score-item-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; }
-  .score-item-num { font-size: 46px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
-  .score-bar-bg { height: 8px; background: #d0e4f7; border-radius: 4px; }
-  .score-bar-fill { height: 8px; border-radius: 4px; }
-  .score-item-tag { font-size: 10px; font-weight: 700; margin-top: 4px; }
+  .score-item-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 3px; }
+  .score-item-num { font-size: 40px; font-weight: 900; line-height: 1; margin-bottom: 5px; }
+  .score-bar-bg { height: 7px; background: #d0e4f7; border-radius: 4px; }
+  .score-bar-fill { height: 7px; border-radius: 4px; }
+  .score-item-tag { font-size: 9px; font-weight: 700; margin-top: 3px; }
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
-  .cell { padding: 14px; border-right: 1px solid #d0e4f7; }
+  .cell { padding: 10px 12px; border-right: 1px solid #d0e4f7; }
   .cell:last-child { border-right: none; }
-  .cell-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
-  .cell-value { font-size: 15px; font-weight: 700; color: #0d1b35; }
-  .cell-unit { font-size: 13px; color: #5a7a9a; font-weight: 600; }
+  .cell-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 3px; text-transform: uppercase; }
+  .cell-value { font-size: 14px; font-weight: 700; color: #0d1b35; }
+  .cell-unit { font-size: 12px; color: #5a7a9a; font-weight: 600; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
-  .section { padding: 20px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .section { padding: 12px 22px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
   .section-white { background: #fff; }
   .section-light { background: #f0f6ff; }
-  .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-  .section-bar { width: 4px; height: 18px; border-radius: 2px; flex-shrink: 0; }
-  .section-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
-  .description-box { background: #f0f6ff; border-radius: 8px; padding: 14px; font-size: 13px; color: #3a5a7a; line-height: 1.6; border-left: 3px solid #1a3a6e; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .point-card { background: #fff; border-radius: 6px; padding: 9px 12px; font-size: 13px; color: #0d1b35; }
-  .point-card-light { background: #f0f6ff; border-radius: 6px; padding: 9px 12px; font-size: 13px; color: #0d1b35; }
-  .checklist-item { background: #f0f6ff; border-radius: 6px; padding: 11px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .checklist-item-white { background: #fff; border-radius: 6px; padding: 11px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; page-break-inside: avoid; }
-  .cost-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; }
-  .cost-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 6px; }
-  .cost-value { font-size: 16px; font-weight: 800; }
-  .cost-note { font-size: 9px; color: #5a7a9a; margin-top: 4px; }
-  .redflag-section { padding: 20px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; page-break-inside: avoid; }
-  .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 10px; }
-  .redflag-card { background: rgba(220,53,69,0.06); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 6px; }
-  .redflag-title { font-size: 13px; font-weight: 600; color: #dc3545; }
-  .verdict-section { padding: 24px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; }
-  .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 6px; }
-  .verdict-value { font-size: 32px; font-weight: 900; letter-spacing: 2px; }
-  .verdict-desc { font-size: 12px; color: #b8d0f0; margin-top: 8px; max-width: 300px; line-height: 1.5; }
-  .footer { padding: 14px 20px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; page-break-inside: avoid; page-break-before: avoid; }
+  .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .section-bar { width: 4px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+  .section-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+  .description-box { background: #f0f6ff; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #3a5a7a; line-height: 1.55; border-left: 3px solid #1a3a6e; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+  .point-card { background: #fff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; }
+  .point-card-light { background: #f0f6ff; border-radius: 5px; padding: 6px 9px; font-size: 11px; color: #0d1b35; }
+  .checklist-item { background: #f0f6ff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .checklist-item-white { background: #fff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; page-break-inside: avoid; }
+  .cost-card { background: #fff; border-radius: 7px; padding: 11px; text-align: center; }
+  .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 5px; }
+  .cost-value { font-size: 15px; font-weight: 800; }
+  .cost-note { font-size: 8px; color: #5a7a9a; margin-top: 3px; }
+  .redflag-section { padding: 12px 22px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; page-break-inside: avoid; }
+  .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 8px; }
+  .redflag-card { background: rgba(220,53,69,0.06); border-radius: 7px; padding: 10px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 5px; }
+  .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; }
+  .verdict-section { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; }
+  .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 5px; }
+  .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
+  .verdict-desc { font-size: 11px; color: #b8d0f0; margin-top: 6px; max-width: 280px; line-height: 1.5; }
+  .footer { padding: 10px 22px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; page-break-inside: avoid; page-break-before: avoid; }
 </style>
 </head>
 <body>
@@ -355,12 +361,12 @@ async function genererPDF(analyse, reportNumber, url) {
   ${analyse.options?.length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
-    <div class="grid-2">
+    <div class="grid-3">
       ${analyse.options.map(o => `<div class="point-card-light">⚙ ${o}</div>`).join('')}
     </div>
   </div>` : ''}
 
-  <div class="section section-light" style="page-break-before: always;">
+  <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">COÛTS &amp; MARCHÉ</div></div>
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
@@ -378,7 +384,7 @@ async function genererPDF(analyse, reportNumber, url) {
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">FOURCHETTE MARCHÉ</div>
-        <div class="cost-value" style="color:#5a7a9a;font-size:13px;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#5a7a9a;font-size:12px;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
       </div>
     </div>
   </div>
@@ -413,7 +419,7 @@ async function genererPDF(analyse, reportNumber, url) {
     </div>
     <div style="text-align:right;">
       <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">PRIX SUGGÉRÉ</div>
-      <div style="font-size:30px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
+      <div style="font-size:28px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
       <div style="font-size:10px;color:#00B4D8;margin-top:4px;">↓ Économie : ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
     </div>
   </div>
