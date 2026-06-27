@@ -167,6 +167,8 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - Ne jamais inventer des points négatifs absents de l'annonce
 - score_global = mettre 0 (calculé automatiquement par le système)
 - taxe_cantonale_ge = mettre 0 (calculé automatiquement par le système)
+- score_prix, score_fiabilite, score_entretien : OBLIGATOIRE entre 1 et 10, JAMAIS 0. Un véhicule moyen = 5, bon = 7, excellent = 9, problème grave = 3
+- options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer, sans limiter
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_positifs : exactement 3 éléments
@@ -257,10 +259,10 @@ RÈGLES JSON :
     console.log('CO2 injecté depuis scraping:', parsed.co2);
   }
 
-  // Force scores entiers
-  parsed.score_prix = Math.round(parsed.score_prix || 0);
-  parsed.score_fiabilite = Math.round(parsed.score_fiabilite || 0);
-  parsed.score_entretien = Math.round(parsed.score_entretien || 0);
+  // FIX: Force scores entiers — si GPT retourne 0 c'est anormal, on met un minimum de 1
+  parsed.score_prix = Math.max(1, Math.round(parsed.score_prix || 5));
+  parsed.score_fiabilite = Math.max(1, Math.round(parsed.score_fiabilite || 5));
+  parsed.score_entretien = Math.max(1, Math.round(parsed.score_entretien || 5));
 
   // FIX: recalcul score_global côté Node.js = moyenne arrondie des 3 scores
   parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
@@ -274,7 +276,16 @@ RÈGLES JSON :
   }
 
   // FIX: calcul taxe avec le CO2 réel (scraping prioritaire sur GPT)
-  const co2Final = scrapedData.co2 || parsed.co2;
+  // Fallback par modèle si CO2 absent du scraping ET de GPT
+  let co2Final = scrapedData.co2 || parsed.co2;
+  if (!co2Final && parsed.marque && parsed.modele) {
+    const modeleStr = (parsed.marque + ' ' + parsed.modele).toLowerCase();
+    if (modeleStr.includes('a 35 amg') || modeleStr.includes('a35 amg')) co2Final = 210;
+    else if (modeleStr.includes('a 45 amg') || modeleStr.includes('a45 amg')) co2Final = 220;
+    else if (modeleStr.includes('c 63 amg') || modeleStr.includes('c63')) co2Final = 250;
+    else if (modeleStr.includes('amg')) co2Final = 200;
+    console.log(`CO2 fallback modèle utilisé: ${co2Final} g/km`);
+  }
   parsed.taxe_cantonale_ge = estimerTaxe(co2Final, parsed.carburant);
   console.log(`TAXE calculée: CO2=${co2Final} → ${parsed.taxe_cantonale_ge} CHF`);
 
@@ -463,9 +474,9 @@ async function genererPDF(analyse, reportNumber, url) {
         <div class="cost-value" style="color:#d4a00a;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
-        <div class="cost-label">TAXE CANTONALE EST.</div>
-        <div class="cost-value" style="color:#1a3a6e;">~${analyse.taxe_cantonale_ge?.toLocaleString()} CHF/an</div>
-        <div class="cost-note">Estimation · varie selon canton</div>
+        <div class="cost-label">CO2 &amp; TAXE CANTONALE</div>
+        <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : 'N/D'}</div>
+        <div class="cost-note"><a href="https://www.tcs.ch/fr/tools/calculateurs/impot-vehicule.php" style="color:#1a3a6e;">Calculer ma taxe → tcs.ch</a></div>
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">FOURCHETTE MARCHÉ</div>
