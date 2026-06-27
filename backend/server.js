@@ -393,7 +393,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-num { font-size: 46px; font-weight: 900; line-height: 1; }
   .score-denom { font-size: 11px; color: #b8d0f0; }
   .score-badge { margin-top: 5px; border-radius: 4px; padding: 2px 7px; font-size: 9px; font-weight: 700; color: #000; }
-  .scores-bar { padding: 11px 22px; background: #fff; border-bottom: 1px solid #d0e4f7; }
+  .scores-bar { padding: 8px 22px; background: #fff; border-bottom: 1px solid #d0e4f7; }
   .scores-bar-title { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
   .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .score-item { text-align: center; }
@@ -421,16 +421,16 @@ async function genererPDF(analyse, reportNumber, url) {
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
   .point-card { background: #fff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; }
   .point-card-light { background: #f0f6ff; border-radius: 5px; padding: 6px 9px; font-size: 11px; color: #0d1b35; }
-  .checklist-item { background: #f0f6ff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
-  .checklist-item-white { background: #fff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
-  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .cost-card { background: #fff; border-radius: 7px; padding: 11px; text-align: center; }
+  .checklist-item { background: #f0f6ff; border-radius: 5px; padding: 5px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .checklist-item-white { background: #fff; border-radius: 5px; padding: 5px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .cost-card { background: #fff; border-radius: 7px; padding: 8px; text-align: center; }
   .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 5px; }
   .cost-value { font-size: 15px; font-weight: 800; }
   .cost-note { font-size: 8px; color: #5a7a9a; margin-top: 3px; }
   .redflag-section { padding: 12px 22px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; }
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 8px; }
-  .redflag-card { background: rgba(220,53,69,0.06); border-radius: 7px; padding: 10px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 5px; }
+  .redflag-card { background: rgba(220,53,69,0.06); border-radius: 7px; padding: 7px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 5px; }
   .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; }
   .verdict-section { padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); }
   .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 5px; }
@@ -515,19 +515,21 @@ async function genererPDF(analyse, reportNumber, url) {
   ${analyse.options?.length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
-    <table style="width:100%; border-collapse:collapse;">
+    <table style="width:100%; border-collapse:separate; border-spacing:0 3px;">
       ${(() => {
         const opts = analyse.options || [];
         const rows = [];
-        for (let i = 0; i < opts.length; i += 2) {
+        for (let i = 0; i < opts.length; i += 3) {
           const a = opts[i] || '';
           const b = opts[i+1] || '';
+          const c = opts[i+2] || '';
           rows.push(`<tr>
-            <td style="width:50%; padding:5px 8px; background:#f0f6ff; border-radius:4px; margin:2px; font-size:12px; color:#0d1b35;">⚙ ${a}</td>
-            <td style="width:4px;"></td>
-            <td style="width:50%; padding:5px 8px; background:#f0f6ff; border-radius:4px; font-size:12px; color:#0d1b35;">${b ? '⚙ ' + b : ''}</td>
-          </tr>
-          <tr><td colspan="3" style="height:4px;"></td></tr>`);
+            <td style="width:33%; padding:4px 7px; background:#f0f6ff; font-size:11.5px; color:#0d1b35; border-radius:3px;">⚙ ${a}</td>
+            <td style="width:2px;"></td>
+            <td style="width:33%; padding:4px 7px; background:${b ? '#f0f6ff' : 'transparent'}; font-size:11.5px; color:#0d1b35; border-radius:3px;">${b ? '⚙ ' + b : ''}</td>
+            <td style="width:2px;"></td>
+            <td style="width:33%; padding:4px 7px; background:${c ? '#f0f6ff' : 'transparent'}; font-size:11.5px; color:#0d1b35; border-radius:3px;">${c ? '⚙ ' + c : ''}</td>
+          </tr>`);
         }
         return rows.join('');
       })()}
