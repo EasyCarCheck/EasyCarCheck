@@ -154,6 +154,21 @@ function traduireOption(opt) {
     'Sitzheizung vorne': "Sièges avant chauffants",
     'Wireless Charging für mobile Geräte': "Chargement sans fil pour appareils mobiles",
     'Roues en alliage léger 18\" AMG -5 rayons- doubles': 'Jantes 18" AMG 5 rayons',
+    'ESP Elektronisches Stabilitätsprogramm': "Contrôle électronique de stabilité ESP",
+    'LED Tagfahrlicht': "LED Phares de jour",
+    'Rückfahrkamera': "Caméra de recul",
+    'Reifendruck-Kontrollsystem RDK': "Système de contrôle pression pneus",
+    'Seitenairbag Fahrer und Beifahrerseite': "Airbags latéraux conducteur et passager",
+    'Airbag Fahrer und Beifahrerseite': "Airbags conducteur et passager",
+    'Keine Gewähr auf die Angaben der Serienausstattungen': null,
+    'Aucune garantie sur l exactitude de l équipement de série': null,
+    'Alarmanlage mit Abschleppschutz u. Innenraumabsicherung': "Alarme avec protection remorquage",
+    'Einbruch- und Diebstahlwarnanlage': "Système antivol",
+    'Aussenspiegel elektrisch anklappbar': "Rétroviseurs électriques rabattables",
+    'Soundsystem': "Système audio premium",
+    'Éclairage d ambiance': "Éclairage d'ambiance",
+    'Aileron arrière': "Aileron arrière AMG",
+    'Spoiler frontal spécial': "Spoiler frontal AMG",
   };
   return dict[opt] !== undefined ? dict[opt] : opt;
 }
@@ -395,7 +410,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .cell-unit { font-size: 12px; color: #5a7a9a; font-weight: 600; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
-  .section { padding: 12px 22px; border-bottom: 1px solid #d0e4f7; }
+  .section { padding: 10px 22px; border-bottom: 1px solid #d0e4f7; }
   .section-white { background: #fff; }
   .section-light { background: #f0f6ff; }
   .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -417,9 +432,9 @@ async function genererPDF(analyse, reportNumber, url) {
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 8px; }
   .redflag-card { background: rgba(220,53,69,0.06); border-radius: 7px; padding: 10px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 5px; }
   .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; }
-  .verdict-section { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); }
+  .verdict-section { padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); }
   .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 5px; }
-  .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
+  .verdict-value { font-size: 26px; font-weight: 900; letter-spacing: 2px; }
   .verdict-desc { font-size: 11px; color: #b8d0f0; margin-top: 6px; max-width: 280px; line-height: 1.5; }
   .footer { padding: 10px 22px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; }
 </style>
