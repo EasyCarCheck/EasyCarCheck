@@ -30,43 +30,51 @@ async function scrapeAnnonce(url) {
     // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
     let equipmentData = '';
     try {
-      const equipmentMatch = html.match(/"optional":\s*(\[[\s\S]*?\])\s*,\s*"searchAttributes"/);
-      const standardMatch = html.match(/"standard":\s*(\[[\s\S]*?\])\s*,\s*"optional"/);
+      // Extraire les noms d'options directement avec regex simple sur "name":"..."
+      // dans la section equipment optional
+      const optionalIdx = html.indexOf('"optional":[');
+      const searchAttrIdx = html.indexOf('"searchAttributes"');
+      if (optionalIdx !== -1 && searchAttrIdx !== -1 && searchAttrIdx > optionalIdx) {
+        const optionalSection = html.substring(optionalIdx, searchAttrIdx);
+        const nameMatches = [...optionalSection.matchAll(/"name":"([^"]+)"/g)];
+        const allNames = nameMatches.map(m => m[1])
+          .filter(n => !n.includes('Détails consultez') && !n.includes('Details siehe') && n.length > 2);
+        // Dédupliquer
+        const uniqueNames = [...new Set(allNames)];
+        if (uniqueNames.length > 0) {
+          equipmentData += "\nOPTIONS (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
+        }
+      }
+
+      // Serie
+      const standardIdx = html.indexOf('"standard":[');
+      const optionalIdx2 = html.indexOf('"optional":[');
+      if (standardIdx !== -1 && optionalIdx2 !== -1 && optionalIdx2 > standardIdx) {
+        const standardSection = html.substring(standardIdx, optionalIdx2);
+        const nameMatches = [...standardSection.matchAll(/"name":"([^"]+)"/g)];
+        const allNames = nameMatches.map(m => m[1])
+          .filter(n => !n.includes('Aucune garantie') && !n.includes('Details') && !n.includes('Détails') && n.length > 2);
+        const uniqueNames = [...new Set(allNames)];
+        if (uniqueNames.length > 0) {
+          equipmentData += "\nSERIE (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
+        }
+      }
+
+      // CO2, poids, prix catalogue, description
       const co2Match = html.match(/"co2Emission":(\d+)/);
       const weightMatch = html.match(/"weightTotal":(\d+)/);
       const listPriceMatch = html.match(/"listPrice":(\d+)/);
       const descMatch = html.match(/"description":"([\s\S]*?)","directImport"/);
-
-      if (equipmentMatch) {
-        const optional = JSON.parse(equipmentMatch[1]);
-        const names = optional.map(o => {
-          let name = o.name;
-          if (o.packageItems && o.packageItems.length > 0) {
-            const items = o.packageItems.map(i => i.name)
-              .filter(i => !i.includes("Detai")).join(", ");
-            if (items) name += " (" + items + ")";
-          }
-          return name;
-        });
-        equipmentData += "\nOPTIONS (" + names.length + "): " + names.join(" | ");
-      }
-
-      if (standardMatch) {
-        const standard = JSON.parse(standardMatch[1]);
-        const names = standard.map(s => s.name)
-          .filter(n => !n.includes("Aucune garantie") && !n.includes("Details") && !n.includes("Detai"));
-        equipmentData += "\nSERIE (" + names.length + "): " + names.join(" | ");
-      }
 
       if (co2Match) equipmentData += "\nCO2: " + co2Match[1] + " g/km";
       if (weightMatch) equipmentData += "\nPOIDS TOTAL: " + weightMatch[1] + " kg";
       if (listPriceMatch) equipmentData += "\nPRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
       if (descMatch) {
         const desc = descMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
-        equipmentData += "\nDESCRIPTION: " + desc.substring(0, 2000);
+        equipmentData += "\nDESCRIPTION COMPLETE: " + desc.substring(0, 2000);
       }
 
-      console.log("EQUIPEMENTS EXTRAITS:", equipmentData.substring(0, 300));
+      console.log("EQUIPEMENTS EXTRAITS:", equipmentData.substring(0, 500));
     } catch(e) {
       console.log("Extraction JSON echouee:", e.message);
     }
