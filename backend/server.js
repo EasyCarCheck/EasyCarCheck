@@ -14,7 +14,6 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
-    // Appel 1 : texte general de la page
     const response = await axios.get('https://api.zenrows.com/v1/', {
       params: {
         apikey: process.env.ZENROWS_API_KEY,
@@ -28,6 +27,62 @@ async function scrapeAnnonce(url) {
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
 
+    // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
+    let equipmentData = '';
+    let co2Value = null;
+
+    try {
+      // OPTIONS (optional)
+      const optionalIdx = html.indexOf('"optional":[');
+      const searchAttrIdx = html.indexOf('"searchAttributes"');
+      if (optionalIdx !== -1 && searchAttrIdx !== -1 && searchAttrIdx > optionalIdx) {
+        const optionalSection = html.substring(optionalIdx, searchAttrIdx);
+        const nameMatches = [...optionalSection.matchAll(/"name":"([^"]+)"/g)];
+        const allNames = nameMatches.map(m => m[1])
+          .filter(n => !n.includes('Détails consultez') && !n.includes('Details siehe') && n.length > 2);
+        const uniqueNames = [...new Set(allNames)];
+        if (uniqueNames.length > 0) {
+          equipmentData += "\nOPTIONS (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
+        }
+      }
+
+      // SERIE (standard)
+      const standardIdx = html.indexOf('"standard":[');
+      const optionalIdx2 = html.indexOf('"optional":[');
+      if (standardIdx !== -1 && optionalIdx2 !== -1 && optionalIdx2 > standardIdx) {
+        const standardSection = html.substring(standardIdx, optionalIdx2);
+        const nameMatches = [...standardSection.matchAll(/"name":"([^"]+)"/g)];
+        const allNames = nameMatches.map(m => m[1])
+          .filter(n => !n.includes('Aucune garantie') && !n.includes('Details') && !n.includes('Détails') && n.length > 2);
+        const uniqueNames = [...new Set(allNames)];
+        if (uniqueNames.length > 0) {
+          equipmentData += "\nSERIE (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
+        }
+      }
+
+      // CO2, poids, prix catalogue, description
+      const co2Match = html.match(/"co2Emission":(\d+)/);
+      const weightMatch = html.match(/"weightTotal":(\d+)/);
+      const listPriceMatch = html.match(/"listPrice":(\d+)/);
+      const descMatch = html.match(/"description":"([\s\S]*?)","directImport"/);
+
+      if (co2Match) {
+        co2Value = parseInt(co2Match[1]);
+        equipmentData += "\nCO2: " + co2Match[1] + " g/km";
+      }
+      if (weightMatch) equipmentData += "\nPOIDS TOTAL: " + weightMatch[1] + " kg";
+      if (listPriceMatch) equipmentData += "\nPRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
+      if (descMatch) {
+        const desc = descMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
+        equipmentData += "\nDESCRIPTION COMPLETE: " + desc.substring(0, 2000);
+      }
+
+      console.log("EQUIPEMENTS EXTRAITS:", equipmentData.substring(0, 500));
+      console.log("CO2 EXTRAIT:", co2Value);
+    } catch(e) {
+      console.log("Extraction JSON echouee:", e.message);
+    }
+
     // Nettoyer le HTML
     let cleanHtml = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
     cleanHtml = cleanHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
@@ -35,39 +90,14 @@ async function scrapeAnnonce(url) {
     cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
 
-    // Appel 2 : css_extractor cible pour les equipements
-    let equipmentData = '';
-    try {
-      const responseEq = await axios.get('https://api.zenrows.com/v1/', {
-        params: {
-          apikey: process.env.ZENROWS_API_KEY,
-          url: url,
-          js_render: 'true',
-          premium_proxy: 'true',
-          wait: '8000',
-          css_extractor: '{"options":".chakra-list__root .chakra-list__item"}'
-        },
-        timeout: 120000
-      });
-      const data = responseEq.data;
-      console.log("CSS EXTRACTOR RAW:", JSON.stringify(data).substring(0, 500));
-      if (data && data.options && Array.isArray(data.options)) {
-        const opts = [...new Set(data.options.filter(o => o && o.trim().length > 2))];
-        if (opts.length > 0) {
-          equipmentData = "\nEQUIPEMENTS & OPTIONS (" + opts.length + "): " + opts.join(" | ");
-          console.log("EQUIPEMENTS OK:", equipmentData.substring(0, 300));
-        }
-      }
-    } catch(e) {
-      console.log("CSS extractor erreur:", e.message);
-    }
+    const finalContent = cleanHtml.substring(0, 35000);
+    console.log("ZENROWS OK:", finalContent.substring(0, 500));
 
-    const finalContent = cleanHtml.substring(0, 25000) + "\n\n" + equipmentData;
-    console.log("ZENROWS OK:", cleanHtml.substring(0, 300));
-    return { html: finalContent, url: url };
+    // FIX: retourner equipmentData et co2Value avec le html
+    return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
-    return { html: `URL: ${url}`, url: url };
+    return { html: `URL: ${url}`, url: url, equipmentData: '', co2: null };
   }
 }
 
@@ -98,11 +128,16 @@ function nettoyerPuissance(puissance) {
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
+  // FIX: injecter equipmentData directement dans le prompt
+  const equipmentSection = scrapedData.equipmentData
+    ? `\n\nDONNÉES STRUCTURÉES EXTRAITES (priorité sur le texte brut) :\n${scrapedData.equipmentData}`
+    : '';
+
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
 Voici le contenu de l'annonce automobile :
 URL: ${url}
-Contenu: ${scrapedData.html}
+Contenu: ${scrapedData.html}${equipmentSection}
 
 ÉTAPE 1 - Extrais ces données EXACTES depuis le contenu :
 - Prix exact en CHF (nombre entier)
@@ -112,11 +147,11 @@ Contenu: ${scrapedData.html}
 - Carburant (Essence / Diesel / Électrique / Hybride)
 - Boîte de vitesses
 - Puissance en PS uniquement (ex: "306 PS")
-- CO2 en g/km si disponible (nombre entier, sinon null)
+- CO2 en g/km : utilise la valeur de la section "DONNÉES STRUCTURÉES" si disponible (nombre entier, sinon null)
 - Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur
-- TOUTES les options et équipements listés — inclure les packs et leurs contenus, supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
+- TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète), supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
 
 ÉTAPE 2 - Analyse approfondie :
 - Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste
@@ -130,7 +165,7 @@ Contenu: ${scrapedData.html}
 - BOÎTE : "Manuelle robotisée" = "Automatique (DCT)" pour Mercedes AMG
 - DESCRIPTION VENDEUR : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. "Zylinderkopf" = "culasse". Jamais "cylindre de tête" ou "cylindre tête"
 - Ne jamais inventer des points négatifs absents de l'annonce
-- score_global = ENTIER arrondi (jamais décimal)
+- score_global = mettre 0 (calculé automatiquement par le système)
 - taxe_cantonale_ge = mettre 0 (calculé automatiquement par le système)
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
@@ -146,7 +181,7 @@ RÈGLES JSON :
 1. JSON valide uniquement, rien d'autre
 2. verdict = "ACHETER", "NÉGOCIER" ou "ÉVITER"
 3. Guillemets doubles uniquement
-4. score_global = entier arrondi
+4. score_global = mettre 0 (recalculé côté serveur)
 5. taxe_cantonale_ge = 0
 
 {
@@ -216,23 +251,32 @@ RÈGLES JSON :
     }
   }
 
+  // FIX: si GPT n'a pas trouvé le CO2 mais qu'on l'a extrait côté scraping, on l'utilise
+  if ((!parsed.co2 || parsed.co2 === 0) && scrapedData.co2) {
+    parsed.co2 = scrapedData.co2;
+    console.log('CO2 injecté depuis scraping:', parsed.co2);
+  }
+
   // Force scores entiers
-  parsed.score_global = Math.round(parsed.score_global || 0);
   parsed.score_prix = Math.round(parsed.score_prix || 0);
   parsed.score_fiabilite = Math.round(parsed.score_fiabilite || 0);
   parsed.score_entretien = Math.round(parsed.score_entretien || 0);
 
-  // Recalculer score_global comme moyenne arrondie des 3 scores
+  // FIX: recalcul score_global côté Node.js = moyenne arrondie des 3 scores
   parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
 
   // Si culasse remplacée → score_fiabilite max 5, recalculer global
   const culasseDetectee = (parsed.red_flags || []).some(r => r.toLowerCase().includes('culasse')) ||
     (parsed.points_negatifs || []).some(p => p.toLowerCase().includes('culasse'));
   if (culasseDetectee && parsed.score_fiabilite > 5) parsed.score_fiabilite = 5;
-  if (culasseDetectee) parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
+  if (culasseDetectee) {
+    parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
+  }
 
-  // Calcul taxe estimation
-  parsed.taxe_cantonale_ge = estimerTaxe(parsed.co2, parsed.carburant);
+  // FIX: calcul taxe avec le CO2 réel (scraping prioritaire sur GPT)
+  const co2Final = scrapedData.co2 || parsed.co2;
+  parsed.taxe_cantonale_ge = estimerTaxe(co2Final, parsed.carburant);
+  console.log(`TAXE calculée: CO2=${co2Final} → ${parsed.taxe_cantonale_ge} CHF`);
 
   // Nettoyer puissance
   parsed.puissance = nettoyerPuissance(parsed.puissance);
@@ -618,7 +662,7 @@ app.post('/test-rapport', async (req, res) => {
     const scraped = await scrapeAnnonce(url);
     console.log('2. Scraping OK');
     const analyse = await analyserAvecGPT(scraped, langue, url);
-    console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global, '| Taxe:', analyse.taxe_cantonale_ge);
+    console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global, '| CO2:', analyse.co2, '| Taxe:', analyse.taxe_cantonale_ge);
     const pdf = await genererPDF(analyse, reportNumber, url);
     console.log('4. PDF OK');
     await envoyerEmail(email, pdf, analyse, reportNumber);
