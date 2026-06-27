@@ -72,6 +72,8 @@ function calculerTaxeGE(co2, poids, carburant) {
   else tauxParG = 12.00;
   return Math.round(base + (co2 * tauxParG));
 }
+
+async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
