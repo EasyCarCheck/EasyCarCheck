@@ -38,7 +38,40 @@ async function scrapeAnnonce(url) {
   }
 }
 
-async function analyserAvecGPT(scrapedData, langue, url) {
+// ─── CALCUL TAXE GE ─────────────────────────────────────
+function calculerTaxeGE(co2, poids, carburant) {
+  const base = 120;
+
+  // Véhicule électrique
+  if (carburant && carburant.toLowerCase().includes('électr')) {
+    let surtaxe = 0;
+    if (!poids) return base + 500; // poids inconnu
+    if (poids <= 1400) surtaxe = 0;
+    else if (poids <= 1650) surtaxe = 50;
+    else if (poids <= 1750) surtaxe = 100;
+    else if (poids <= 1900) surtaxe = 200;
+    else if (poids <= 2100) surtaxe = 400;
+    else if (poids <= 2300) surtaxe = 600;
+    else if (poids <= 2400) surtaxe = 800;
+    else if (poids <= 2500) surtaxe = 1100;
+    else if (poids <= 2600) surtaxe = 1200;
+    else surtaxe = 1400;
+    return base + surtaxe;
+  }
+
+  // Véhicule thermique ou hybride
+  if (!co2) return base + 500; // CO2 inconnu → forfait
+  let tauxParG = 0;
+  if (co2 <= 120) tauxParG = 0.25;
+  else if (co2 <= 135) tauxParG = 0.75;
+  else if (co2 <= 155) tauxParG = 1.25;
+  else if (co2 <= 175) tauxParG = 2.25;
+  else if (co2 <= 200) tauxParG = 3.50;
+  else if (co2 <= 250) tauxParG = 4.50;
+  else if (co2 <= 300) tauxParG = 8.00;
+  else tauxParG = 12.00;
+  return Math.round(base + (co2 * tauxParG));
+}
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
   const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
@@ -47,49 +80,49 @@ Voici le contenu de l'annonce automobile :
 URL: ${url}
 Contenu: ${scrapedData.html}
 
-ÉTAPE 1 - Extrais ces données exactes depuis le contenu :
-- Prix exact en CHF
-- Kilométrage exact
+ÉTAPE 1 - Extrais ces données EXACTES depuis le contenu :
+- Prix exact en CHF (nombre entier)
+- Kilométrage exact (nombre entier)
 - Année exacte
 - Marque et modèle exacts
 - Carburant, boîte, puissance
+- CO2 en g/km si disponible (nombre entier, sinon null)
+- Poids à vide en kg si disponible (nombre entier, sinon null)
 - Couleur exacte — cherche dans toute la page. Si introuvable, mets "Non communiquée"
-- Description du vendeur
-- Options listées
+- Description complète du vendeur
+- Toutes les options listées
 
 ÉTAPE 2 - Analyse approfondie :
-- Compare le prix avec le marché suisse actuel et calcule TOUJOURS une fourchette marché min et max réaliste
-- Identifie TOUS les problèmes connus de ce modèle
+- Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent (remplacement 5000-8000 CHF hors garantie), boîte DCT fragile
-- Détecte les red flags dans la description vendeur
-- Si "Zylinderkopf" ou "culasse" ou "cylindre" ou "Zylinderkopf" mentionné dans l'annonce → red flag OBLIGATOIRE : ajoute "Culasse remplacée" dans red_flags ET dans points_negatifs. JAMAIS dans points_positifs. Utilise TOUJOURS le terme exact "Culasse remplacée", jamais "cylindre tête" ou autre
-- Si culasse remplacée → baisser score_fiabilite de 2 points par rapport à la normale
-- Ne jamais mentionner "consommation de carburant élevée" comme point négatif
-- Ne jamais qualifier le kilométrage d'élevé sauf si plus de 25000 km/an. Ex: 54500 km en 2021 = ~13000 km/an = NORMAL, ne pas mentionner
-- Si free service Mercedes actif (service gratuit jusqu'à X km ou X ans) : cout_entretien_annee1 = 250 CHF (liquides uniquement: huile moteur, huile boite, liquide de frein). cout_total_3ans = 750 CHF. Ajouter dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
-- Si pas de free service : estimer cout_entretien_annee1 et cout_total_3ans selon le modèle
-- La boite "Manuelle robotisée" sur AutoScout24 = toujours "Automatique (DCT)" pour les Mercedes AMG
-- Extrais OBLIGATOIREMENT : couleur, transmission (2 ou 4 roues motrices), liste complète des options
-- Traduis INTÉGRALEMENT la description du vendeur en ${langues[langue] || 'français'} en phrases claires et lisibles. PAS de liste de mots-clés bruts. Reformule proprement
-- Traduis TOUS les termes techniques en ${langues[langue] || 'français'}
+- DÉTECTION CULASSE : Si "Zylinderkopf" ou "culasse" ou "cylindre" mentionné dans l'annonce → ajouter "Culasse remplacée" dans red_flags ET dans points_negatifs. JAMAIS dans points_positifs. Toujours "Culasse remplacée" comme terme exact
+- Si culasse remplacée détectée → baisser score_fiabilite de 2 points
+- INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée", kilométrage normal (<25000 km/an)
+- KILOMÉTRAGE : qualifier d'élevé SEULEMENT si >25000 km/an. 54500 km en 2021 = ~13000 km/an = NORMAL, ne pas mentionner
+- FREE SERVICE : Si service gratuit Mercedes actif → cout_entretien_annee1 = 250 CHF, cout_total_3ans = 750 CHF. Ajouter dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
+- BOÎTE : "Manuelle robotisée" sur AutoScout24 = "Automatique (DCT)" pour Mercedes AMG
+- DESCRIPTION : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. Jamais de liste de mots-clés bruts
 - Ne jamais inventer des points négatifs absents de l'annonce
-- Génère TOUJOURS au minimum 3 points dans points_positifs et 2 dans points_negatifs
-- Génère TOUJOURS exactement 4 éléments dans checklist_visite
-- Génère TOUJOURS exactement 3 questions dans questions_vendeur
-- Génère TOUJOURS 2 à 3 problèmes connus dans problemes_connus_modele
-- La taxe cantonale genevoise : montant réaliste entre 400 et 1200 CHF/an, JAMAIS 0
+- taxe_cantonale_ge : mettre 0 (sera calculé automatiquement)
+- score_global doit être un ENTIER (arrondi), jamais un décimal comme 6.7
+
+QUANTITÉS OBLIGATOIRES :
+- points_positifs : minimum 3 éléments
+- points_negatifs : minimum 2 éléments (uniquement si réels)
+- checklist_visite : exactement 4 éléments
+- questions_vendeur : exactement 3 questions
+- problemes_connus_modele : 2 à 3 éléments
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
-RÈGLES ABSOLUES :
-1. Réponds UNIQUEMENT avec du JSON valide
-2. verdict = UNIQUEMENT ACHETER, NÉGOCIER ou ÉVITER
-3. prix_negocie_suggere doit être un nombre réaliste jamais 0
-4. Utilise uniquement des guillemets doubles dans le JSON
-5. Pas de virgule après le dernier élément d'un tableau ou objet
-6. Traduis TOUJOURS tout en ${langues[langue] || 'français'}
+RÈGLES JSON ABSOLUES :
+1. Réponds UNIQUEMENT avec du JSON valide, rien d'autre
+2. verdict = UNIQUEMENT "ACHETER", "NÉGOCIER" ou "ÉVITER"
+3. prix_negocie_suggere = nombre réaliste, jamais 0
+4. Guillemets doubles uniquement
+5. Pas de virgule après le dernier élément
+6. score_global = entier arrondi (ex: 6 pas 6.7)
 7. taxe_cantonale_ge entre 400 et 1200, JAMAIS 0
-8. fourchette_marche_min et fourchette_marche_max toujours réalistes
 
 {
   "marque": "",
@@ -100,6 +133,8 @@ RÈGLES ABSOLUES :
   "carburant": "",
   "boite": "",
   "puissance": "",
+  "co2": null,
+  "poids": null,
   "couleur": "",
   "transmission": "",
   "options": [],
@@ -142,21 +177,30 @@ RÈGLES ABSOLUES :
   let clean = content.replace(/```json|```/g, '').trim();
   console.log('GPT RESPONSE:', clean.substring(0, 500));
 
+  let parsed;
   try {
-    return JSON.parse(clean);
+    parsed = JSON.parse(clean);
   } catch(e) {
-    clean = clean.replace(/,(\s*[}\]])/g, '$1');
-    clean = clean.replace(/[\u2018\u2019]/g, '');
+    clean = clean.replace(/,(\s*[}\]])/g, '$1').replace(/[\u2018\u2019]/g, '');
     try {
-      return JSON.parse(clean);
+      parsed = JSON.parse(clean);
     } catch(e2) {
       const match = clean.match(/\{[\s\S]*\}/);
       if (match) {
-        try { return JSON.parse(match[0]); } catch(e3) { throw new Error('JSON invalide'); }
-      }
-      throw new Error('JSON invalide');
+        try { parsed = JSON.parse(match[0]); } catch(e3) { throw new Error('JSON invalide'); }
+      } else { throw new Error('JSON invalide'); }
     }
   }
+
+  // Force score_global entier
+  if (parsed.score_global) parsed.score_global = Math.round(parsed.score_global);
+  if (parsed.score_prix) parsed.score_prix = Math.round(parsed.score_prix);
+  if (parsed.score_fiabilite) parsed.score_fiabilite = Math.round(parsed.score_fiabilite);
+  if (parsed.score_entretien) parsed.score_entretien = Math.round(parsed.score_entretien);
+  // Calcul taxe GE précis selon barème officiel genevois 2025
+  parsed.taxe_cantonale_ge = calculerTaxeGE(parsed.co2, parsed.poids, parsed.carburant);
+
+  return parsed;
 }
 
 async function genererPDF(analyse, reportNumber, url) {
@@ -220,18 +264,18 @@ async function genererPDF(analyse, reportNumber, url) {
   .checklist-item { background: #f0f6ff; border-radius: 6px; padding: 11px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .checklist-item-white { background: #fff; border-radius: 6px; padding: 11px 14px; font-size: 13px; color: #0d1b35; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
   .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; page-break-inside: avoid; }
-  .cost-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; page-break-inside: avoid; }
+  .cost-card { background: #fff; border-radius: 8px; padding: 14px; text-align: center; }
   .cost-label { font-size: 10px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 6px; }
   .cost-value { font-size: 16px; font-weight: 800; }
   .redflag-section { padding: 20px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; page-break-inside: avoid; }
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 10px; }
   .redflag-card { background: rgba(220,53,69,0.06); border-radius: 8px; padding: 12px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 6px; }
   .redflag-title { font-size: 13px; font-weight: 600; color: #dc3545; }
-  .verdict-section { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; }
+  .verdict-section { padding: 24px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; }
   .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 6px; }
-  .verdict-value { font-size: 30px; font-weight: 900; letter-spacing: 2px; }
-  .verdict-desc { font-size: 12px; color: #b8d0f0; margin-top: 6px; max-width: 300px; line-height: 1.5; }
-  .footer { padding: 14px 20px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; }
+  .verdict-value { font-size: 32px; font-weight: 900; letter-spacing: 2px; }
+  .verdict-desc { font-size: 12px; color: #b8d0f0; margin-top: 8px; max-width: 300px; line-height: 1.5; }
+  .footer { padding: 14px 20px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; page-break-inside: avoid; }
 </style>
 </head>
 <body>
@@ -261,21 +305,21 @@ async function genererPDF(analyse, reportNumber, url) {
     <div class="scores-grid">
       <div class="score-item">
         <div class="score-item-label">PRIX</div>
-        <div class="score-item-num" style="color: ${colour(analyse.score_prix)};">${analyse.score_prix}</div>
-        <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_prix * 10}%; background: ${colour(analyse.score_prix)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_prix)};">${scoreTag(analyse.score_prix)}</div>
+        <div class="score-item-num" style="color:${colour(analyse.score_prix)};">${analyse.score_prix}</div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_prix*10}%;background:${colour(analyse.score_prix)};"></div></div>
+        <div class="score-item-tag" style="color:${colour(analyse.score_prix)};">${scoreTag(analyse.score_prix)}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">FIABILITÉ</div>
-        <div class="score-item-num" style="color: ${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
-        <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_fiabilite * 10}%; background: ${colour(analyse.score_fiabilite)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_fiabilite)};">${scoreTag(analyse.score_fiabilite)}</div>
+        <div class="score-item-num" style="color:${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_fiabilite*10}%;background:${colour(analyse.score_fiabilite)};"></div></div>
+        <div class="score-item-tag" style="color:${colour(analyse.score_fiabilite)};">${scoreTag(analyse.score_fiabilite)}</div>
       </div>
       <div class="score-item">
         <div class="score-item-label">ENTRETIEN</div>
-        <div class="score-item-num" style="color: ${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
-        <div class="score-bar-bg"><div class="score-bar-fill" style="width: ${analyse.score_entretien * 10}%; background: ${colour(analyse.score_entretien)};"></div></div>
-        <div class="score-item-tag" style="color: ${colour(analyse.score_entretien)};">${scoreTag(analyse.score_entretien)}</div>
+        <div class="score-item-num" style="color:${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_entretien*10}%;background:${colour(analyse.score_entretien)};"></div></div>
+        <div class="score-item-tag" style="color:${colour(analyse.score_entretien)};">${scoreTag(analyse.score_entretien)}</div>
       </div>
     </div>
   </div>
@@ -287,7 +331,7 @@ async function genererPDF(analyse, reportNumber, url) {
     <div class="cell"><div class="cell-label">PUISSANCE</div><div class="cell-value">${analyse.puissance} <span style="font-size:10px;color:#5a7a9a;">PS</span></div></div>
   </div>
 
-  <div class="grid-4 grid-light" style="border-bottom: 1px solid #d0e4f7;">
+  <div class="grid-4 grid-light" style="border-bottom:1px solid #d0e4f7;">
     <div class="cell"><div class="cell-label">CARBURANT</div><div class="cell-value">${analyse.carburant}</div></div>
     <div class="cell"><div class="cell-label">BOÎTE</div><div class="cell-value">${analyse.boite}</div></div>
     <div class="cell"><div class="cell-label">TRANSMISSION</div><div class="cell-value">${analyse.transmission}</div></div>
@@ -308,14 +352,14 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>
 
   ${analyse.options?.length > 0 ? `
-  <div class="section section-white">
+  <div class="section section-white" style="page-break-after: avoid;">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
     <div class="grid-2">
       ${analyse.options.map(o => `<div class="point-card-light">⚙ ${o}</div>`).join('')}
     </div>
   </div>` : ''}
 
-  <div class="section section-light" style="page-break-before: always; page-break-inside: avoid;">
+  <div class="section section-light" style="page-break-before: always;">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">COÛTS &amp; MARCHÉ</div></div>
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
@@ -329,6 +373,7 @@ async function genererPDF(analyse, reportNumber, url) {
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">TAXE GE / AN</div>
         <div class="cost-value" style="color:#1a3a6e;">${analyse.taxe_cantonale_ge?.toLocaleString()} CHF</div>
+        <div style="font-size:9px;color:#5a7a9a;margin-top:4px;">ge.ch/calcul-taxe-vehicule</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">FOURCHETTE MARCHÉ</div>
@@ -367,7 +412,7 @@ async function genererPDF(analyse, reportNumber, url) {
     </div>
     <div style="text-align:right;">
       <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">PRIX SUGGÉRÉ</div>
-      <div style="font-size:28px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
+      <div style="font-size:30px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
       <div style="font-size:10px;color:#00B4D8;margin-top:4px;">↓ Économie : ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
     </div>
   </div>
@@ -431,7 +476,7 @@ app.post('/test-rapport', async (req, res) => {
     const scraped = await scrapeAnnonce(url);
     console.log('2. Scraping OK');
     const analyse = await analyserAvecGPT(scraped, langue, url);
-    console.log('3. GPT OK - Verdict:', analyse.verdict);
+    console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global);
     const pdf = await genererPDF(analyse, reportNumber, url);
     console.log('4. PDF OK');
     await envoyerEmail(email, pdf, analyse, reportNumber);
