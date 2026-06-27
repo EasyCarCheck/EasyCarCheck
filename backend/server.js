@@ -14,6 +14,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
+    // Appel 1 : texte general de la page
     const response = await axios.get('https://api.zenrows.com/v1/', {
       params: {
         apikey: process.env.ZENROWS_API_KEY,
@@ -27,58 +28,6 @@ async function scrapeAnnonce(url) {
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
 
-    // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
-    let equipmentData = '';
-    try {
-      // Extraire les noms d'options directement avec regex simple sur "name":"..."
-      // dans la section equipment optional
-      const optionalIdx = html.indexOf('"optional":[');
-      const searchAttrIdx = html.indexOf('"searchAttributes"');
-      if (optionalIdx !== -1 && searchAttrIdx !== -1 && searchAttrIdx > optionalIdx) {
-        const optionalSection = html.substring(optionalIdx, searchAttrIdx);
-        const nameMatches = [...optionalSection.matchAll(/"name":"([^"]+)"/g)];
-        const allNames = nameMatches.map(m => m[1])
-          .filter(n => !n.includes('Détails consultez') && !n.includes('Details siehe') && n.length > 2);
-        // Dédupliquer
-        const uniqueNames = [...new Set(allNames)];
-        if (uniqueNames.length > 0) {
-          equipmentData += "\nOPTIONS (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
-        }
-      }
-
-      // Serie
-      const standardIdx = html.indexOf('"standard":[');
-      const optionalIdx2 = html.indexOf('"optional":[');
-      if (standardIdx !== -1 && optionalIdx2 !== -1 && optionalIdx2 > standardIdx) {
-        const standardSection = html.substring(standardIdx, optionalIdx2);
-        const nameMatches = [...standardSection.matchAll(/"name":"([^"]+)"/g)];
-        const allNames = nameMatches.map(m => m[1])
-          .filter(n => !n.includes('Aucune garantie') && !n.includes('Details') && !n.includes('Détails') && n.length > 2);
-        const uniqueNames = [...new Set(allNames)];
-        if (uniqueNames.length > 0) {
-          equipmentData += "\nSERIE (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
-        }
-      }
-
-      // CO2, poids, prix catalogue, description
-      const co2Match = html.match(/"co2Emission":(\d+)/);
-      const weightMatch = html.match(/"weightTotal":(\d+)/);
-      const listPriceMatch = html.match(/"listPrice":(\d+)/);
-      const descMatch = html.match(/"description":"([\s\S]*?)","directImport"/);
-
-      if (co2Match) equipmentData += "\nCO2: " + co2Match[1] + " g/km";
-      if (weightMatch) equipmentData += "\nPOIDS TOTAL: " + weightMatch[1] + " kg";
-      if (listPriceMatch) equipmentData += "\nPRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
-      if (descMatch) {
-        const desc = descMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
-        equipmentData += "\nDESCRIPTION COMPLETE: " + desc.substring(0, 2000);
-      }
-
-      console.log("EQUIPEMENTS EXTRAITS:", equipmentData.substring(0, 500));
-    } catch(e) {
-      console.log("Extraction JSON echouee:", e.message);
-    }
-
     // Nettoyer le HTML
     let cleanHtml = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
     cleanHtml = cleanHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
@@ -86,8 +35,35 @@ async function scrapeAnnonce(url) {
     cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
 
-    const finalContent = cleanHtml.substring(0, 35000);
-    console.log("ZENROWS OK:", finalContent.substring(0, 500));
+    // Appel 2 : css_extractor cible pour les equipements
+    let equipmentData = '';
+    try {
+      const responseEq = await axios.get('https://api.zenrows.com/v1/', {
+        params: {
+          apikey: process.env.ZENROWS_API_KEY,
+          url: url,
+          js_render: 'true',
+          premium_proxy: 'true',
+          wait: '8000',
+          css_extractor: '{"options":".chakra-list__root .chakra-list__item"}'
+        },
+        timeout: 120000
+      });
+      const data = responseEq.data;
+      console.log("CSS EXTRACTOR RAW:", JSON.stringify(data).substring(0, 500));
+      if (data && data.options && Array.isArray(data.options)) {
+        const opts = [...new Set(data.options.filter(o => o && o.trim().length > 2))];
+        if (opts.length > 0) {
+          equipmentData = "\nEQUIPEMENTS & OPTIONS (" + opts.length + "): " + opts.join(" | ");
+          console.log("EQUIPEMENTS OK:", equipmentData.substring(0, 300));
+        }
+      }
+    } catch(e) {
+      console.log("CSS extractor erreur:", e.message);
+    }
+
+    const finalContent = cleanHtml.substring(0, 25000) + "\n\n" + equipmentData;
+    console.log("ZENROWS OK:", cleanHtml.substring(0, 300));
     return { html: finalContent, url: url };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
