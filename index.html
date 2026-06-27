@@ -16,7 +16,7 @@
   nav a { color: #b8d0f0; text-decoration: none; font-size: 14px; transition: color 0.2s; }
   nav a:hover { color: #fff; }
   .lang-select { display: flex; gap: 6px; }
-  .lang-btn { background: transparent; border: 1px solid rgba(184,208,240,0.4); color: #b8d0f0; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+  .lang-btn { background: transparent; border: 1px solid rgba(184,208,240,0.4); color: #b8d0f0; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; transition: all 0.2s; }
   .lang-btn.active, .lang-btn:hover { border-color: #00B4D8; color: #00B4D8; background: rgba(0,180,216,0.1); }
 
   /* HERO */
@@ -186,11 +186,12 @@
     <a href="#how">Comment ça marche</a>
     <a href="#pricing">Tarifs</a>
     <a href="#faq">FAQ</a>
+    <a href="mentions-legales.html">Légal</a>
     <div class="lang-select">
-      <button class="lang-btn active" onclick="setLangue('fr', this)">🇫🇷 FR</button>
-      <button class="lang-btn" onclick="setLangue('de', this)">🇩🇪 DE</button>
-      <button class="lang-btn" onclick="setLangue('it', this)">🇮🇹 IT</button>
-      <button class="lang-btn" onclick="setLangue('en', this)">🇬🇧 EN</button>
+      <button class="lang-btn active" onclick="setLangue('fr', this)">FR</button>
+      <button class="lang-btn" onclick="setLangue('de', this)">DE</button>
+      <button class="lang-btn" onclick="setLangue('it', this)">IT</button>
+      <button class="lang-btn" onclick="setLangue('en', this)">EN</button>
     </div>
   </nav>
 </header>
