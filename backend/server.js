@@ -190,11 +190,14 @@ RÈGLES JSON :
   parsed.score_fiabilite = Math.round(parsed.score_fiabilite || 0);
   parsed.score_entretien = Math.round(parsed.score_entretien || 0);
 
-  // Si culasse remplacée → score max 6
+  // Recalculer score_global comme moyenne arrondie des 3 scores
+  parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
+
+  // Si culasse remplacée → score_fiabilite max 5, recalculer global
   const culasseDetectee = (parsed.red_flags || []).some(r => r.toLowerCase().includes('culasse')) ||
     (parsed.points_negatifs || []).some(p => p.toLowerCase().includes('culasse'));
-  if (culasseDetectee && parsed.score_global > 6) parsed.score_global = 6;
   if (culasseDetectee && parsed.score_fiabilite > 5) parsed.score_fiabilite = 5;
+  if (culasseDetectee) parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
 
   // Calcul taxe estimation
   parsed.taxe_cantonale_ge = estimerTaxe(parsed.co2, parsed.carburant);
@@ -456,20 +459,112 @@ async function genererPDF(analyse, reportNumber, url) {
 
 // ─── ENVOI EMAIL ─────────────────────────────────────────
 async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
+  const verdictEmailColor = analyse.verdict === 'ACHETER' || analyse.verdict === 'KAUFEN' || analyse.verdict === 'BUY' || analyse.verdict === 'ACQUISTARE' ? '#28a745' : analyse.verdict === 'ÉVITER' || analyse.verdict === 'MEIDEN' || analyse.verdict === 'AVOID' || analyse.verdict === 'EVITARE' ? '#dc3545' : '#d4a00a';
+  const scoreEmailColor = analyse.score_global >= 7 ? '#28a745' : analyse.score_global >= 5 ? '#d4a00a' : '#dc3545';
+
   const result = await resend.emails.send({
     from: 'EasyCarCheck <contact@easycarcheck.ch>',
     to: email,
     subject: `🚗 Votre rapport EasyCarCheck #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
     html: `
-      <div style="font-family:Arial;background:#1a3a6e;color:#fff;padding:30px;border-radius:10px;">
-        <h1 style="color:#00B4D8;">🚗 EasyCarCheck</h1>
-        <p>Votre rapport d'analyse est prêt !</p>
-        <h2>${analyse.marque} ${analyse.modele} ${analyse.annee}</h2>
-        <p>Verdict : <strong style="color:${analyse.verdict === 'ACHETER' ? '#28a745' : analyse.verdict === 'ÉVITER' ? '#dc3545' : '#d4a00a'}">${analyse.verdict}</strong></p>
-        <p>Score global : <strong>${analyse.score_global}/10</strong></p>
-        <p style="color:#b8d0f0;font-size:12px;">Le rapport PDF complet est en pièce jointe.</p>
-        <p style="color:#b8d0f0;font-size:11px;">EasyCarCheck · easycarcheck.ch</p>
-      </div>
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f0f6ff;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f6ff;padding:30px 20px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+  <tr><td style="background:#1a3a6e;border-radius:12px 12px 0 0;padding:24px;text-align:center;">
+    <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">🚗 EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
+    <div style="font-size:12px;color:#b8d0f0;margin-top:4px;">Analyse IA · Marché Suisse</div>
+  </td></tr>
+
+  <tr><td style="background:#fff;padding:32px 28px;border-left:1px solid #d0e4f7;border-right:1px solid #d0e4f7;">
+
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:56px;height:56px;background:rgba(40,167,69,0.1);border:2px solid #28a745;border-radius:50%;margin:0 auto 14px;line-height:56px;font-size:26px;text-align:center;">✅</div>
+      <h1 style="font-size:22px;font-weight:900;color:#0d1b35;margin:0 0 6px;">Votre rapport est prêt !</h1>
+      <p style="font-size:14px;color:#5a7a9a;margin:0;">Il est joint à cet email en pièce jointe PDF.</p>
+    </div>
+
+    <div style="background:#f0f6ff;border-radius:10px;padding:18px 20px;margin-bottom:24px;border:1px solid #d0e4f7;">
+      <div style="font-size:11px;color:#5a7a9a;letter-spacing:1px;margin-bottom:10px;">VOTRE ANALYSE</div>
+      <div style="font-size:18px;font-weight:900;color:#0d1b35;margin-bottom:12px;">${analyse.marque?.toUpperCase()} ${analyse.modele?.toUpperCase()}</div>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="33%" style="padding-right:6px;">
+            <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid #d0e4f7;">
+              <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">SCORE</div>
+              <div style="font-size:22px;font-weight:900;color:${scoreEmailColor};">${analyse.score_global}/10</div>
+            </div>
+          </td>
+          <td width="33%" style="padding:0 3px;">
+            <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid #d0e4f7;">
+              <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">VERDICT</div>
+              <div style="font-size:14px;font-weight:900;color:${verdictEmailColor};">${analyse.verdict}</div>
+            </div>
+          </td>
+          <td width="33%" style="padding-left:6px;">
+            <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid #d0e4f7;">
+              <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">RAPPORT</div>
+              <div style="font-size:16px;font-weight:900;color:#1a3a6e;">#${reportNumber}</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr><td style="padding:12px 0;border-bottom:1px solid #f0f6ff;">
+        <table><tr>
+          <td style="font-size:18px;padding-right:12px;">📄</td>
+          <td>
+            <div style="font-size:13px;font-weight:700;color:#0d1b35;">Rapport PDF en pièce jointe</div>
+            <div style="font-size:12px;color:#5a7a9a;">EasyCarCheck_Rapport_${reportNumber}.pdf</div>
+          </td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:12px 0;border-bottom:1px solid #f0f6ff;">
+        <table><tr>
+          <td style="font-size:18px;padding-right:12px;">🔍</td>
+          <td>
+            <div style="font-size:13px;font-weight:700;color:#0d1b35;">Red flags, checklist visite, prix de négociation</div>
+            <div style="font-size:12px;color:#5a7a9a;">Tout est dans le rapport PDF joint</div>
+          </td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:12px 0;">
+        <table><tr>
+          <td style="font-size:18px;padding-right:12px;">⚠️</td>
+          <td>
+            <div style="font-size:13px;font-weight:700;color:#0d1b35;">Rapport non reçu ?</div>
+            <div style="font-size:12px;color:#5a7a9a;">Vérifiez vos spams · <a href="mailto:contact@easycarcheck.ch" style="color:#1a3a6e;">contact@easycarcheck.ch</a></div>
+          </td>
+        </tr></table>
+      </td></tr>
+    </table>
+
+    <div style="background:#f0f6ff;border-radius:10px;padding:16px;border:1px solid #d0e4f7;text-align:center;">
+      <p style="font-size:13px;color:#5a7a9a;margin:0;line-height:1.6;">Ce rapport est un outil d'aide à la décision.<br>Il ne remplace pas une inspection physique par un professionnel.</p>
+    </div>
+
+  </td></tr>
+
+  <tr><td style="background:#1a3a6e;border-radius:0 0 12px 12px;padding:20px;text-align:center;">
+    <div style="font-size:12px;color:#b8d0f0;margin-bottom:8px;">EasyCarCheck · easycarcheck.ch · 🇨🇭 Suisse</div>
+    <div>
+      <a href="https://easycarcheck.ch" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Site web</a>
+      <a href="https://easycarcheck.ch/mentions-legales.html" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Mentions légales</a>
+      <a href="mailto:contact@easycarcheck.ch" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Contact</a>
+    </div>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>
     `,
     attachments: [{
       filename: `EasyCarCheck_Rapport_${reportNumber}.pdf`,
