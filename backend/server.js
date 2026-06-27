@@ -142,6 +142,22 @@ function nettoyerPuissance(puissance) {
   return puissance.replace(/\s*\([\d\s\w]+\)\s*/g, '').replace(/PS\s*PS/g, 'PS').trim();
 }
 
+// ─── TRADUCTION OPTIONS ALLEMAND ────────────────────────
+function traduireOption(opt) {
+  const dict = {
+    'Deaktivierung Beifahrerairbag': "Désactivation airbag passager",
+    'Knieairbag Fahrer': "Airbag genoux conducteur",
+    'Aussenspiegel elektrisch anklappbar': "Rétroviseurs électriques rabattables",
+    'Innen- und Fahreraussenspiegel automatisch abblendbar': "Rétroviseurs intérieur et extérieur photochromatiques",
+    'Details siehe Preisliste': null,
+    'Détails consultez la liste de prix': null,
+    'Sitzheizung vorne': "Sièges avant chauffants",
+    'Wireless Charging für mobile Geräte': "Chargement sans fil pour appareils mobiles",
+    'Roues en alliage léger 18\" AMG -5 rayons- doubles': 'Jantes 18" AMG 5 rayons',
+  };
+  return dict[opt] !== undefined ? dict[opt] : opt;
+}
+
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
@@ -309,8 +325,10 @@ RÈGLES JSON :
 
   // FIX OPTIONS: bypass GPT — injecter directement les options du scraping si disponibles
   if (scrapedData.options && scrapedData.options.length > 0) {
-    parsed.options = scrapedData.options;
-    console.log('OPTIONS injectées depuis scraping:', scrapedData.options.length, 'options');
+    parsed.options = scrapedData.options
+      .map(o => traduireOption(o))
+      .filter(o => o !== null);
+    console.log('OPTIONS injectées depuis scraping:', parsed.options.length, 'options');
   }
 
   // Nettoyer puissance
@@ -342,9 +360,10 @@ async function genererPDF(analyse, reportNumber, url) {
 <html>
 <head>
 <meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; min-height: 0 !important; }
+  body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; min-height: 0 !important; }
   .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 18px 22px; border-bottom: 2px solid #00B4D8; }
   .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .logo { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #fff; }
@@ -481,8 +500,8 @@ async function genererPDF(analyse, reportNumber, url) {
   ${analyse.options?.length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
-    <div class="grid-3">
-      ${analyse.options.map(o => `<div class="point-card-light">⚙ ${o}</div>`).join('')}
+    <div style="columns:3; column-gap:16px; font-size:11px; color:#0d1b35; line-height:1.9;">
+      ${analyse.options.map(o => `<div style="break-inside:avoid; padding:1px 0; border-bottom:0.5px solid #e8f0f8;">· ${o}</div>`).join('')}
     </div>
   </div>` : ''}
 
