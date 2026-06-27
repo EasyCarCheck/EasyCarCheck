@@ -30,41 +30,64 @@ async function scrapeAnnonce(url) {
     // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
     let equipmentData = '';
     let co2Value = null;
+    let optionsList = [];
 
     try {
-      // OPTIONS (optional)
-      const optionalIdx = html.indexOf('"optional":[');
-      const searchAttrIdx = html.indexOf('"searchAttributes"');
-      if (optionalIdx !== -1 && searchAttrIdx !== -1 && searchAttrIdx > optionalIdx) {
-        const optionalSection = html.substring(optionalIdx, searchAttrIdx);
-        const nameMatches = [...optionalSection.matchAll(/"name":"([^"]+)"/g)];
-        const allNames = nameMatches.map(m => m[1])
-          .filter(n => !n.includes('Détails consultez') && !n.includes('Details siehe') && n.length > 2);
-        const uniqueNames = [...new Set(allNames)];
-        if (uniqueNames.length > 0) {
-          equipmentData += "\nOPTIONS (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
+      // ── MÉTHODE 1: JSON échappé \"optional\":[ dans scripts Next.js (format ZenRows) ──
+      const escapedOptIdx = html.indexOf('\\"optional\\":[');
+      const escapedSearchIdx = html.indexOf('\\"searchAttributes\\"');
+      if (escapedOptIdx !== -1 && escapedSearchIdx !== -1 && escapedSearchIdx > escapedOptIdx) {
+        const optSection = html.substring(escapedOptIdx, escapedSearchIdx);
+        const matches = [...optSection.matchAll(/\\"name\\":\\"([^\\"]+)\\"/g)];
+        const names = matches.map(m => m[1]).filter(n => !n.includes('Détails consultez') && !n.includes('Details siehe') && n.length > 2);
+        optionsList = [...new Set(names)];
+        if (optionsList.length > 0) equipmentData += "\nOPTIONS_OPT (" + optionsList.length + "): " + optionsList.join(" | ");
+      }
+      const escapedStdIdx = html.indexOf('\\"standard\\":[');
+      const escapedOptIdx2 = html.indexOf('\\"optional\\":[');
+      if (escapedStdIdx !== -1 && escapedOptIdx2 !== -1 && escapedOptIdx2 > escapedStdIdx) {
+        const stdSection = html.substring(escapedStdIdx, escapedOptIdx2);
+        const matches = [...stdSection.matchAll(/\\"name\\":\\"([^\\"]+)\\"/g)];
+        const names = matches.map(m => m[1]).filter(n => !n.includes('Aucune garantie') && !n.includes('Details') && !n.includes('Détails') && n.length > 2);
+        const uniqueStd = [...new Set(names)];
+        if (uniqueStd.length > 0) {
+          optionsList = [...new Set([...optionsList, ...uniqueStd])];
+          equipmentData += "\nOPTIONS_STD (" + uniqueStd.length + "): " + uniqueStd.join(" | ");
         }
       }
 
-      // SERIE (standard)
-      const standardIdx = html.indexOf('"standard":[');
-      const optionalIdx2 = html.indexOf('"optional":[');
-      if (standardIdx !== -1 && optionalIdx2 !== -1 && optionalIdx2 > standardIdx) {
-        const standardSection = html.substring(standardIdx, optionalIdx2);
-        const nameMatches = [...standardSection.matchAll(/"name":"([^"]+)"/g)];
-        const allNames = nameMatches.map(m => m[1])
-          .filter(n => !n.includes('Aucune garantie') && !n.includes('Details') && !n.includes('Détails') && n.length > 2);
-        const uniqueNames = [...new Set(allNames)];
-        if (uniqueNames.length > 0) {
-          equipmentData += "\nSERIE (" + uniqueNames.length + "): " + uniqueNames.join(" | ");
+      // ── MÉTHODE 2: <li class="chakra-list__item"> (fallback) ──
+      if (optionsList.length === 0) {
+        const liMatches = [...html.matchAll(/<li class="chakra-list__item">([^<]+)<\/li>/g)];
+        const liNames = liMatches.map(m => m[1].trim()).filter(n => n.length > 2);
+        if (liNames.length > 0) {
+          optionsList = [...new Set(liNames)];
+          equipmentData += "\nOPTIONS_LI (" + optionsList.length + "): " + optionsList.join(" | ");
         }
       }
 
-      // CO2, poids, prix catalogue, description
-      const co2Match = html.match(/"co2Emission":(\d+)/);
-      const weightMatch = html.match(/"weightTotal":(\d+)/);
-      const listPriceMatch = html.match(/"listPrice":(\d+)/);
-      const descMatch = html.match(/"description":"([\s\S]*?)","directImport"/);
+      // ── MÉTHODE 3: JSON non-échappé (ancien format) ──
+      if (optionsList.length === 0) {
+        const optionalIdx = html.indexOf('"optional":[');
+        const searchAttrIdx = html.indexOf('"searchAttributes"');
+        if (optionalIdx !== -1 && searchAttrIdx !== -1 && searchAttrIdx > optionalIdx) {
+          const section = html.substring(optionalIdx, searchAttrIdx);
+          const matches = [...section.matchAll(/"name":"([^"]+)"/g)];
+          const names = matches.map(m => m[1]).filter(n => !n.includes('Détails consultez') && !n.includes('Details siehe') && n.length > 2);
+          optionsList = [...new Set(names)];
+          if (optionsList.length > 0) equipmentData += "\nOPTIONS_RAW (" + optionsList.length + "): " + optionsList.join(" | ");
+        }
+      }
+
+      console.log("OPTIONS EXTRAITES:", optionsList.length);
+
+      // CO2 — schema.org: "emissionsCO2":"210 g/km" OU JSON échappé \"co2Emission\":210
+      const co2Match = html.match(/"emissionsCO2":"(\d+)\s*g\/km"/) ||
+                       html.match(/\\"co2Emission\\":(\d+)/) ||
+                       html.match(/"co2Emission":(\d+)/) ||
+                       html.match(/"co2":(\d+)/);
+      const weightMatch = html.match(/\\"weightTotal\\":(\d+)/) || html.match(/"weightTotal":(\d+)/);
+      const listPriceMatch = html.match(/\\"listPrice\\":(\d+)/) || html.match(/"listPrice":(\d+)/);
 
       if (co2Match) {
         co2Value = parseInt(co2Match[1]);
@@ -72,12 +95,7 @@ async function scrapeAnnonce(url) {
       }
       if (weightMatch) equipmentData += "\nPOIDS TOTAL: " + weightMatch[1] + " kg";
       if (listPriceMatch) equipmentData += "\nPRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
-      if (descMatch) {
-        const desc = descMatch[1].replace(/\\n/g, " ").replace(/\\"/g, '"');
-        equipmentData += "\nDESCRIPTION COMPLETE: " + desc.substring(0, 2000);
-      }
 
-      console.log("EQUIPEMENTS EXTRAITS:", equipmentData.substring(0, 500));
       console.log("CO2 EXTRAIT:", co2Value);
     } catch(e) {
       console.log("Extraction JSON echouee:", e.message);
@@ -93,11 +111,11 @@ async function scrapeAnnonce(url) {
     const finalContent = cleanHtml.substring(0, 35000);
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
 
-    // FIX: retourner equipmentData et co2Value avec le html
-    return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value };
+    // FIX: retourner equipmentData, co2Value et optionsList avec le html
+    return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value, options: optionsList };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
-    return { html: `URL: ${url}`, url: url, equipmentData: '', co2: null };
+    return { html: `URL: ${url}`, url: url, equipmentData: '', co2: null, options: [] };
   }
 }
 
@@ -288,6 +306,12 @@ RÈGLES JSON :
   }
   parsed.taxe_cantonale_ge = estimerTaxe(co2Final, parsed.carburant);
   console.log(`TAXE calculée: CO2=${co2Final} → ${parsed.taxe_cantonale_ge} CHF`);
+
+  // FIX OPTIONS: bypass GPT — injecter directement les options du scraping si disponibles
+  if (scrapedData.options && scrapedData.options.length > 0) {
+    parsed.options = scrapedData.options;
+    console.log('OPTIONS injectées depuis scraping:', scrapedData.options.length, 'options');
+  }
 
   // Nettoyer puissance
   parsed.puissance = nettoyerPuissance(parsed.puissance);
