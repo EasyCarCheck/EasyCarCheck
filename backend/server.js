@@ -20,9 +20,9 @@ async function scrapeAnnonce(url) {
         url: url,
         js_render: 'true',
         premium_proxy: 'true',
-        wait: '5000'
+        wait: '8000'
       },
-      timeout: 90000
+      timeout: 120000
     });
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
@@ -32,7 +32,7 @@ async function scrapeAnnonce(url) {
     html = html.replace(/<[^>]+>/g, ' ');
     html = html.replace(/\s+/g, ' ').trim();
     console.log('ZENROWS OK:', html.substring(0, 2000));
-    return { html: html.substring(0, 15000), url: url };
+    return { html: html.substring(0, 20000), url: url };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
     return { html: `URL: ${url}`, url: url };
@@ -81,10 +81,10 @@ Contenu: ${scrapedData.html}
 - Boîte de vitesses
 - Puissance en PS uniquement (ex: "306 PS")
 - CO2 en g/km si disponible (nombre entier, sinon null)
-- Couleur exacte — cherche dans toute la page. Si introuvable, mets "Non communiquée"
+- Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur
-- TOUTES les options listées sans exception
+- TOUTES les options et équipements listés — inclure les packs et leurs contenus, supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
 
 ÉTAPE 2 - Analyse approfondie :
 - Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste
@@ -189,6 +189,12 @@ RÈGLES JSON :
   parsed.score_prix = Math.round(parsed.score_prix || 0);
   parsed.score_fiabilite = Math.round(parsed.score_fiabilite || 0);
   parsed.score_entretien = Math.round(parsed.score_entretien || 0);
+
+  // Si culasse remplacée → score max 6
+  const culasseDetectee = (parsed.red_flags || []).some(r => r.toLowerCase().includes('culasse')) ||
+    (parsed.points_negatifs || []).some(p => p.toLowerCase().includes('culasse'));
+  if (culasseDetectee && parsed.score_global > 6) parsed.score_global = 6;
+  if (culasseDetectee && parsed.score_fiabilite > 5) parsed.score_fiabilite = 5;
 
   // Calcul taxe estimation
   parsed.taxe_cantonale_ge = estimerTaxe(parsed.co2, parsed.carburant);
