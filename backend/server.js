@@ -26,13 +26,71 @@ async function scrapeAnnonce(url) {
     });
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
-    html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-    html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-    html = html.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
-    html = html.replace(/<[^>]+>/g, ' ');
-    html = html.replace(/\s+/g, ' ').trim();
-    console.log('ZENROWS OK:', html.substring(0, 2000));
-    return { html: html.substring(0, 20000), url: url };
+
+    // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
+    let equipmentData = '';
+    try {
+      const equipmentMatch = html.match(/"optional":\s*(\[[\s\S]*?\])\s*,\s*"searchAttributes"/);
+      const standardMatch = html.match(/"standard":\s*(\[[\s\S]*?\])\s*,\s*"optional"/);
+      const co2Match = html.match(/"co2Emission":(\d+)/);
+      const weightMatch = html.match(/"weightTotal":(\d+)/);
+      const listPriceMatch = html.match(/"listPrice":(\d+)/);
+      const descMatch = html.match(/"description":"([\s\S]*?)","directImport"/);
+
+      if (equipmentMatch) {
+        const optional = JSON.parse(equipmentMatch[1]);
+        const names = optional.map(o => {
+          let name = o.name;
+          if (o.packageItems && o.packageItems.length > 0) {
+            const items = o.packageItems.map(i => i.name)
+              .filter(i => !i.includes("Detai")).join(", ");
+            if (items) name += " (" + items + ")";
+          }
+          return name;
+        });
+        equipmentData += "
+OPTIONS (" + names.length + "): " + names.join(" | ");
+      }
+
+      if (standardMatch) {
+        const standard = JSON.parse(standardMatch[1]);
+        const names = standard.map(s => s.name)
+          .filter(n => !n.includes("Aucune garantie") && !n.includes("Details") && !n.includes("Detai"));
+        equipmentData += "
+SERIE (" + names.length + "): " + names.join(" | ");
+      }
+
+      if (co2Match) equipmentData += "
+CO2: " + co2Match[1] + " g/km";
+      if (weightMatch) equipmentData += "
+POIDS TOTAL: " + weightMatch[1] + " kg";
+      if (listPriceMatch) equipmentData += "
+PRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
+      if (descMatch) {
+        const desc = descMatch[1].replace(/\n/g, "
+").replace(/\"/g, """);
+        equipmentData += "
+DESCRIPTION: " + desc.substring(0, 2000);
+      }
+
+      console.log("EQUIPEMENTS EXTRAITS:", equipmentData.substring(0, 300));
+    } catch(e) {
+      console.log("Extraction JSON echouee:", e.message);
+    }
+
+    // Nettoyer le HTML
+    let cleanHtml = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+    cleanHtml = cleanHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+    cleanHtml = cleanHtml.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, "");
+    cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
+    cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
+
+    const finalContent = (cleanHtml.substring(0, 14000) + "
+
+--- DONNEES STRUCTUREES ---
+" + equipmentData).substring(0, 20000);
+    console.log("ZENROWS OK:", finalContent.substring(0, 500));
+    return { html: finalContent, url: url };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
     return { html: `URL: ${url}`, url: url };
