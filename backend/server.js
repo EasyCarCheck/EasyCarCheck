@@ -517,7 +517,7 @@ async function genererPDF(analyse, reportNumber, url) {
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
     <table style="width:100%; border-collapse:separate; border-spacing:0 3px;">
       ${(() => {
-        const opts = analyse.options || [];
+        const opts = (analyse.options || []).slice(0, 24);
         const rows = [];
         for (let i = 0; i < opts.length; i += 3) {
           const a = opts[i] || '';
