@@ -79,6 +79,59 @@ async function scrapeAnnonce(url) {
         }
       }
 
+      // ── MÉTHODE 4: searchAttributes depuis JSON Next.js (toujours présent) ──
+      const saSection = html.match(/"searchAttributes":\s*\[([^\]]+)\]/);
+      if (saSection) {
+        const saItems = [...saSection[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
+        // Dictionnaire officiel AutoScout24 FR (extrait du JSON de la page)
+        const saDict = {
+          '360-camera': 'Caméra 360°', 'abs': 'ABS',
+          'active-brake-assistant': 'Assistant de freinage automatique',
+          'adaptive-cruise-control': 'Régulateur de vitesse adaptatif',
+          'adaptive-headlights': 'Phares adaptatifs',
+          'additional-instrumentation': 'Instruments supplémentaires',
+          'air-condition': 'Climatisation', 'airbags': 'Airbags',
+          'alarm-system': "Système d'alarme", 'alcantara': 'Alcantara',
+          'alloy-wheels': 'Jantes en alliage', 'android-auto': 'Android Auto',
+          'anti-theft-device': 'Dispositif antivol', 'apple-carplay': 'Apple CarPlay',
+          'assisted-parking': 'Aide au parcage', 'audio-system': 'Système audio',
+          'automatic-air-condition': 'Climatisation automatique',
+          'backrest': 'Dossier', 'blind-spot-system': "Système d'angle mort",
+          'bluetooth-interface': 'Interface Bluetooth', 'central-locking': 'Verrouillage centralisé',
+          'cornering-light': 'Feux de virage', 'cruise-control': 'Régulateur de vitesse',
+          'custom-exhaust': 'Échappement personnalisé', 'dab-radio': 'Radio numérique DAB',
+          'differential-locking': 'Blocage de différentiel', 'drowsiness-detection': 'Détection de somnolence',
+          'electric-seat': 'Réglage électrique des sièges', 'electric-tailgate': 'Hayon électrique',
+          'electric-windows': 'Vitres électriques', 'esp': 'Contrôle de la stabilité (ESP)',
+          'foglights': 'Phares antibrouillard', 'hands-free-set': 'Dispositif mains libres',
+          'hardtop': 'Toit rigide', 'head-up-display': 'Affichage tête haute',
+          'heated-seats': 'Sièges chauffants', 'isofix': 'ISOFIX',
+          'keyless': 'Accès et démarrage sans clé', 'lane-assistant': 'Assistant de voie',
+          'laser-headlights': 'Phares à Laser', 'leather-seats': 'Sièges en cuir',
+          'led': 'Phares à LED', 'limited-slip-differential': 'Différentiel à glissement limité',
+          'luggage-rack': 'Porte-bagages', 'navigation': 'Système de navigation intégré',
+          'panorama-roof': 'Toit panoramique', 'parking-sensor-front': 'Capteurs de stationnement avant',
+          'parking-sensor-rear': 'Capteurs de stationnement arrière',
+          'partial-leather-seats': 'Sièges en cuir partiel', 'portable-navigation-system': 'Système de navigation portable',
+          'power-steering': 'Direction assistée', 'rear-camera': 'Caméra arrière',
+          'reinforced-suspension': 'Suspension renforcée', 'side-airbags': 'Airbags latéraux',
+          'sliding-door': 'Porte coulissante', 'speaker': 'Haut-parleur',
+          'sport-seats': 'Sièges sport', 'sport-suspension': 'Suspension sport',
+          'start-stop-system': 'Système Start-Stop', 'sunroof': 'Toit ouvrant',
+          'towbar': 'Rotule d attelage fixe', 'traction-control': 'Contrôle de traction',
+          'traffic-sign-assistant': 'Assistant de signalisation routière',
+          'traffic-sign-recognition': 'Reconnaissance des panneaux de signalisation',
+          'ventilated-seats': 'Sièges ventilés', 'xenon-headlights': 'Phares au xénon',
+          'adaptive-cruise-control': 'Régulateur de vitesse adaptatif',
+        };
+        const saNames = saItems.map(k => saDict[k]).filter(v => v);
+        if (saNames.length > 0) {
+          optionsList = [...new Set([...optionsList, ...saNames])];
+          equipmentData += "\nSEARCH_ATTR (" + saNames.length + "): " + saNames.join(" | ");
+          console.log("SEARCH_ATTR extraits:", saNames.length);
+        }
+      }
+
       console.log("OPTIONS EXTRAITES:", optionsList.length);
 
       // CO2 — schema.org: "emissionsCO2":"210 g/km" OU JSON échappé \"co2Emission\":210
@@ -344,6 +397,12 @@ RÈGLES JSON :
       .map(o => traduireOption(o))
       .filter(o => o !== null);
     console.log('OPTIONS injectées depuis scraping:', parsed.options.length, 'options');
+  } else if (parsed.options && parsed.options.length > 0) {
+    // Fallback: utiliser les options GPT si scraping vide
+    parsed.options = parsed.options
+      .map(o => traduireOption(o))
+      .filter(o => o !== null);
+    console.log('OPTIONS depuis GPT (fallback):', parsed.options.length, 'options');
   }
 
   // Nettoyer puissance
@@ -550,7 +609,7 @@ async function genererPDF(analyse, reportNumber, url) {
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">CO2 &amp; TAXE CANTONALE</div>
         <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : 'N/D'}</div>
-        <div class="cost-note"><a href="https://www.tcs.ch/fr/tools/calculateurs/impot-vehicule.php" style="color:#1a3a6e;">Calculer ma taxe → tcs.ch</a></div>
+        <div class="cost-note"><a href="https://swiss-car-tax.ch/fr" style="color:#1a3a6e;">Calculer ma taxe → swiss-car-tax.ch</a></div>
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">FOURCHETTE MARCHÉ</div>
