@@ -505,7 +505,7 @@ async function genererPDF(analyse, reportNumber, url) {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; height: auto !important; }
-  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 18px 22px; border-bottom: 2px solid #00B4D8; }
+  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 14px 22px; border-bottom: 2px solid #00B4D8; }
   .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .logo { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #fff; }
   .logo span { color: #00B4D8; }
@@ -519,7 +519,7 @@ async function genererPDF(analyse, reportNumber, url) {
   .score-num { font-size: 46px; font-weight: 900; line-height: 1; }
   .score-denom { font-size: 11px; color: #b8d0f0; }
   .score-badge { margin-top: 5px; border-radius: 4px; padding: 2px 7px; font-size: 9px; font-weight: 700; color: #000; }
-  .scores-bar { padding: 14px 22px; page-break-inside: avoid; background: #fff; border-bottom: 1px solid #d0e4f7; }
+  .scores-bar { padding: 10px 22px; page-break-inside: avoid; background: #fff; border-bottom: 1px solid #d0e4f7; }
   .scores-bar-title { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
   .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .score-item { text-align: center; }
@@ -643,7 +643,7 @@ async function genererPDF(analyse, reportNumber, url) {
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
     <table style="width:100%; border-collapse:separate; border-spacing:0 3px;">
       ${(() => {
-        const opts = (analyse.options || []).slice(0, 24);
+        const opts = (analyse.options || []).slice(0, 18);
         const rows = [];
         for (let i = 0; i < opts.length; i += 3) {
           const a = opts[i] || '';
@@ -676,7 +676,7 @@ async function genererPDF(analyse, reportNumber, url) {
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">CO2 &amp; TAXE CANTONALE</div>
         <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : 'Non renseigné'}</div>
-        ${analyse.co2 ? `<div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">Calculer sur le site officiel de votre canton</div>` : ''}
+        ${analyse.co2 ? `<div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">Taxe: site officiel de votre canton</div>` : ''}
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">FOURCHETTE MARCHÉ</div>
