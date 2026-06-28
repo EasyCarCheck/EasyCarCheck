@@ -443,6 +443,22 @@ RÈGLES JSON :
   parsed.puissance = nettoyerPuissance(parsed.puissance);
 
   // Limiter strictement les quantités
+  // Filtrer les points négatifs interdits
+  const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation d\'huile', 'consommation élevée', 'km élevé', 'km important'];
+  if (parsed.points_negatifs) {
+    parsed.points_negatifs = parsed.points_negatifs.filter(p => 
+      !mots_interdits.some(mot => p.toLowerCase().includes(mot))
+    );
+  }
+  // Filtrer aussi le conseil_achat
+  if (parsed.conseil_achat) {
+    parsed.conseil_achat = parsed.conseil_achat
+      .replace(/[Ll]e kilométrage[^.]+\./g, '')
+      .replace(/[Ee]n raison du kilométrage[^.]+\./g, '')
+      .replace(/compte tenu du kilométrage[^.]+\./g, '')
+      .trim();
+  }
+
   if (parsed.points_positifs?.length > 3) parsed.points_positifs = parsed.points_positifs.slice(0, 3);
   if (parsed.points_negatifs?.length > 3) parsed.points_negatifs = parsed.points_negatifs.slice(0, 3);
   if (parsed.checklist_visite?.length > 4) parsed.checklist_visite = parsed.checklist_visite.slice(0, 4);
