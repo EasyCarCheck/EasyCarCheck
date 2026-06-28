@@ -432,11 +432,11 @@ async function genererPDF(analyse, reportNumber, url) {
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 8px; }
   .redflag-card { background: rgba(220,53,69,0.06); border-radius: 7px; padding: 12px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 5px; }
   .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; }
-  .verdict-section { padding: 50px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; page-break-before: avoid; }
+  .verdict-section { padding: 30px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; page-break-before: avoid; }
   .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 5px; }
   .verdict-value { font-size: 38px; font-weight: 900; letter-spacing: 2px; }
   .verdict-desc { font-size: 11px; color: #b8d0f0; margin-top: 6px; max-width: 280px; line-height: 1.5; }
-  .footer { padding: 35px 22px; background: #f0f6ff; border-top: 1px solid #d0e4f7; font-size: 9px; color: #5a7a9a; text-align: center; line-height: 1.6; page-break-inside: avoid; }
+  .footer { padding: 15px 22px; background: #1a3a6e; border-top: 1px solid #2952a3; font-size: 9px; color: #b8d0f0; text-align: center; line-height: 1.6; page-break-inside: avoid; }
 </style>
 </head>
 <body>
