@@ -38,7 +38,7 @@ async function scrapeAnnonce(url) {
           js_render: 'true',
           premium_proxy: 'true',
           wait: '8000',
-          css_extractor: JSON.stringify({ equipments: 'li.chakra-list__item' })
+          css_extractor: JSON.stringify({ equipments: '#expandable-equipment li.chakra-list__item' })
         },
         timeout: 120000
       });
