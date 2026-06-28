@@ -80,9 +80,9 @@ async function scrapeAnnonce(url) {
       }
 
       // ── MÉTHODE 4: searchAttributes depuis JSON Next.js (toujours présent) ──
-      const saSection = html.match(/"searchAttributes":\s*\[([^\]]+)\]/);
+      const saSection = html.match(/(?:\\"searchAttributes\\":|"searchAttributes":)\s*\[([^\]]{10,}?)\]/);
       if (saSection) {
-        const saItems = [...saSection[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
+        const saItems = [...saSection[1].matchAll(/(?:\\"|")([^"\\]+)(?:\\"|")/g)].map(m => m[1]);
         // Dictionnaire officiel AutoScout24 FR (extrait du JSON de la page)
         const saDict = {
           '360-camera': 'Caméra 360°', 'abs': 'ABS',
