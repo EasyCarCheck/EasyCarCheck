@@ -581,7 +581,7 @@ async function genererPDF(analyse, reportNumber, url) {
 
   <div class="header">
     <div class="header-top">
-      <div class="logo">&#9658; EASY<span>CAR</span>CHECK</div>
+      <div class="logo"><svg width="22" height="16" viewBox="0 0 22 16" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M17.5 5.5L16 2H6L4.5 5.5H1C0.4 5.5 0 5.9 0 6.5V11.5C0 12.1 0.4 12.5 1 12.5H2C2 13.9 3.1 15 4.5 15S7 13.9 7 12.5H15C15 13.9 16.1 15 17.5 15S20 13.9 20 12.5H21C21.6 12.5 22 12.1 22 11.5V8.5C22 7.9 21.6 7.5 21 7.5L17.5 5.5Z M4.5 13.5C3.7 13.5 3 12.8 3 12S3.7 10.5 4.5 10.5 6 11.2 6 12 5.3 13.5 4.5 13.5Z M17.5 13.5C16.7 13.5 16 12.8 16 12S16.7 10.5 17.5 10.5 19 11.2 19 12 18.3 13.5 17.5 13.5Z M15.5 5.5H6.5L7.5 3H14.5L15.5 5.5Z" fill="white"/></svg><span style="color:#fff;">EASY</span><span style="color:#00B4D8;">CAR</span><span style="color:#fff;">CHECK</span></div>
       <div class="report-num">Rapport #${reportNumber} · JUIN 2026</div>
     </div>
     <div class="header-main">
@@ -645,8 +645,8 @@ async function genererPDF(analyse, reportNumber, url) {
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">POINTS CLÉS</div></div>
     <div class="grid-2">
-      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745; display:flex; align-items:flex-start; gap:8px;"><span class="icon-check">v</span><span>${p}</span></div>`).join('')}
-      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a; display:flex; align-items:flex-start; gap:8px;"><span class="icon-warn">!</span><span>${p}</span></div>`).join('')}
+      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745; display:flex; align-items:flex-start; gap:8px;"><span style="display:inline-block;width:14px;height:14px;background:#28a745;border-radius:50%;color:#fff;text-align:center;line-height:14px;font-size:10px;font-weight:bold;flex-shrink:0;">✓</span><span>${p}</span></div>`).join('')}
+      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a; display:flex; align-items:flex-start; gap:8px;"><span style="display:inline-block;width:14px;height:14px;background:#d4a00a;border-radius:50%;color:#fff;text-align:center;line-height:14px;font-size:10px;font-weight:bold;flex-shrink:0;">!</span><span>${p}</span></div>`).join('')}
     </div>
   </div>
 
@@ -700,23 +700,23 @@ async function genererPDF(analyse, reportNumber, url) {
   ${analyse.red_flags?.length > 0 ? `
   <div class="redflag-section">
     <div class="redflag-badge">RED FLAGS</div>
-    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title"><span class="icon-cross">x</span> ${r}</div></div>`).join('')}
+    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title"><span style="display:inline-block;width:14px;height:14px;background:#dc3545;border-radius:50%;color:#fff;text-align:center;line-height:14px;font-size:10px;font-weight:bold;flex-shrink:0;">✕</span> ${r}</div></div>`).join('')}
   </div>` : ''}
 
   ${analyse.problemes_connus_modele?.length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">PROBLÈMES CONNUS DU MODÈLE</div></div>
-    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white"><span class="icon-warn">!</span> ${p}</div>`).join('')}
+    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white"><span style="display:inline-block;width:14px;height:14px;background:#d4a00a;border-radius:50%;color:#fff;text-align:center;line-height:14px;font-size:10px;font-weight:bold;flex-shrink:0;">!</span> ${p}</div>`).join('')}
   </div>` : ''}
 
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">CHECKLIST VISITE</div></div>
-    ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span class="icon-check">v</span> ${c}</div>`).join('')}
+    ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span style="display:inline-block;width:14px;height:14px;background:#28a745;border-radius:50%;color:#fff;text-align:center;line-height:14px;font-size:10px;font-weight:bold;flex-shrink:0;">✓</span> ${c}</div>`).join('')}
   </div>
 
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">QUESTIONS À POSER AU VENDEUR</div></div>
-    ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white"><span class="icon-q">?</span> ${q}</div>`).join('')}
+    ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white"><span style="display:inline-block;width:14px;height:14px;background:#1a3a6e;border-radius:50%;color:#fff;text-align:center;line-height:14px;font-size:10px;font-weight:bold;flex-shrink:0;">?</span> ${q}</div>`).join('')}
   </div>
 
   ${analyse.conseil_achat ? `
