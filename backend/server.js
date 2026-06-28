@@ -14,6 +14,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url) {
   try {
+    // Appel principal HTML
     const response = await axios.get('https://api.zenrows.com/v1/', {
       params: {
         apikey: process.env.ZENROWS_API_KEY,
@@ -26,6 +27,29 @@ async function scrapeAnnonce(url) {
     });
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
+
+    // Appel CSS extractor pour les équipements (toujours présent sur toutes les annonces)
+    let cssEquipments = [];
+    try {
+      const cssResponse = await axios.get('https://api.zenrows.com/v1/', {
+        params: {
+          apikey: process.env.ZENROWS_API_KEY,
+          url: url,
+          js_render: 'true',
+          premium_proxy: 'true',
+          wait: '8000',
+          css_extractor: JSON.stringify({ equipments: 'li.chakra-list__item' })
+        },
+        timeout: 120000
+      });
+      const cssData = cssResponse.data;
+      if (cssData && cssData.equipments && Array.isArray(cssData.equipments)) {
+        cssEquipments = cssData.equipments.filter(e => e && e.trim().length > 2);
+        console.log('CSS EXTRACTOR équipements:', cssEquipments.length);
+      }
+    } catch(e) {
+      console.log('CSS extractor erreur:', e.message);
+    }
 
     // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
     let equipmentData = '';
@@ -130,6 +154,13 @@ async function scrapeAnnonce(url) {
           equipmentData += "\nSEARCH_ATTR (" + saNames.length + "): " + saNames.join(" | ");
           console.log("SEARCH_ATTR extraits:", saNames.length);
         }
+      }
+
+      // ── MÉTHODE 5: CSS Extractor ZenRows (le plus fiable) ──
+      if (cssEquipments.length > 0) {
+        const cssTranslated = cssEquipments.map(e => traduireOption(e)).filter(e => e !== null);
+        optionsList = [...new Set([...cssTranslated, ...optionsList])];
+        console.log("CSS_EXTRACTOR fusionné:", cssTranslated.length, "options");
       }
 
       console.log("OPTIONS EXTRAITES:", optionsList.length);
