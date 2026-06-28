@@ -571,7 +571,7 @@ async function genererPDF(analyse, reportNumber, url) {
 
   <div class="header">
     <div class="header-top">
-      <div class="logo">● EASY<span>CAR</span>CHECK</div>
+      <div class="logo">&#9658; EASY<span>CAR</span>CHECK</div>
       <div class="report-num">Rapport #${reportNumber} · JUIN 2026</div>
     </div>
     <div class="header-main">
@@ -635,8 +635,8 @@ async function genererPDF(analyse, reportNumber, url) {
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">POINTS CLÉS</div></div>
     <div class="grid-2">
-      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745;">✓ ${p}</div>`).join('')}
-      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a;">⚠ ${p}</div>`).join('')}
+      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745;"><span style="color:#28a745;font-weight:bold;">&#10003;</span> ${p}</div>`).join('')}
+      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a;"><span style="color:#d4a00a;font-weight:bold;">&#9888;</span> ${p}</div>`).join('')}
     </div>
   </div>
 
@@ -652,11 +652,11 @@ async function genererPDF(analyse, reportNumber, url) {
           const b = opts[i+1] || '';
           const c = opts[i+2] || '';
           rows.push(`<tr>
-            <td style="width:33%; padding:4px 7px; background:#f0f6ff; font-size:11.5px; color:#0d1b35; border-radius:3px;">⚙ ${a}</td>
+            <td style="width:33%; padding:4px 7px; background:#f0f6ff; font-size:11.5px; color:#0d1b35; border-radius:3px;">&#9679; ${a}</td>
             <td style="width:2px;"></td>
-            <td style="width:33%; padding:4px 7px; background:${b ? '#f0f6ff' : 'transparent'}; font-size:11.5px; color:#0d1b35; border-radius:3px;">${b ? '⚙ ' + b : ''}</td>
+            <td style="width:33%; padding:4px 7px; background:${b ? '#f0f6ff' : 'transparent'}; font-size:11.5px; color:#0d1b35; border-radius:3px;">${b ? '&#9679; ' + b : ''}</td>
             <td style="width:2px;"></td>
-            <td style="width:33%; padding:4px 7px; background:${c ? '#f0f6ff' : 'transparent'}; font-size:11.5px; color:#0d1b35; border-radius:3px;">${c ? '⚙ ' + c : ''}</td>
+            <td style="width:33%; padding:4px 7px; background:${c ? '#f0f6ff' : 'transparent'}; font-size:11.5px; color:#0d1b35; border-radius:3px;">${c ? '&#9679; ' + c : ''}</td>
           </tr>`);
         }
         return rows.join('');
@@ -689,19 +689,19 @@ async function genererPDF(analyse, reportNumber, url) {
 
   ${analyse.red_flags?.length > 0 ? `
   <div class="redflag-section">
-    <div class="redflag-badge">▲ RED FLAGS</div>
-    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title">✗ ${r}</div></div>`).join('')}
+    <div class="redflag-badge">RED FLAGS</div>
+    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title">&#10007; ${r}</div></div>`).join('')}
   </div>` : ''}
 
   ${analyse.problemes_connus_modele?.length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">PROBLÈMES CONNUS DU MODÈLE</div></div>
-    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white"><span style="color:#d4a00a;font-weight:700;">⚠</span> ${p}</div>`).join('')}
+    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white"><span style="color:#d4a00a;font-weight:700;">&#9888;</span> ${p}</div>`).join('')}
   </div>` : ''}
 
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">CHECKLIST VISITE</div></div>
-    ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span style="color:#28a745;font-weight:700;">✓</span> ${c}</div>`).join('')}
+    ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span style="color:#28a745;font-weight:700;">&#10003;</span> ${c}</div>`).join('')}
   </div>
 
   <div class="section section-white">
@@ -711,13 +711,13 @@ async function genererPDF(analyse, reportNumber, url) {
 
   ${analyse.conseil_achat ? `
   <div class="section section-white" style="page-break-inside:avoid;">
-    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">► CONSEIL D'ACHAT</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">CONSEIL D'ACHAT</div></div>
     <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:6px 0;">${analyse.conseil_achat}</p>
   </div>` : ''}
 
   <div class="verdict-section">
     <div>
-      <div class="verdict-label">★ VERDICT FINAL</div>
+      <div class="verdict-label">VERDICT FINAL</div>
       <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${analyse.verdict}</div>
       <div class="verdict-desc">${analyse.resume_verdict}</div>
     </div>
@@ -774,7 +774,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
 
   <tr><td style="background:#1a3a6e;border-radius:12px 12px 0 0;padding:24px;text-align:center;">
-    <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">● EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
+    <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">&#9658; EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
     <div style="font-size:12px;color:#b8d0f0;margin-top:4px;">Analyse IA · Marché Suisse</div>
   </td></tr>
 
