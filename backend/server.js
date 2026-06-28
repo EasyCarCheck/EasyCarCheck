@@ -289,13 +289,25 @@ Contenu: ${scrapedData.html}${equipmentSection}
 ÉTAPE 2 - Analyse approfondie :
 - Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent (remplacement 5000-8000 CHF hors garantie), boîte DCT fragile
+- Pour Audi RS6 C7 (2013-2018) moteur 4.0 TFSI : consommation d'huile à surveiller (risque rupture de bielle lié au launch control), suspension pneumatique coûteuse (2000-4000 CHF), courroie de distribution à vérifier vers 100000 km, budget entretien 3000-6000 CHF/an
+- Pour TOUTES les voitures : utilise ta connaissance des problèmes récurrents documentés du modèle spécifique. Ex: VW/Audi DSG fragile, BMW N47 chaîne distribution, Peugeot 1.6 THP joint de culasse, Renault EDC boîte robotisée, Land Rover électronique complexe, etc.
+- problemes_connus_modele : TOUJOURS 2 problèmes RÉELS et SPÉCIFIQUES au modèle exact (pas généralités). Utilise les données techniques que tu connais sur ce modèle.
+- questions_vendeur : adapter les questions au modèle. Pour RS6 C7 : demander si launch control utilisé, si changements d'huile réguliers. Pour toute voiture sportive : demander usage circuit/piste. Pour diesel : demander FAP, EGR. Pour boîte auto : demander entretien boîte.
 - CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné → ajouter EXACTEMENT "Culasse remplacée" dans red_flags ET points_negatifs. JAMAIS dans points_positifs. Toujours "Culasse remplacée" comme terme exact
 - Si culasse remplacée → baisser score_fiabilite de 2 points et score_global de 1 point
 - INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée", "kilométrage élevé", "kilométrage relativement élevé", "kilométrage important", "consommation élevée"
+- INTERDITS comme problèmes connus : "usure prématurée des freins" sauf si explicitement mentionné dans l'annonce. Ne jamais inventer des problèmes mécaniques non mentionnés.
+- problemes_connus_modele : uniquement des problèmes RÉELS et DOCUMENTÉS pour ce modèle spécifique, pas des généralités
 - KILOMÉTRAGE : NE JAMAIS mentionner le kilométrage comme point négatif. JAMAIS. Même à 200000 km. Le kilométrage est déjà visible dans les données du rapport.
 - SPORTIVES (RS, AMG, M, S, R): Ne pas mentionner la consommation comme point négatif. C'est une sportive, c'est normal.
 - FREE SERVICE Mercedes : cout_entretien_annee1 = 250, cout_total_3ans = 750. Mentionner dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
-- Sans free service : estimer les coûts selon le modèle
+- Sans free service : estimer les coûts selon le modèle et la cylindrée
+  * Voiture compacte / citadine (Golf, Polo, Clio) : 400-600 CHF/an
+  * Berline / break standard (Passat, 3 Series, C-Class) : 800-1200 CHF/an
+  * SUV / 4x4 standard : 1000-1500 CHF/an
+  * Voiture sportive / premium (911, M3, AMG C63) : 2000-3000 CHF/an
+  * Voiture ultra-sportive / hypercars (RS6, M5, AMG GT, Cayenne Turbo) : 3000-5000 CHF/an
+  * cout_entretien_annee1 doit être réaliste pour le modèle spécifique
 - BOÎTE : "Manuelle robotisée" = "Automatique (DCT)" pour Mercedes AMG
 - DESCRIPTION VENDEUR : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. "Zylinderkopf" = "culasse". Jamais "cylindre de tête" ou "cylindre tête"
 - Ne jamais inventer des points négatifs absents de l'annonce
@@ -444,20 +456,25 @@ RÈGLES JSON :
 
   // Limiter strictement les quantités
   // Filtrer les points négatifs interdits
-  const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation d\'huile', 'consommation élevée', 'km élevé', 'km important'];
+  const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation élevée', 'km élevé', 'km important'];
   if (parsed.points_negatifs) {
     parsed.points_negatifs = parsed.points_negatifs.filter(p => 
       !mots_interdits.some(mot => p.toLowerCase().includes(mot))
     );
   }
-  // Filtrer aussi le conseil_achat
-  if (parsed.conseil_achat) {
-    parsed.conseil_achat = parsed.conseil_achat
-      .replace(/[Ll]e kilométrage[^.]+\./g, '')
-      .replace(/[Ee]n raison du kilométrage[^.]+\./g, '')
-      .replace(/compte tenu du kilométrage[^.]+\./g, '')
+  // Nettoyer verdict_texte et conseil_achat
+  const nettoyerTexte = (txt) => {
+    if (!txt) return txt;
+    return txt
+      .replace(/en raison du kilométrage[^.]*\.?/gi, '')
+      .replace(/compte tenu du kilométrage[^.]*\.?/gi, '')
+      .replace(/le kilométrage[^.]*\.?/gi, '')
+      .replace(/du kilométrage[^.]*\.?/gi, '')
+      .replace(/\s{2,}/g, ' ')
       .trim();
-  }
+  };
+  if (parsed.conseil_achat) parsed.conseil_achat = nettoyerTexte(parsed.conseil_achat);
+  if (parsed.verdict_texte) parsed.verdict_texte = nettoyerTexte(parsed.verdict_texte);
 
   if (parsed.points_positifs?.length > 3) parsed.points_positifs = parsed.points_positifs.slice(0, 3);
   if (parsed.points_negatifs?.length > 3) parsed.points_negatifs = parsed.points_negatifs.slice(0, 3);
@@ -658,8 +675,8 @@ async function genererPDF(analyse, reportNumber, url) {
       </div>
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">CO2 &amp; TAXE CANTONALE</div>
-        <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : 'N/D'}</div>
-        <div class="cost-note"><a href="https://swiss-car-tax.ch/fr" style="color:#1a3a6e;">Calculer ma taxe → swiss-car-tax.ch</a></div>
+        <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : 'Non renseigné'}</div>
+        ${analyse.co2 ? `<div class="cost-note"><a href="https://swiss-car-tax.ch/fr" style="color:#1a3a6e;">Calculer ma taxe → swiss-car-tax.ch</a></div>` : ''}
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">FOURCHETTE MARCHÉ</div>
