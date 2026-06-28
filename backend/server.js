@@ -239,8 +239,8 @@ function traduireOption(opt) {
     'Sitzheizung vorne': "Sièges avant chauffants",
     'Wireless Charging für mobile Geräte': "Chargement sans fil pour appareils mobiles",
     'Roues en alliage léger 18\" AMG -5 rayons- doubles': 'Jantes 18" AMG 5 rayons',
-    'Ambientebeleuchtung': 'Éclairage d ambiance intérieur',
-    'Dachhimmel schwarz/ Stoff': 'Ciel de toit noir tissu',
+    'Ambientebeleuchtung': 'Éclairage d\'ambiance intérieur',
+    'Dachhimmel schwarz/ Stoff': 'Ciel de toit noir / tissu',
     'Dachhimmel schwarz': 'Ciel de toit noir',
     'Gilets de sécurité pour le conducteur et les passagers': 'Ceintures de sécurité',
     'Intérieur MBUX Assist': 'Système MBUX',
@@ -645,8 +645,8 @@ async function genererPDF(analyse, reportNumber, url) {
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">POINTS CLÉS</div></div>
     <div class="grid-2">
-      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745;"><span class="icon-check">v</span> ${p}</div>`).join('')}
-      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a;"><span class="icon-warn">!</span> ${p}</div>`).join('')}
+      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745; display:flex; align-items:flex-start; gap:8px;"><span class="icon-check">v</span><span>${p}</span></div>`).join('')}
+      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a; display:flex; align-items:flex-start; gap:8px;"><span class="icon-warn">!</span><span>${p}</span></div>`).join('')}
     </div>
   </div>
 
