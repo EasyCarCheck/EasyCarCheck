@@ -239,6 +239,12 @@ function traduireOption(opt) {
     'Sitzheizung vorne': "Sièges avant chauffants",
     'Wireless Charging für mobile Geräte': "Chargement sans fil pour appareils mobiles",
     'Roues en alliage léger 18\" AMG -5 rayons- doubles': 'Jantes 18" AMG 5 rayons',
+    'Ambientebeleuchtung': 'Éclairage d ambiance intérieur',
+    'Dachhimmel schwarz/ Stoff': 'Ciel de toit noir tissu',
+    'Dachhimmel schwarz': 'Ciel de toit noir',
+    'Gilets de sécurité pour le conducteur et les passagers': 'Ceintures de sécurité',
+    'Intérieur MBUX Assist': 'Système MBUX',
+    'Distronic/ tempomat à réglage de distance': 'Régulateur de distance adaptatif',
     'ESP Elektronisches Stabilitätsprogramm': "Contrôle électronique de stabilité ESP",
     'LED Tagfahrlicht': "LED Phares de jour",
     'Rückfahrkamera': "Caméra de recul",
@@ -550,6 +556,10 @@ async function genererPDF(analyse, reportNumber, url) {
   .point-card { background: #fff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; }
   .point-card-light { background: #f0f6ff; border-radius: 5px; padding: 6px 9px; font-size: 11px; color: #0d1b35; }
   .checklist-item { background: #f0f6ff; border-radius: 5px; padding: 9px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .icon-check { display:inline-block; width:14px; height:14px; background:#28a745; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
+  .icon-warn { display:inline-block; width:14px; height:14px; background:#d4a00a; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
+  .icon-cross { display:inline-block; width:14px; height:14px; background:#dc3545; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
+  .icon-q { display:inline-block; width:14px; height:14px; background:#1a3a6e; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
   .checklist-item-white { background: #fff; border-radius: 5px; padding: 9px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
   .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; page-break-inside: avoid; }
   .cost-card { background: #fff; border-radius: 7px; padding: 12px; text-align: center; }
@@ -635,8 +645,8 @@ async function genererPDF(analyse, reportNumber, url) {
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">POINTS CLÉS</div></div>
     <div class="grid-2">
-      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745;"><span style="color:#28a745;font-weight:bold;">&#10003;</span> ${p}</div>`).join('')}
-      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a;"><span style="color:#d4a00a;font-weight:bold;">&#9888;</span> ${p}</div>`).join('')}
+      ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:3px solid #28a745;"><span class="icon-check">v</span> ${p}</div>`).join('')}
+      ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:3px solid #d4a00a;"><span class="icon-warn">!</span> ${p}</div>`).join('')}
     </div>
   </div>
 
@@ -690,23 +700,23 @@ async function genererPDF(analyse, reportNumber, url) {
   ${analyse.red_flags?.length > 0 ? `
   <div class="redflag-section">
     <div class="redflag-badge">RED FLAGS</div>
-    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title">&#10007; ${r}</div></div>`).join('')}
+    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title"><span class="icon-cross">x</span> ${r}</div></div>`).join('')}
   </div>` : ''}
 
   ${analyse.problemes_connus_modele?.length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">PROBLÈMES CONNUS DU MODÈLE</div></div>
-    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white"><span style="color:#d4a00a;font-weight:700;">&#9888;</span> ${p}</div>`).join('')}
+    ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white"><span class="icon-warn">!</span> ${p}</div>`).join('')}
   </div>` : ''}
 
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">CHECKLIST VISITE</div></div>
-    ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span style="color:#28a745;font-weight:700;">&#10003;</span> ${c}</div>`).join('')}
+    ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item"><span class="icon-check">v</span> ${c}</div>`).join('')}
   </div>
 
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">QUESTIONS À POSER AU VENDEUR</div></div>
-    ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white"><span style="color:#1a3a6e;font-weight:700;">?</span> ${q}</div>`).join('')}
+    ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white"><span class="icon-q">?</span> ${q}</div>`).join('')}
   </div>
 
   ${analyse.conseil_achat ? `
