@@ -503,6 +503,7 @@ async function genererPDF(analyse, reportNumber, url) {
 <head>
 <meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Emoji&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; height: auto !important; }
@@ -570,7 +571,7 @@ async function genererPDF(analyse, reportNumber, url) {
 
   <div class="header">
     <div class="header-top">
-      <div class="logo">🚗 EASY<span>CAR</span>CHECK</div>
+      <div class="logo">● EASY<span>CAR</span>CHECK</div>
       <div class="report-num">Rapport #${reportNumber} · JUIN 2026</div>
     </div>
     <div class="header-main">
@@ -688,7 +689,7 @@ async function genererPDF(analyse, reportNumber, url) {
 
   ${analyse.red_flags?.length > 0 ? `
   <div class="redflag-section">
-    <div class="redflag-badge">🚨 RED FLAGS</div>
+    <div class="redflag-badge">▲ RED FLAGS</div>
     ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title">✗ ${r}</div></div>`).join('')}
   </div>` : ''}
 
@@ -710,13 +711,13 @@ async function genererPDF(analyse, reportNumber, url) {
 
   ${analyse.conseil_achat ? `
   <div class="section section-white" style="page-break-inside:avoid;">
-    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">💡 CONSEIL D'ACHAT</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">► CONSEIL D'ACHAT</div></div>
     <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:6px 0;">${analyse.conseil_achat}</p>
   </div>` : ''}
 
   <div class="verdict-section">
     <div>
-      <div class="verdict-label">🏆 VERDICT FINAL</div>
+      <div class="verdict-label">★ VERDICT FINAL</div>
       <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${analyse.verdict}</div>
       <div class="verdict-desc">${analyse.resume_verdict}</div>
     </div>
@@ -730,7 +731,7 @@ async function genererPDF(analyse, reportNumber, url) {
   <div class="footer">
     Source : ${url}<br>
     Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel.<br>
-    EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · 🇨🇭 Suisse
+    EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch ·  Suisse
   </div>
 
 </body>
@@ -762,7 +763,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
   const result = await resend.emails.send({
     from: 'EasyCarCheck <contact@easycarcheck.ch>',
     to: email,
-    subject: `🚗 Votre rapport EasyCarCheck #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
+    subject: `● Votre rapport EasyCarCheck #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -773,7 +774,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
 
   <tr><td style="background:#1a3a6e;border-radius:12px 12px 0 0;padding:24px;text-align:center;">
-    <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">🚗 EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
+    <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">● EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
     <div style="font-size:12px;color:#b8d0f0;margin-top:4px;">Analyse IA · Marché Suisse</div>
   </td></tr>
 
@@ -849,7 +850,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
   </td></tr>
 
   <tr><td style="background:#1a3a6e;border-radius:0 0 12px 12px;padding:20px;text-align:center;">
-    <div style="font-size:12px;color:#b8d0f0;margin-bottom:8px;">EasyCarCheck · easycarcheck.ch · 🇨🇭 Suisse</div>
+    <div style="font-size:12px;color:#b8d0f0;margin-bottom:8px;">EasyCarCheck · easycarcheck.ch ·  Suisse</div>
     <div>
       <a href="https://easycarcheck.ch" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Site web</a>
       <a href="https://easycarcheck.ch/mentions-legales.html" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Mentions légales</a>
@@ -872,7 +873,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
 }
 
 // ─── ROUTES ──────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK 🚗' }));
+app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK ●' }));
 
 app.post('/test-rapport', async (req, res) => {
   try {
@@ -967,4 +968,4 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚗 EasyCarCheck Backend running on port ${PORT}`));
+app.listen(PORT, () => console.log(`● EasyCarCheck Backend running on port ${PORT}`));
