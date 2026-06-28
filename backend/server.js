@@ -291,8 +291,9 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent (remplacement 5000-8000 CHF hors garantie), boîte DCT fragile
 - CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné → ajouter EXACTEMENT "Culasse remplacée" dans red_flags ET points_negatifs. JAMAIS dans points_positifs. Toujours "Culasse remplacée" comme terme exact
 - Si culasse remplacée → baisser score_fiabilite de 2 points et score_global de 1 point
-- INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée"
-- KILOMÉTRAGE : Ne qualifier d'élevé QUE si >25000 km/an. 54500 km en 2021 = ~13000 km/an = NORMAL, ne pas mentionner
+- INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée", "kilométrage élevé", "kilométrage relativement élevé", "kilométrage important", "consommation élevée"
+- KILOMÉTRAGE : NE JAMAIS mentionner le kilométrage comme point négatif. JAMAIS. Même à 200000 km. Le kilométrage est déjà visible dans les données du rapport.
+- SPORTIVES (RS, AMG, M, S, R): Ne pas mentionner la consommation comme point négatif. C'est une sportive, c'est normal.
 - FREE SERVICE Mercedes : cout_entretien_annee1 = 250, cout_total_3ans = 750. Mentionner dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
 - Sans free service : estimer les coûts selon le modèle
 - BOÎTE : "Manuelle robotisée" = "Automatique (DCT)" pour Mercedes AMG
@@ -305,10 +306,11 @@ Contenu: ${scrapedData.html}${equipmentSection}
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_positifs : exactement 3 éléments
-- points_negatifs : exactement 3 éléments
+- points_negatifs : exactement 3 éléments (JAMAIS kilométrage, JAMAIS consommation pour sportives)
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : exactement 2 éléments
+- conseil_achat : 2-3 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché)
 
 ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
 
@@ -349,6 +351,7 @@ RÈGLES JSON :
   "problemes_connus_modele": [],
   "checklist_visite": [],
   "questions_vendeur": [],
+  "conseil_achat": "",
   "cout_entretien_annee1": 0,
   "cout_total_3ans": 0,
   "taxe_cantonale_ge": 0,
@@ -670,6 +673,12 @@ async function genererPDF(analyse, reportNumber, url) {
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">QUESTIONS À POSER AU VENDEUR</div></div>
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white"><span style="color:#1a3a6e;font-weight:700;">?</span> ${q}</div>`).join('')}
   </div>
+
+  ${analyse.conseil_achat ? `
+  <div class="section section-white" style="page-break-inside:avoid;">
+    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">💡 CONSEIL D'ACHAT</div></div>
+    <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:6px 0;">${analyse.conseil_achat}</p>
+  </div>` : ''}
 
   <div class="verdict-section">
     <div>
