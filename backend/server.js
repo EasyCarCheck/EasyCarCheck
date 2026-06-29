@@ -341,8 +341,8 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer, sans limiter
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
-- points_positifs : exactement 3 éléments
-- points_negatifs : exactement 3 éléments (JAMAIS kilométrage, JAMAIS consommation pour sportives)
+- points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
+- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives)
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : exactement 2 éléments
