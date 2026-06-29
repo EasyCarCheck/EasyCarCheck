@@ -513,7 +513,7 @@ RÈGLES JSON :
 }
 
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
-async function traduireVerdict(verdict, langue) {
+function traduireVerdict(verdict, langue) {
   const verdicts = {
     fr: { 'ACHETER': 'ACHETER', 'NÉGOCIER': 'NÉGOCIER', 'ÉVITER': 'ÉVITER' },
     de: { 'ACHETER': 'KAUFEN', 'NÉGOCIER': 'VERHANDELN', 'ÉVITER': 'MEIDEN' },
@@ -525,10 +525,10 @@ async function traduireVerdict(verdict, langue) {
 
 async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   const labels = {
-    fr: { scores: 'DÉTAIL DES SCORES', points: 'POINTS CLÉS', options: 'ÉQUIPEMENTS & OPTIONS', couts: 'COÛTS & MARCHÉ', entretien1: 'ENTRETIEN AN 1', total3: 'TOTAL 3 ANS', co2: 'CO2 & TAXE CANTONALE', marche: 'FOURCHETTE MARCHÉ', taxe: 'Taxe: site officiel de votre canton', red: 'RED FLAGS', alerte: 'ALERTE', problemes: 'PROBLÈMES CONNUS DU MODÈLE', checklist: 'CHECKLIST VISITE', questions: 'QUESTIONS À POSER AU VENDEUR', conseil: "CONSEIL D'ACHAT", verdict: 'VERDICT FINAL', disclaimer: "Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel." },
-    de: { scores: 'BEWERTUNGSDETAILS', points: 'WICHTIGE PUNKTE', options: 'AUSSTATTUNG & OPTIONEN', couts: 'KOSTEN & MARKT', entretien1: 'WARTUNG JAHR 1', total3: 'TOTAL 3 JAHRE', co2: 'CO2 & KANTONSSTEUER', marche: 'MARKTPREISSPANNE', taxe: 'Steuer: offizielle Kantonswebsite', red: 'WARNHINWEISE', alerte: 'WARNUNG', problemes: 'BEKANNTE MODELLPROBLEME', checklist: 'BESICHTIGUNGS-CHECKLISTE', questions: 'FRAGEN AN DEN VERKÄUFER', conseil: 'KAUFEMPFEHLUNG', verdict: 'ENDURTEIL', disclaimer: 'Dieser Bericht ist ein Entscheidungshilfe-Tool. Er ersetzt keine physische Inspektion durch einen Fachmann.' },
-    it: { scores: 'DETTAGLIO PUNTEGGI', points: 'PUNTI CHIAVE', options: 'EQUIPAGGIAMENTI & OPZIONI', couts: 'COSTI & MERCATO', entretien1: 'MANUTENZIONE ANNO 1', total3: 'TOTALE 3 ANNI', co2: 'CO2 & TASSA CANTONALE', marche: 'FASCIA DI MERCATO', taxe: 'Calcola sul sito ufficiale del tuo cantone', red: 'SEGNALAZIONI', alerte: 'ATTENZIONE', problemes: 'PROBLEMI NOTI DEL MODELLO', checklist: 'CHECKLIST VISITA', questions: 'DOMANDE AL VENDITORE', conseil: "CONSIGLIO D'ACQUISTO", verdict: 'VERDETTO FINALE', disclaimer: 'Questo rapporto è uno strumento di supporto decisionale.' },
-    en: { scores: 'SCORE DETAILS', points: 'KEY POINTS', options: 'EQUIPMENT & OPTIONS', couts: 'COSTS & MARKET', entretien1: 'MAINTENANCE YEAR 1', total3: 'TOTAL 3 YEARS', co2: 'CO2 & CANTONAL TAX', marche: 'MARKET RANGE', taxe: "Calculate on your canton's official website", red: 'RED FLAGS', alerte: 'ALERT', problemes: 'KNOWN MODEL ISSUES', checklist: 'VISIT CHECKLIST', questions: 'QUESTIONS FOR THE SELLER', conseil: 'BUYING ADVICE', verdict: 'FINAL VERDICT', disclaimer: 'This report is a decision-support tool. It does not replace a physical inspection by a professional.' }
+    fr: { marque: 'MARQUE & MODÈLE', score_global: '${L.score_global}', rapport: 'Rapport', prix: 'PRIX', fiabilite: 'FIABILITÉ', entretien: 'ENTRETIEN', annee: 'ANNÉE', km: 'KILOMÉTRAGE', prix_dem: 'PRIX DEMANDÉ', puissance: 'PUISSANCE', carburant: 'CARBURANT', boite: 'BOÎTE', transmission: 'TRANSMISSION', couleur: 'COULEUR', desc: 'DESCRIPTION VENDEUR', scores: 'DÉTAIL DES SCORES', points: 'POINTS CLÉS', options: 'ÉQUIPEMENTS & OPTIONS', couts: 'COÛTS & MARCHÉ', entretien1: 'ENTRETIEN AN 1', total3: 'TOTAL 3 ANS', co2: 'CO2 & TAXE CANTONALE', marche: 'FOURCHETTE MARCHÉ', taxe: 'Taxe: site officiel de votre canton', red: 'RED FLAGS', alerte: 'ALERTE', problemes: 'PROBLÈMES CONNUS DU MODÈLE', checklist: 'CHECKLIST VISITE', questions: 'QUESTIONS À POSER AU VENDEUR', conseil: "CONSEIL D'ACHAT", verdict: 'VERDICT FINAL', disclaimer: "Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel." },
+    de: { marque: 'MARKE & MODELL', score_global: 'GESAMTBEWERTUNG', rapport: 'Bericht', prix: 'PREIS', fiabilite: 'ZUVERLÄSSIGKEIT', entretien: 'WARTUNG', annee: 'JAHR', km: 'KILOMETERSTAND', prix_dem: 'VERLANGTER PREIS', puissance: 'LEISTUNG', carburant: 'KRAFTSTOFF', boite: 'GETRIEBE', transmission: 'ANTRIEB', couleur: 'FARBE', desc: 'VERKÄUFERBESCHREIBUNG', scores: 'BEWERTUNGSDETAILS', points: 'WICHTIGE PUNKTE', options: 'AUSSTATTUNG & OPTIONEN', couts: 'KOSTEN & MARKT', entretien1: 'WARTUNG JAHR 1', total3: 'TOTAL 3 JAHRE', co2: 'CO2 & KANTONSSTEUER', marche: 'MARKTPREISSPANNE', taxe: 'Steuer: offizielle Kantonswebsite', red: 'WARNHINWEISE', alerte: 'WARNUNG', problemes: 'BEKANNTE MODELLPROBLEME', checklist: 'BESICHTIGUNGS-CHECKLISTE', questions: 'FRAGEN AN DEN VERKÄUFER', conseil: 'KAUFEMPFEHLUNG', verdict: 'ENDURTEIL', disclaimer: 'Dieser Bericht ist ein Entscheidungshilfe-Tool. Er ersetzt keine physische Inspektion durch einen Fachmann.' },
+    it: { marque: 'MARCA & MODELLO', score_global: 'PUNTEGGIO GLOBALE', rapport: 'Rapporto', prix: 'PREZZO', fiabilite: 'AFFIDABILITÀ', entretien: 'MANUTENZIONE', annee: 'ANNO', km: 'CHILOMETRAGGIO', prix_dem: 'PREZZO RICHIESTO', puissance: 'POTENZA', carburant: 'CARBURANTE', boite: 'CAMBIO', transmission: 'TRAZIONE', couleur: 'COLORE', desc: 'DESCRIZIONE VENDITORE', scores: 'DETTAGLIO PUNTEGGI', points: 'PUNTI CHIAVE', options: 'EQUIPAGGIAMENTI & OPZIONI', couts: 'COSTI & MERCATO', entretien1: 'MANUTENZIONE ANNO 1', total3: 'TOTALE 3 ANNI', co2: 'CO2 & TASSA CANTONALE', marche: 'FASCIA DI MERCATO', taxe: 'Calcola sul sito ufficiale del tuo cantone', red: 'SEGNALAZIONI', alerte: 'ATTENZIONE', problemes: 'PROBLEMI NOTI DEL MODELLO', checklist: 'CHECKLIST VISITA', questions: 'DOMANDE AL VENDITORE', conseil: "CONSIGLIO D'ACQUISTO", verdict: 'VERDETTO FINALE', disclaimer: 'Questo rapporto è uno strumento di supporto decisionale.' },
+    en: { marque: 'MAKE & MODEL', score_global: 'OVERALL SCORE', rapport: 'Report', prix: 'PRICE', fiabilite: 'RELIABILITY', entretien: 'MAINTENANCE', annee: 'YEAR', km: 'MILEAGE', prix_dem: 'ASKING PRICE', puissance: 'POWER', carburant: 'FUEL', boite: 'GEARBOX', transmission: 'DRIVE', couleur: 'COLOUR', desc: 'SELLER DESCRIPTION', scores: 'SCORE DETAILS', points: 'KEY POINTS', options: 'EQUIPMENT & OPTIONS', couts: 'COSTS & MARKET', entretien1: 'MAINTENANCE YEAR 1', total3: 'TOTAL 3 YEARS', co2: 'CO2 & CANTONAL TAX', marche: 'MARKET RANGE', taxe: "Calculate on your canton's official website", red: 'RED FLAGS', alerte: 'ALERT', problemes: 'KNOWN MODEL ISSUES', checklist: 'VISIT CHECKLIST', questions: 'QUESTIONS FOR THE SELLER', conseil: 'BUYING ADVICE', verdict: 'FINAL VERDICT', disclaimer: 'This report is a decision-support tool. It does not replace a physical inspection by a professional.' }
   };
   const L = labels[langue] || labels.fr;
   const verdictColor = {
@@ -538,8 +538,15 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     'ACQUISTARE': '#28a745', 'TRATTARE': '#d4a00a', 'EVITARE': '#dc3545'
   };
   const colour = (score) => score >= 7 ? '#28a745' : score >= 5 ? '#d4a00a' : '#dc3545';
-  const badge = (score) => score >= 8 ? 'EXCELLENT' : score >= 7 ? 'BIEN ÉVALUÉ' : score >= 5 ? 'MOYEN' : 'À ÉVITER';
-  const scoreTag = (score) => score >= 8 ? 'EXCELLENT' : score >= 7 ? 'BIEN ÉVALUÉ' : score >= 5 ? 'MOYEN' : 'À SURVEILLER';
+  const badgeMap = {
+    fr: { ex: 'EXCELLENT', bien: 'BIEN ÉVALUÉ', moy: 'MOYEN', sur: 'À SURVEILLER', ev: 'À ÉVITER' },
+    de: { ex: 'AUSGEZEICHNET', bien: 'GUT BEWERTET', moy: 'MITTEL', sur: 'ACHTUNG', ev: 'MEIDEN' },
+    it: { ex: 'ECCELLENTE', bien: 'BEN VALUTATO', moy: 'MEDIO', sur: 'ATTENZIONE', ev: 'DA EVITARE' },
+    en: { ex: 'EXCELLENT', bien: 'WELL RATED', moy: 'AVERAGE', sur: 'WATCH OUT', ev: 'AVOID' }
+  };
+  const bm = badgeMap[langue] || badgeMap.fr;
+  const badge = (score) => score >= 8 ? bm.ex : score >= 7 ? bm.bien : score >= 5 ? bm.moy : bm.ev;
+  const scoreTag = (score) => score >= 8 ? bm.ex : score >= 7 ? bm.bien : score >= 5 ? bm.moy : bm.sur;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -619,16 +626,16 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   <div class="header">
     <div class="header-top">
       <div class="logo">EASY<span>CAR</span>CHECK</div>
-      <div class="report-num">Rapport #${reportNumber} · JUIN 2026</div>
+      <div class="report-num">${L.rapport} #${reportNumber} · JUIN 2026</div>
     </div>
     <div class="header-main">
       <div>
-        <div class="car-brand-label">MARQUE &amp; MODÈLE</div>
+        <div class="car-brand-label">${L.marque}</div>
         <div class="car-brand">${analyse.marque?.toUpperCase()}</div>
         <div class="car-model">${analyse.modele?.toUpperCase()}</div>
       </div>
       <div class="score-box" style="border: 2px solid ${colour(analyse.score_global)};">
-        <div class="score-label">SCORE GLOBAL</div>
+        <div class="score-label">${L.score_global}</div>
         <div class="score-num" style="color: ${colour(analyse.score_global)};">${analyse.score_global}</div>
         <div class="score-denom">/10</div>
         <div class="score-badge" style="background: ${colour(analyse.score_global)};">${badge(analyse.score_global)}</div>
@@ -640,19 +647,19 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     <div class="scores-bar-title">${L.scores}</div>
     <div class="scores-grid">
       <div class="score-item">
-        <div class="score-item-label">PRIX</div>
+        <div class="score-item-label">${L.prix}</div>
         <div class="score-item-num" style="color:${colour(analyse.score_prix)};">${analyse.score_prix}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_prix*10}%;background:${colour(analyse.score_prix)};"></div></div>
         <div class="score-item-tag" style="color:${colour(analyse.score_prix)};">${scoreTag(analyse.score_prix)}</div>
       </div>
       <div class="score-item">
-        <div class="score-item-label">FIABILITÉ</div>
+        <div class="score-item-label">${L.fiabilite}</div>
         <div class="score-item-num" style="color:${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_fiabilite*10}%;background:${colour(analyse.score_fiabilite)};"></div></div>
         <div class="score-item-tag" style="color:${colour(analyse.score_fiabilite)};">${scoreTag(analyse.score_fiabilite)}</div>
       </div>
       <div class="score-item">
-        <div class="score-item-label">ENTRETIEN</div>
+        <div class="score-item-label">${L.entretien}</div>
         <div class="score-item-num" style="color:${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_entretien*10}%;background:${colour(analyse.score_entretien)};"></div></div>
         <div class="score-item-tag" style="color:${colour(analyse.score_entretien)};">${scoreTag(analyse.score_entretien)}</div>
@@ -661,21 +668,21 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   </div>
 
   <div class="grid-4 grid-white">
-    <div class="cell"><div class="cell-label">ANNÉE</div><div class="cell-value">${analyse.annee}</div></div>
-    <div class="cell"><div class="cell-label">KILOMÉTRAGE</div><div class="cell-value">${analyse.kilometrage} <span class="cell-unit">km</span></div></div>
-    <div class="cell"><div class="cell-label">PRIX DEMANDÉ</div><div class="cell-value" style="color:#1a3a6e;">${analyse.prix} <span class="cell-unit">CHF</span></div></div>
-    <div class="cell"><div class="cell-label">PUISSANCE</div><div class="cell-value">${analyse.puissance}</div></div>
+    <div class="cell"><div class="cell-label">${L.annee}</div><div class="cell-value">${analyse.annee}</div></div>
+    <div class="cell"><div class="cell-label">${L.km}</div><div class="cell-value">${analyse.kilometrage} <span class="cell-unit">km</span></div></div>
+    <div class="cell"><div class="cell-label">${L.prix_dem}</div><div class="cell-value" style="color:#1a3a6e;">${analyse.prix} <span class="cell-unit">CHF</span></div></div>
+    <div class="cell"><div class="cell-label">${L.puissance}</div><div class="cell-value">${analyse.puissance}</div></div>
   </div>
 
   <div class="grid-4 grid-light" style="border-bottom:1px solid #d0e4f7;">
-    <div class="cell"><div class="cell-label">CARBURANT</div><div class="cell-value">${analyse.carburant}</div></div>
-    <div class="cell"><div class="cell-label">BOÎTE</div><div class="cell-value">${analyse.boite}</div></div>
-    <div class="cell"><div class="cell-label">TRANSMISSION</div><div class="cell-value">${analyse.transmission}</div></div>
-    <div class="cell"><div class="cell-label">COULEUR</div><div class="cell-value">${analyse.couleur}</div></div>
+    <div class="cell"><div class="cell-label">${L.carburant}</div><div class="cell-value">${analyse.carburant}</div></div>
+    <div class="cell"><div class="cell-label">${L.boite}</div><div class="cell-value">${analyse.boite}</div></div>
+    <div class="cell"><div class="cell-label">${L.transmission}</div><div class="cell-value">${analyse.transmission}</div></div>
+    <div class="cell"><div class="cell-label">${L.couleur}</div><div class="cell-value">${analyse.couleur}</div></div>
   </div>
 
   <div class="section section-white">
-    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">DESCRIPTION VENDEUR</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.desc}</div></div>
     <div class="description-box">${analyse.description_vendeur}</div>
   </div>
 
