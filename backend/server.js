@@ -324,7 +324,7 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée", "kilométrage élevé", "kilométrage relativement élevé", "kilométrage important", "consommation élevée"
 - KILOMÉTRAGE : NE JAMAIS mentionner le kilométrage comme point négatif
 - SPORTIVES (RS, AMG, M, S, R): Ne pas mentionner la consommation comme point négatif
-- FREE SERVICE Mercedes : cout_entretien_annee1 = 250, cout_total_3ans = 750. Mentionner dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
+- FREE SERVICE (Mercedes, BMW, Audi, Volvo ou autre constructeur) : cout_entretien_annee1 = 250, cout_total_3ans = 750. Mentionner dans points_positifs ce texte traduit en ${langues[langue] || 'français'} : FR="Entretien main d'oeuvre et pièces couvert par le constructeur (liquides à la charge du propriétaire)" / DE="Arbeits- und Ersatzteile durch den Hersteller abgedeckt (Betriebsstoffe auf Kosten des Besitzers)" / IT="Manodopera e ricambi coperti dal costruttore (liquidi a carico del proprietario)" / EN="Labour and parts covered by the manufacturer (fluids at owner's expense)"
 - Sans free service : estimer les coûts selon le modèle
   * Voiture compacte / citadine : 400-600 CHF/an
   * Berline / break standard : 800-1200 CHF/an
