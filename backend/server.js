@@ -469,7 +469,7 @@ RÈGLES JSON :
   parsed.puissance = nettoyerPuissance(parsed.puissance);
 
   // Filtrer points négatifs interdits
-  const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation élevée', 'km élevé', 'km important'];
+  const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation élevée', 'km élevé', 'km important', 'co2', 'CO2', 'émissions', 'emissionen', 'Emissionen', 'verbrauch', 'Verbrauch'];
   if (parsed.points_negatifs) {
     parsed.points_negatifs = parsed.points_negatifs.filter(p =>
       !mots_interdits.some(mot => p.toLowerCase().includes(mot))
@@ -510,7 +510,10 @@ RÈGLES JSON :
   const termesDict = {
     de: {
       'Culasse remplacée': 'Zylinderkopf ersetzt', 'Boîte DCT fragile': 'DCT-Getriebe anfällig',
-      'Culasse': 'Zylinderkopf', 'culasse': 'Zylinderkopf', 'boîte DCT': 'DCT-Getriebe', 'Négocier': 'Verhandeln',
+      'Culasse': 'Zylinderkopf', 'culasse': 'Zylinderkopf',
+      'boîte DCT': 'DCT-Getriebe', 'Boîte DCT': 'DCT-Getriebe',
+      'la boîte DCT': 'das DCT-Getriebe', 'La boîte DCT': 'Das DCT-Getriebe',
+      'Négocier': 'Verhandeln',
     },
     it: {
       'Culasse remplacée': 'Testata sostituita', 'Boîte DCT fragile': 'Cambio DCT fragile',
