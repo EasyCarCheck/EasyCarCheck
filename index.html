@@ -282,11 +282,16 @@
     .faq-answer { font-size: 13px; padding: 0 16px 14px; }
 
     /* PRICING */
-    .pricing { padding: 24px 14px; }
-    .pricing h2 { font-size: 18px; margin-bottom: 6px; }
-    .pricing-sub { font-size: 12px; margin-bottom: 16px; }
-    .pricing-grid { flex-direction: column; align-items: center; gap: 14px; }
-    .pricing-card { width: 100%; max-width: 340px; padding: 24px 18px; }
+    .pricing { padding: 24px 0 20px; }
+    .pricing h2 { font-size: 18px; margin-bottom: 6px; padding: 0 16px; }
+    .pricing-sub { font-size: 12px; margin-bottom: 14px; padding: 0 16px; }
+    .pricing-grid { display: none; }
+    .pricing-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding: 4px 16px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .pricing-carousel::-webkit-scrollbar { display: none; }
+    .pricing-carousel .pricing-card { min-width: 280px; max-width: 280px; scroll-snap-align: center; flex-shrink: 0; padding: 24px 18px; }
+    .pricing-carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
+    .pricing-carousel-dot { width: 7px; height: 7px; border-radius: 50%; background: #d0e4f7; transition: background 0.2s; }
+    .pricing-carousel-dot.active { background: #1a3a6e; }
 
     /* FOOTER */
     footer { padding: 20px 14px; }
@@ -563,6 +568,65 @@
       <button class="pricing-btn secondary" onclick="payerRapport('pack5')" id="p3-btn">Choisir ce pack</button>
     </div>
   </div>
+
+  <!-- MOBILE PRICING CAROUSEL -->
+  <div class="pricing-carousel" id="pricingCarousel">
+    <div class="pricing-card">
+      <h3 id="pc0-title">Gratuit</h3>
+      <div class="pricing-price">0</div>
+      <div class="pricing-period">CHF</div>
+      <ul class="pricing-features">
+        <li>Score global /10</li>
+        <li>Verdict Acheter/Négocier/Éviter</li>
+        <li>Résultat instantané</li>
+      </ul>
+      <button class="pricing-btn secondary" onclick="document.getElementById('urlInput').focus(); window.scrollTo({top:0,behavior:'smooth'})">Commencer</button>
+    </div>
+    <div class="pricing-card popular">
+      <div class="popular-badge">⭐ Le plus populaire</div>
+      <h3>Rapport complet</h3>
+      <div class="pricing-price" style="color:#1a3a6e;">9 <span style="font-size:18px;text-decoration:line-through;color:#8fa8c8;">12</span></div>
+      <div class="pricing-period">CHF · Offre de lancement</div>
+      <ul class="pricing-features">
+        <li>Rapport PDF complet</li>
+        <li>Red flags & problèmes connus</li>
+        <li>Checklist visite</li>
+        <li>Prix négociation suggéré</li>
+        <li>Taxe cantonale GE</li>
+        <li>Envoi par email</li>
+      </ul>
+      <button class="pricing-btn primary" onclick="payerRapport('single')">Obtenir le rapport</button>
+    </div>
+    <div class="pricing-card">
+      <h3>Pack 3 rapports</h3>
+      <div class="pricing-price">27 <span style="font-size:18px;text-decoration:line-through;color:#8fa8c8;">30</span></div>
+      <div class="pricing-period">CHF · 9 CHF/rapport</div>
+      <ul class="pricing-features">
+        <li>3 rapports complets PDF</li>
+        <li>Valable 6 mois</li>
+        <li>Idéal pour comparer</li>
+      </ul>
+      <button class="pricing-btn secondary" onclick="payerRapport('pack3')">Choisir ce pack</button>
+    </div>
+    <div class="pricing-card">
+      <h3>Pack 5 rapports</h3>
+      <div class="pricing-price">40 <span style="font-size:18px;text-decoration:line-through;color:#8fa8c8;">45</span></div>
+      <div class="pricing-period">CHF · 8 CHF/rapport</div>
+      <ul class="pricing-features">
+        <li>5 rapports complets PDF</li>
+        <li>Valable 6 mois</li>
+        <li>Meilleur rapport qualité/prix</li>
+      </ul>
+      <button class="pricing-btn secondary" onclick="payerRapport('pack5')">Choisir ce pack</button>
+    </div>
+  </div>
+  <div class="pricing-carousel-dots" id="pricingDots">
+    <div class="pricing-carousel-dot active" id="pdot0"></div>
+    <div class="pricing-carousel-dot" id="pdot1"></div>
+    <div class="pricing-carousel-dot" id="pdot2"></div>
+    <div class="pricing-carousel-dot" id="pdot3"></div>
+  </div>
+
 </div>
 
 <div class="modal-overlay" id="emailModal">
@@ -845,6 +909,18 @@
   document.getElementById('emailModal').addEventListener('click', function(e) {
     if (e.target === this) fermerModal();
   });
+
+  // Pricing carousel dots
+  const pricingCarousel = document.getElementById('pricingCarousel');
+  if (pricingCarousel) {
+    pricingCarousel.addEventListener('scroll', () => {
+      const index = Math.round(pricingCarousel.scrollLeft / (280 + 12));
+      [0,1,2,3].forEach(i => {
+        const dot = document.getElementById('pdot' + i);
+        if (dot) dot.classList.toggle('active', i === index);
+      });
+    });
+  }
 </script>
 </body>
 </html>
