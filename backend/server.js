@@ -515,10 +515,14 @@ RÈGLES JSON :
     it: {
       'Culasse remplacée': 'Testata sostituita', 'Boîte DCT fragile': 'Cambio DCT fragile',
       'Culasse': 'Testata', 'culasse': 'testata',
+      'boîte DCT': 'cambio DCT', 'Boîte DCT': 'Cambio DCT',
+      'la boîte DCT': 'il cambio DCT', 'La boîte DCT': 'Il cambio DCT',
     },
     en: {
       'Culasse remplacée': 'Cylinder head replaced', 'Boîte DCT fragile': 'DCT gearbox fragile',
       'Culasse': 'Cylinder head', 'culasse': 'cylinder head',
+      'boîte DCT': 'DCT gearbox', 'Boîte DCT': 'DCT gearbox',
+      'la boîte DCT': 'the DCT gearbox', 'La boîte DCT': 'The DCT gearbox',
     }
   };
 
@@ -536,6 +540,11 @@ RÈGLES JSON :
     if (parsed.points_negatifs) parsed.points_negatifs = parsed.points_negatifs.map(traduireTermes);
     if (parsed.points_positifs) parsed.points_positifs = parsed.points_positifs.map(traduireTermes);
     if (parsed.verdict_texte) parsed.verdict_texte = traduireTermes(parsed.verdict_texte);
+    if (parsed.checklist_visite) parsed.checklist_visite = parsed.checklist_visite.map(traduireTermes);
+    if (parsed.questions_vendeur) parsed.questions_vendeur = parsed.questions_vendeur.map(traduireTermes);
+    if (parsed.problemes_connus_modele) parsed.problemes_connus_modele = parsed.problemes_connus_modele.map(traduireTermes);
+    if (parsed.conseil_achat) parsed.conseil_achat = traduireTermes(parsed.conseil_achat);
+    if (parsed.resume_verdict) parsed.resume_verdict = traduireTermes(parsed.resume_verdict);
   }
 
   // Nettoyer mentions kilométrage dans textes
