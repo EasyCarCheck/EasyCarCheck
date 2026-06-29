@@ -490,6 +490,47 @@ RÈGLES JSON :
     );
   }
   // Nettoyer verdict_texte et conseil_achat
+  // Traduction des termes techniques récurrents
+  const termesDict = {
+    de: {
+      'Culasse remplacée': 'Zylinderkopf ersetzt',
+      'Boîte DCT fragile': 'DCT-Getriebe anfällig',
+      'Culasse': 'Zylinderkopf',
+      'culasse': 'Zylinderkopf',
+      'boîte DCT': 'DCT-Getriebe',
+      'Négocier': 'Verhandeln',
+    },
+    it: {
+      'Culasse remplacée': 'Testata sostituita',
+      'Boîte DCT fragile': 'Cambio DCT fragile',
+      'Culasse': 'Testata',
+      'culasse': 'testata',
+    },
+    en: {
+      'Culasse remplacée': 'Cylinder head replaced',
+      'Boîte DCT fragile': 'DCT gearbox fragile',
+      'Culasse': 'Cylinder head',
+      'culasse': 'cylinder head',
+    }
+  };
+
+  const traduireTermes = (txt) => {
+    if (!txt || !termesDict[parsed.langue || langue]) return txt;
+    let result = txt;
+    for (const [fr, trad] of Object.entries(termesDict[parsed.langue || langue] || {})) {
+      result = result.replace(new RegExp(fr, 'g'), trad);
+    }
+    return result;
+  };
+
+  // Appliquer traduction aux champs texte
+  if (langue !== 'fr') {
+    if (parsed.red_flags) parsed.red_flags = parsed.red_flags.map(traduireTermes);
+    if (parsed.points_negatifs) parsed.points_negatifs = parsed.points_negatifs.map(traduireTermes);
+    if (parsed.points_positifs) parsed.points_positifs = parsed.points_positifs.map(traduireTermes);
+    if (parsed.verdict_texte) parsed.verdict_texte = traduireTermes(parsed.verdict_texte);
+  }
+
   const nettoyerTexte = (txt) => {
     if (!txt) return txt;
     return txt
