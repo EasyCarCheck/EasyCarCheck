@@ -273,7 +273,10 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     ? `\n\nDONNÉES STRUCTURÉES EXTRAITES (priorité sur le texte brut) :\n${scrapedData.equipmentData}`
     : '';
 
-  const prompt = `Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
+  const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
+IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
+
+Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
 Voici le contenu de l'annonce automobile :
 URL: ${url}
@@ -331,7 +334,7 @@ QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - problemes_connus_modele : exactement 2 éléments
 - conseil_achat : 2-3 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché)
 
-ÉTAPE 3 - Génère le rapport en ${langues[langue] || 'français'}.
+ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
 
 RÈGLES JSON :
 1. JSON valide uniquement, rien d'autre
@@ -493,7 +496,14 @@ RÈGLES JSON :
 }
 
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
-async function genererPDF(analyse, reportNumber, url) {
+async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
+  const labels = {
+    fr: { scores: 'DÉTAIL DES SCORES', points: 'POINTS CLÉS', options: 'ÉQUIPEMENTS & OPTIONS', couts: 'COÛTS & MARCHÉ', entretien1: 'ENTRETIEN AN 1', total3: 'TOTAL 3 ANS', co2: 'CO2 & TAXE CANTONALE', marche: 'FOURCHETTE MARCHÉ', taxe: 'Taxe: site officiel de votre canton', red: 'RED FLAGS', alerte: 'ALERTE', problemes: 'PROBLÈMES CONNUS DU MODÈLE', checklist: 'CHECKLIST VISITE', questions: 'QUESTIONS À POSER AU VENDEUR', conseil: "CONSEIL D'ACHAT", verdict: 'VERDICT FINAL', disclaimer: "Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel." },
+    de: { scores: 'BEWERTUNGSDETAILS', points: 'WICHTIGE PUNKTE', options: 'AUSSTATTUNG & OPTIONEN', couts: 'KOSTEN & MARKT', entretien1: 'WARTUNG JAHR 1', total3: 'TOTAL 3 JAHRE', co2: 'CO2 & KANTONSSTEUER', marche: 'MARKTPREISSPANNE', taxe: 'Steuer: offizielle Kantonswebsite', red: 'WARNHINWEISE', alerte: 'WARNUNG', problemes: 'BEKANNTE MODELLPROBLEME', checklist: 'BESICHTIGUNGS-CHECKLISTE', questions: 'FRAGEN AN DEN VERKÄUFER', conseil: 'KAUFEMPFEHLUNG', verdict: 'ENDURTEIL', disclaimer: 'Dieser Bericht ist ein Entscheidungshilfe-Tool. Er ersetzt keine physische Inspektion durch einen Fachmann.' },
+    it: { scores: 'DETTAGLIO PUNTEGGI', points: 'PUNTI CHIAVE', options: 'EQUIPAGGIAMENTI & OPZIONI', couts: 'COSTI & MERCATO', entretien1: 'MANUTENZIONE ANNO 1', total3: 'TOTALE 3 ANNI', co2: 'CO2 & TASSA CANTONALE', marche: 'FASCIA DI MERCATO', taxe: 'Calcola sul sito ufficiale del tuo cantone', red: 'SEGNALAZIONI', alerte: 'ATTENZIONE', problemes: 'PROBLEMI NOTI DEL MODELLO', checklist: 'CHECKLIST VISITA', questions: 'DOMANDE AL VENDITORE', conseil: "CONSIGLIO D'ACQUISTO", verdict: 'VERDETTO FINALE', disclaimer: 'Questo rapporto è uno strumento di supporto decisionale.' },
+    en: { scores: 'SCORE DETAILS', points: 'KEY POINTS', options: 'EQUIPMENT & OPTIONS', couts: 'COSTS & MARKET', entretien1: 'MAINTENANCE YEAR 1', total3: 'TOTAL 3 YEARS', co2: 'CO2 & CANTONAL TAX', marche: 'MARKET RANGE', taxe: "Calculate on your canton's official website", red: 'RED FLAGS', alerte: 'ALERT', problemes: 'KNOWN MODEL ISSUES', checklist: 'VISIT CHECKLIST', questions: 'QUESTIONS FOR THE SELLER', conseil: 'BUYING ADVICE', verdict: 'FINAL VERDICT', disclaimer: 'This report is a decision-support tool. It does not replace a physical inspection by a professional.' }
+  };
+  const L = labels[langue] || labels.fr;
   const verdictColor = {
     'ACHETER': '#28a745', 'NÉGOCIER': '#d4a00a', 'ÉVITER': '#dc3545',
     'VERHANDELN': '#d4a00a', 'KAUFEN': '#28a745', 'MEIDEN': '#dc3545',
@@ -600,7 +610,7 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>
 
   <div class="scores-bar">
-    <div class="scores-bar-title">DÉTAIL DES SCORES</div>
+    <div class="scores-bar-title">${L.scores}</div>
     <div class="scores-grid">
       <div class="score-item">
         <div class="score-item-label">PRIX</div>
@@ -643,7 +653,7 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>
 
   <div class="section section-light">
-    <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">POINTS CLÉS</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">${L.points}</div></div>
     <div class="grid-2">
       ${(analyse.points_positifs || []).map(p => `<div class="point-card" style="border-left:4px solid #28a745; padding:8px 10px; color:#0d1b35; font-size:12px;"><span style="color:#28a745; font-weight:700; margin-right:6px;">OK</span>${p}</div>`).join('')}
       ${(analyse.points_negatifs || []).map(p => `<div class="point-card" style="border-left:4px solid #d4a00a; padding:8px 10px; color:#0d1b35; font-size:12px;"><span style="color:#d4a00a; font-weight:700; margin-right:6px;">ATT.</span>${p}</div>`).join('')}
@@ -652,7 +662,7 @@ async function genererPDF(analyse, reportNumber, url) {
 
   ${analyse.options?.length > 0 ? `
   <div class="section section-white">
-    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">ÉQUIPEMENTS &amp; OPTIONS</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.options}</div></div>
     <table style="width:100%; border-collapse:separate; border-spacing:0 3px;">
       ${(() => {
         const opts = (analyse.options || []).slice(0, 24);
@@ -675,23 +685,23 @@ async function genererPDF(analyse, reportNumber, url) {
   </div>` : ''}
 
   <div class="section section-light">
-    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">COÛTS &amp; MARCHÉ</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.couts}</div></div>
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
-        <div class="cost-label">ENTRETIEN AN 1</div>
+        <div class="cost-label">${L.entretien1}</div>
         <div class="cost-value" style="color:#d4a00a;">${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
-        <div class="cost-label">TOTAL 3 ANS</div>
+        <div class="cost-label">${L.total3}</div>
         <div class="cost-value" style="color:#d4a00a;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
-        <div class="cost-label">CO2 &amp; TAXE CANTONALE</div>
+        <div class="cost-label">${L.co2}</div>
         <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : 'Non renseigné'}</div>
-        ${analyse.co2 ? `<div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">Taxe: site officiel de votre canton</div>` : ''}
+        ${analyse.co2 ? `<div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${L.taxe}</div>` : ''}
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
-        <div class="cost-label">FOURCHETTE MARCHÉ</div>
+        <div class="cost-label">${L.marche}</div>
         <div class="cost-value" style="color:#5a7a9a;font-size:12px;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
       </div>
     </div>
@@ -699,35 +709,35 @@ async function genererPDF(analyse, reportNumber, url) {
 
   ${analyse.red_flags?.length > 0 ? `
   <div class="redflag-section">
-    <div class="redflag-badge">RED FLAGS</div>
-    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title" style="color:#dc3545; font-weight:700;">ALERTE — ${r}</div></div>`).join('')}
+    <div class="redflag-badge">${L.red}</div>
+    ${analyse.red_flags.map(r => `<div class="redflag-card"><div class="redflag-title" style="color:#dc3545; font-weight:700;">${L.alerte} — ${r}</div></div>`).join('')}
   </div>` : ''}
 
   ${analyse.problemes_connus_modele?.length > 0 ? `
   <div class="section section-white">
-    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">PROBLÈMES CONNUS DU MODÈLE</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.problemes}</div></div>
     ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white" style="border-left:3px solid #d4a00a;"><span style="color:#d4a00a; font-weight:700; margin-right:6px;">!</span>${p}</div>`).join('')}
   </div>` : ''}
 
   <div class="section section-light">
-    <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">CHECKLIST VISITE</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">${L.checklist}</div></div>
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item" style="border-left:3px solid #28a745;"><span style="color:#28a745; font-weight:700; margin-right:6px;">></span>${c}</div>`).join('')}
   </div>
 
   <div class="section section-white">
-    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">QUESTIONS À POSER AU VENDEUR</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.questions}</div></div>
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
   </div>
 
   ${analyse.conseil_achat ? `
   <div class="section section-white" style="page-break-inside:avoid;">
-    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">CONSEIL D'ACHAT</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">${L.conseil}</div></div>
     <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:6px 0;">${analyse.conseil_achat}</p>
   </div>` : ''}
 
   <div class="verdict-section">
     <div>
-      <div class="verdict-label">VERDICT FINAL</div>
+      <div class="verdict-label">${L.verdict}</div>
       <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${analyse.verdict}</div>
       <div class="verdict-desc">${analyse.resume_verdict}</div>
     </div>
@@ -740,7 +750,7 @@ async function genererPDF(analyse, reportNumber, url) {
 
   <div class="footer">
     Source : ${url}<br>
-    Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel.<br>
+    ${L.disclaimer}<br>
     EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch ·  Suisse
   </div>
 
@@ -895,7 +905,7 @@ app.post('/test-rapport', async (req, res) => {
     console.log('2. Scraping OK');
     const analyse = await analyserAvecGPT(scraped, langue, url);
     console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global, '| CO2:', analyse.co2, '| Taxe:', analyse.taxe_cantonale_ge);
-    const pdf = await genererPDF(analyse, reportNumber, url);
+    const pdf = await genererPDF(analyse, reportNumber, url, langue);
     console.log('4. PDF OK');
     await envoyerEmail(email, pdf, analyse, reportNumber);
     console.log('5. Email envoyé !');
@@ -967,7 +977,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
       const scraped = await scrapeAnnonce(url);
       const analyse = await analyserAvecGPT(scraped, langue, url);
-      const pdf = await genererPDF(analyse, reportNumber, url);
+      const pdf = await genererPDF(analyse, reportNumber, url, langue);
       await envoyerEmail(email, pdf, analyse, reportNumber);
       console.log(`✅ Rapport #${reportNumber} envoyé à ${email}`);
     } catch (err) {
