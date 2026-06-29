@@ -45,6 +45,7 @@ async function scrapeAnnonce(url) {
       });
       const cssData = cssResponse.data;
       if (cssData && cssData.equipments && Array.isArray(cssData.equipments)) {
+        setLangue(langue || 'fr');
         cssEquipments = cssData.equipments.filter(e => e && e.trim().length > 2);
         console.log('CSS EXTRACTOR équipements:', cssEquipments.length);
       }
@@ -228,40 +229,53 @@ function nettoyerPuissance(puissance) {
 }
 
 // ─── TRADUCTION OPTIONS ALLEMAND ────────────────────────
+// Dictionnaire universel: clé allemande/française → traductions par langue
+const OPTIONS_DICT = {
+  // Null = à supprimer
+  'Details siehe Preisliste': null,
+  'Détails consultez la liste de prix': null,
+  'Keine Gewähr auf die Angaben der Serienausstattungen': null,
+  'Aucune garantie sur l exactitude de l équipement de série': null,
+
+  // Termes allemands → traductions
+  'Ambientebeleuchtung':           { fr: "Éclairage d'ambiance", de: "Ambientebeleuchtung", it: "Illuminazione ambientale", en: "Ambient lighting" },
+  'Deaktivierung Beifahrerairbag': { fr: "Désactivation airbag passager", de: "Beifahrerairbag-Deaktivierung", it: "Disattivazione airbag passeggero", en: "Passenger airbag deactivation" },
+  'Knieairbag Fahrer':             { fr: "Airbag genoux conducteur", de: "Knieairbag Fahrer", it: "Airbag ginocchio guidatore", en: "Driver knee airbag" },
+  'Aussenspiegel elektrisch anklappbar': { fr: "Rétroviseurs électriques rabattables", de: "Elektrisch anklappbare Außenspiegel", it: "Specchietti elettrici ripiegabili", en: "Electric folding mirrors" },
+  'Innen- und Fahreraussenspiegel automatisch abblendbar': { fr: "Rétroviseurs photochromatiques", de: "Automatisch abblendbare Spiegel", it: "Specchietti fotocromatici", en: "Auto-dimming mirrors" },
+  'Sitzheizung vorne':             { fr: "Sièges avant chauffants", de: "Sitzheizung vorne", it: "Sedili anteriori riscaldati", en: "Front heated seats" },
+  'Wireless Charging für mobile Geräte': { fr: "Chargement sans fil", de: "Kabelloses Laden", it: "Ricarica wireless", en: "Wireless charging" },
+  'Dachhimmel schwarz/ Stoff':     { fr: "Ciel de toit noir / tissu", de: "Schwarzer Dachhimmel", it: "Cielo del tetto nero", en: "Black headliner" },
+  'Dachhimmel schwarz':            { fr: "Ciel de toit noir", de: "Schwarzer Dachhimmel", it: "Cielo del tetto nero", en: "Black headliner" },
+  'ESP Elektronisches Stabilitätsprogramm': { fr: "Contrôle ESP", de: "ESP", it: "Controllo ESP", en: "ESP stability control" },
+  'LED Tagfahrlicht':              { fr: "Feux de jour LED", de: "LED-Tagfahrlicht", it: "Luci diurne LED", en: "LED daytime lights" },
+  'Rückfahrkamera':                { fr: "Caméra de recul", de: "Rückfahrkamera", it: "Telecamera posteriore", en: "Rear camera" },
+  'Reifendruck-Kontrollsystem RDK': { fr: "Contrôle pression pneus", de: "Reifendruckkontrolle", it: "Controllo pressione pneumatici", en: "Tyre pressure monitoring" },
+  'Seitenairbag Fahrer und Beifahrerseite': { fr: "Airbags latéraux", de: "Seitenairbags", it: "Airbag laterali", en: "Side airbags" },
+  'Airbag Fahrer und Beifahrerseite': { fr: "Airbags conducteur et passager", de: "Fahrer- und Beifahrerairbag", it: "Airbag guidatore e passeggero", en: "Driver and passenger airbags" },
+  'Alarmanlage mit Abschleppschutz u. Innenraumabsicherung': { fr: "Alarme avec antivol", de: "Alarmanlage mit Abschleppschutz", it: "Allarme con protezione rimorchio", en: "Alarm with tow protection" },
+  'Einbruch- und Diebstahlwarnanlage': { fr: "Système antivol", de: "Diebstahlwarnanlage", it: "Antifurto", en: "Anti-theft system" },
+  'Soundsystem':                   { fr: "Système audio premium", de: "Soundsystem", it: "Sistema audio premium", en: "Premium sound system" },
+
+  // Termes français → traductions
+  'Éclairage d ambiance':          { fr: "Éclairage d'ambiance", de: "Ambientebeleuchtung", it: "Illuminazione ambientale", en: "Ambient lighting" },
+  'Éclairage d\'ambiance intérieur': { fr: "Éclairage d'ambiance", de: "Ambientebeleuchtung", it: "Illuminazione ambientale", en: "Ambient lighting" },
+  'Aileron arrière':               { fr: "Aileron arrière AMG", de: "AMG Heckspoiler", it: "Spoiler posteriore AMG", en: "AMG rear spoiler" },
+  'Gilets de sécurité pour le conducteur et les passagers': { fr: "Ceintures de sécurité", de: "Sicherheitsgurte", it: "Cinture di sicurezza", en: "Seat belts" },
+  'Intérieur MBUX Assist':         { fr: "Système MBUX", de: "MBUX System", it: "Sistema MBUX", en: "MBUX System" },
+  'Distronic/ tempomat à réglage de distance': { fr: "Régulateur de distance adaptatif", de: "Distronic Abstandsregeltempomat", it: "Cruise control adattivo", en: "Adaptive cruise control" },
+};
+
+let _currentLangue = 'fr';
+function setLangue(l) { _currentLangue = l; }
+
 function traduireOption(opt) {
-  const dict = {
-    'Deaktivierung Beifahrerairbag': "Désactivation airbag passager",
-    'Knieairbag Fahrer': "Airbag genoux conducteur",
-    'Aussenspiegel elektrisch anklappbar': "Rétroviseurs électriques rabattables",
-    'Innen- und Fahreraussenspiegel automatisch abblendbar': "Rétroviseurs intérieur et extérieur photochromatiques",
-    'Details siehe Preisliste': null,
-    'Détails consultez la liste de prix': null,
-    'Sitzheizung vorne': "Sièges avant chauffants",
-    'Wireless Charging für mobile Geräte': "Chargement sans fil pour appareils mobiles",
-    'Roues en alliage léger 18\" AMG -5 rayons- doubles': 'Jantes 18" AMG 5 rayons',
-    'Ambientebeleuchtung': 'Éclairage d\'ambiance intérieur',
-    'Dachhimmel schwarz/ Stoff': 'Ciel de toit noir / tissu',
-    'Dachhimmel schwarz': 'Ciel de toit noir',
-    'Gilets de sécurité pour le conducteur et les passagers': 'Ceintures de sécurité',
-    'Intérieur MBUX Assist': 'Système MBUX',
-    'Distronic/ tempomat à réglage de distance': 'Régulateur de distance adaptatif',
-    'ESP Elektronisches Stabilitätsprogramm': "Contrôle électronique de stabilité ESP",
-    'LED Tagfahrlicht': "LED Phares de jour",
-    'Rückfahrkamera': "Caméra de recul",
-    'Reifendruck-Kontrollsystem RDK': "Système de contrôle pression pneus",
-    'Seitenairbag Fahrer und Beifahrerseite': "Airbags latéraux conducteur et passager",
-    'Airbag Fahrer und Beifahrerseite': "Airbags conducteur et passager",
-    'Keine Gewähr auf die Angaben der Serienausstattungen': null,
-    'Aucune garantie sur l exactitude de l équipement de série': null,
-    'Alarmanlage mit Abschleppschutz u. Innenraumabsicherung': "Alarme avec protection remorquage",
-    'Einbruch- und Diebstahlwarnanlage': "Système antivol",
-    'Aussenspiegel elektrisch anklappbar': "Rétroviseurs électriques rabattables",
-    'Soundsystem': "Système audio premium",
-    'Éclairage d ambiance': "Éclairage d'ambiance",
-    'Aileron arrière': "Aileron arrière AMG",
-    'Spoiler frontal spécial': "Spoiler frontal AMG",
-  };
-  return dict[opt] !== undefined ? dict[opt] : opt;
+  if (OPTIONS_DICT[opt] === null) return null;
+  if (OPTIONS_DICT[opt]) {
+    const val = OPTIONS_DICT[opt][_currentLangue] || OPTIONS_DICT[opt]['fr'];
+    return val || null;
+  }
+  return opt;
 }
 
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
@@ -447,6 +461,9 @@ RÈGLES JSON :
   parsed.taxe_cantonale_ge = estimerTaxe(co2Final, parsed.carburant);
   console.log(`TAXE calculée: CO2=${co2Final} → ${parsed.taxe_cantonale_ge} CHF`);
 
+  // Configurer la langue pour la traduction des options
+  setLangue(langue || 'fr');
+
   // FIX OPTIONS: bypass GPT — injecter directement les options du scraping si disponibles
   if (scrapedData.options && scrapedData.options.length > 0) {
     parsed.options = scrapedData.options
@@ -496,6 +513,16 @@ RÈGLES JSON :
 }
 
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
+async function traduireVerdict(verdict, langue) {
+  const verdicts = {
+    fr: { 'ACHETER': 'ACHETER', 'NÉGOCIER': 'NÉGOCIER', 'ÉVITER': 'ÉVITER' },
+    de: { 'ACHETER': 'KAUFEN', 'NÉGOCIER': 'VERHANDELN', 'ÉVITER': 'MEIDEN' },
+    it: { 'ACHETER': 'ACQUISTARE', 'NÉGOCIER': 'TRATTARE', 'ÉVITER': 'EVITARE' },
+    en: { 'ACHETER': 'BUY', 'NÉGOCIER': 'NEGOTIATE', 'ÉVITER': 'AVOID' }
+  };
+  return (verdicts[langue] || verdicts.fr)[verdict] || verdict;
+}
+
 async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   const labels = {
     fr: { scores: 'DÉTAIL DES SCORES', points: 'POINTS CLÉS', options: 'ÉQUIPEMENTS & OPTIONS', couts: 'COÛTS & MARCHÉ', entretien1: 'ENTRETIEN AN 1', total3: 'TOTAL 3 ANS', co2: 'CO2 & TAXE CANTONALE', marche: 'FOURCHETTE MARCHÉ', taxe: 'Taxe: site officiel de votre canton', red: 'RED FLAGS', alerte: 'ALERTE', problemes: 'PROBLÈMES CONNUS DU MODÈLE', checklist: 'CHECKLIST VISITE', questions: 'QUESTIONS À POSER AU VENDEUR', conseil: "CONSEIL D'ACHAT", verdict: 'VERDICT FINAL', disclaimer: "Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel." },
@@ -738,13 +765,13 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   <div class="verdict-section">
     <div>
       <div class="verdict-label">${L.verdict}</div>
-      <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${analyse.verdict}</div>
+      <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${traduireVerdict(analyse.verdict, langue)}</div>
       <div class="verdict-desc">${analyse.resume_verdict}</div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">PRIX SUGGÉRÉ</div>
+      <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
       <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
-      <div style="font-size:10px;color:#00B4D8;margin-top:4px;">↓ Économie : ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
+      <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
     </div>
   </div>
 
@@ -776,14 +803,14 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
 }
 
 // ─── ENVOI EMAIL ─────────────────────────────────────────
-async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
+async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'fr') {
   const verdictEmailColor = analyse.verdict === 'ACHETER' || analyse.verdict === 'KAUFEN' || analyse.verdict === 'BUY' || analyse.verdict === 'ACQUISTARE' ? '#28a745' : analyse.verdict === 'ÉVITER' || analyse.verdict === 'MEIDEN' || analyse.verdict === 'AVOID' || analyse.verdict === 'EVITARE' ? '#dc3545' : '#d4a00a';
   const scoreEmailColor = analyse.score_global >= 7 ? '#28a745' : analyse.score_global >= 5 ? '#d4a00a' : '#dc3545';
 
   const result = await resend.emails.send({
     from: 'EasyCarCheck <contact@easycarcheck.ch>',
     to: email,
-    subject: `● Votre rapport EasyCarCheck #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
+    subject: `${langue === 'de' ? '● Ihr EasyCarCheck-Bericht' : langue === 'it' ? '● Il tuo rapporto EasyCarCheck' : langue === 'en' ? '● Your EasyCarCheck Report' : '● Votre rapport EasyCarCheck'} #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -795,19 +822,19 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
 
   <tr><td style="background:#1a3a6e;border-radius:12px 12px 0 0;padding:24px;text-align:center;">
     <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">&#9658; EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
-    <div style="font-size:12px;color:#b8d0f0;margin-top:4px;">Analyse IA · Marché Suisse</div>
+    <div style="font-size:12px;color:#b8d0f0;margin-top:4px;">${langue === "de" ? "KI-Analyse · Schweizer Markt" : langue === "it" ? "Analisi IA · Mercato Svizzero" : langue === "en" ? "AI Analysis · Swiss Market" : "Analyse IA · Marché Suisse"}</div>
   </td></tr>
 
   <tr><td style="background:#fff;padding:32px 28px;border-left:1px solid #d0e4f7;border-right:1px solid #d0e4f7;">
 
     <div style="text-align:center;margin-bottom:28px;">
       <div style="width:56px;height:56px;background:rgba(40,167,69,0.1);border:2px solid #28a745;border-radius:50%;margin:0 auto 14px;line-height:56px;font-size:26px;text-align:center;">✅</div>
-      <h1 style="font-size:22px;font-weight:900;color:#0d1b35;margin:0 0 6px;">Votre rapport est prêt !</h1>
-      <p style="font-size:14px;color:#5a7a9a;margin:0;">Il est joint à cet email en pièce jointe PDF.</p>
+      <h1 style="font-size:22px;font-weight:900;color:#0d1b35;margin:0 0 6px;">${langue === "de" ? "Ihr Bericht ist bereit!" : langue === "it" ? "Il tuo rapporto è pronto!" : langue === "en" ? "Your report is ready!" : "Votre rapport est prêt !"}</h1>
+      <p style="font-size:14px;color:#5a7a9a;margin:0;">${langue === "de" ? "Er ist als PDF-Anhang an diese E-Mail angehängt." : langue === "it" ? "È allegato a questa email in formato PDF." : langue === "en" ? "It is attached to this email as a PDF." : "Il est joint à cet email en pièce jointe PDF."}</p>
     </div>
 
     <div style="background:#f0f6ff;border-radius:10px;padding:18px 20px;margin-bottom:24px;border:1px solid #d0e4f7;">
-      <div style="font-size:11px;color:#5a7a9a;letter-spacing:1px;margin-bottom:10px;">VOTRE ANALYSE</div>
+      <div style="font-size:11px;color:#5a7a9a;letter-spacing:1px;margin-bottom:10px;">${langue === "de" ? "IHRE ANALYSE" : langue === "it" ? "LA TUA ANALISI" : langue === "en" ? "YOUR ANALYSIS" : "VOTRE ANALYSE"}</div>
       <div style="font-size:18px;font-weight:900;color:#0d1b35;margin-bottom:12px;">${analyse.marque?.toUpperCase()} ${analyse.modele?.toUpperCase()}</div>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
@@ -820,12 +847,12 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
           <td width="33%" style="padding:0 3px;">
             <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid #d0e4f7;">
               <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">VERDICT</div>
-              <div style="font-size:14px;font-weight:900;color:${verdictEmailColor};">${analyse.verdict}</div>
+              <div style="font-size:14px;font-weight:900;color:${verdictEmailColor};">${traduireVerdict(analyse.verdict, langue)}</div>
             </div>
           </td>
           <td width="33%" style="padding-left:6px;">
             <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid #d0e4f7;">
-              <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">RAPPORT</div>
+              <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">${langue === "de" ? "BERICHT" : langue === "it" ? "RAPPORTO" : langue === "en" ? "REPORT" : "RAPPORT"}</div>
               <div style="font-size:16px;font-weight:900;color:#1a3a6e;">#${reportNumber}</div>
             </div>
           </td>
@@ -838,7 +865,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber) {
         <table><tr>
           <td style="font-size:18px;padding-right:12px;">📄</td>
           <td>
-            <div style="font-size:13px;font-weight:700;color:#0d1b35;">Rapport PDF en pièce jointe</div>
+            <div style="font-size:13px;font-weight:700;color:#0d1b35;">${langue === "de" ? "PDF-Bericht im Anhang" : langue === "it" ? "Rapporto PDF in allegato" : langue === "en" ? "PDF Report attached" : "Rapport PDF en pièce jointe"}</div>
             <div style="font-size:12px;color:#5a7a9a;">EasyCarCheck_Rapport_${reportNumber}.pdf</div>
           </td>
         </tr></table>
@@ -907,7 +934,7 @@ app.post('/test-rapport', async (req, res) => {
     console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global, '| CO2:', analyse.co2, '| Taxe:', analyse.taxe_cantonale_ge);
     const pdf = await genererPDF(analyse, reportNumber, url, langue);
     console.log('4. PDF OK');
-    await envoyerEmail(email, pdf, analyse, reportNumber);
+    await envoyerEmail(email, pdf, analyse, reportNumber, langue);
     console.log('5. Email envoyé !');
     res.json({ success: true, reportNumber, verdict: analyse.verdict, score: analyse.score_global });
   } catch (err) {
@@ -978,7 +1005,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       const scraped = await scrapeAnnonce(url);
       const analyse = await analyserAvecGPT(scraped, langue, url);
       const pdf = await genererPDF(analyse, reportNumber, url, langue);
-      await envoyerEmail(email, pdf, analyse, reportNumber);
+      await envoyerEmail(email, pdf, analyse, reportNumber, langue);
       console.log(`✅ Rapport #${reportNumber} envoyé à ${email}`);
     } catch (err) {
       console.error('Erreur génération rapport:', err);
