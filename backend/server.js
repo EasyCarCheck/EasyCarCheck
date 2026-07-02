@@ -489,6 +489,41 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
   }
 
+  // ─── CORRECTIONS PRIX AUTOMATIQUES ───────────────────
+  const prixDemande = parseInt(parsed.prix) || 0;
+  const fourchMin = parseInt(parsed.fourchette_marche_min) || 0;
+  const fourchMax = parseInt(parsed.fourchette_marche_max) || 0;
+
+  // 1. Prix suggéré doit être dans la fourchette marché
+  if (fourchMin > 0 && fourchMax > 0 && parsed.prix_negocie_suggere) {
+    if (parsed.prix_negocie_suggere > fourchMax) {
+      parsed.prix_negocie_suggere = fourchMax;
+      console.log('PRIX SUGGERE corrige fourchette max:', fourchMax);
+    }
+    if (parsed.prix_negocie_suggere < fourchMin) {
+      parsed.prix_negocie_suggere = fourchMin;
+      console.log('PRIX SUGGERE corrige fourchette min:', fourchMin);
+    }
+  }
+
+  // 2. Économie recalculée par rapport au prix demandé réel
+  if (prixDemande > 0 && parsed.prix_negocie_suggere > 0) {
+    const economie = prixDemande - parsed.prix_negocie_suggere;
+    if (economie > 0) {
+      parsed.economie_potentielle_min = Math.round(economie * 0.7);
+      parsed.economie_potentielle_max = Math.round(economie * 1.3);
+    }
+  }
+
+  // 3. Verdict EVITER automatique si prix dépasse fourchette de plus de 15%
+  if (fourchMax > 0 && prixDemande > fourchMax * 1.15) {
+    parsed.verdict = 'EVITER';
+    parsed.score_prix = Math.min(parsed.score_prix, 3);
+    parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
+    if (!parsed.resume_verdict) parsed.resume_verdict = 'Prix demandé nettement au-dessus de la valeur marché.';
+    console.log('VERDICT force EVITER — prix', prixDemande, 'depasse fourchette max', fourchMax, 'de +15%');
+  }
+
   // FIX: calcul taxe avec le CO2 réel (scraping prioritaire sur GPT)
   // Fallback par modèle si CO2 absent du scraping ET de GPT
   let co2Final = scrapedData.co2 || parsed.co2;
