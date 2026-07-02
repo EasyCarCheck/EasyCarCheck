@@ -348,7 +348,7 @@ const OPTIONS_DICT = {
   'Gurtstraffer vorne':            { fr: "Prétensionneurs de ceinture avant", de: "Gurtstraffer vorne", it: "Pretensionatori anteriori", en: "Front belt pretensioners" },
   'Höhenverstellbare Gurten vorne': { fr: "Ceintures avant réglables en hauteur", de: "Höhenverstellbare Gurte", it: "Cinture regolabili in altezza", en: "Height-adjustable front belts" },
   'Innenraumlicht-Paket':          { fr: "Pack éclairage intérieur", de: "Innenraumlicht-Paket", it: "Kit illuminazione interna", en: "Interior lighting package" },
-  'Jantes en alliage léger19J':    { fr: "Jantes en alliage 19 pouces", de: "Leichtmetallfelgen 19 Zoll", it: "Cerchi in lega 19"", en: "19-inch light alloy wheels" },
+  'Jantes en alliage léger19J':    { fr: "Jantes en alliage 19 pouces", de: "Leichtmetallfelgen 19 Zoll", it: "Cerchi in lega 19 pollici", en: "19-inch light alloy wheels" },
   'Frontscheibe mit Color-Band':   { fr: "Pare-brise avec bandeau teinté", de: "Frontscheibe mit Farbband", it: "Parabrezza con banda colorata", en: "Windscreen with tinted band" },
   'Fahrer-Informationssystem mit Farbdisplay': { fr: "Système d'info conducteur écran couleur", de: "Fahrerinformationssystem Farbdisplay", it: "Sistema info conducente display", en: "Colour driver info display" },
   'Garantie: 2 Jahre ohne Kilometerbegrenzung (ab 1. Inv.)': { fr: "Garantie 2 ans kilométrage illimité", de: "2 Jahre Garantie", it: "Garanzia 2 anni km illimitati", en: "2-year unlimited mileage warranty" },
