@@ -337,6 +337,21 @@ const OPTIONS_DICT = {
   'Baguettes d accent en argent':  { fr: "Inserts décoratifs en argent", de: "Zierleisten in Silber", it: "Inserti decorativi argento", en: "Silver decorative inserts" },
   'Baguettes décoratives du toit dans la couleur de la carrosserie': { fr: "Baguettes de toit couleur carrosserie", de: "Dachreling in Wagenfarbe", it: "Barre tetto nel colore della carrozzeria", en: "Roof rails in body colour" },
   'Befestigungsösen im Laderaum':  { fr: "Crochets d'arrimage dans le coffre", de: "Verzurrösen im Laderaum", it: "Ganci di fissaggio nel bagagliaio", en: "Load securing hooks" },
+  'Antiblockiersystem (ABS)':      { fr: "Système antiblocage ABS", de: "ABS", it: "Sistema antibloccaggio ABS", en: "Anti-lock braking system ABS" },
+  'Airbag: Airbag Fahrer undBeifahrer': { fr: "Airbags conducteur et passager", de: "Fahrer- und Beifahrerairbag", it: "Airbag guidatore e passeggero", en: "Driver and passenger airbags" },
+  'Airbag: Airbag Fahrer und Beifahrer': { fr: "Airbags conducteur et passager", de: "Fahrer- und Beifahrerairbag", it: "Airbag guidatore e passeggero", en: "Driver and passenger airbags" },
+  'Assist: Rückfahrkamera':        { fr: "Caméra de recul", de: "Rückfahrkamera", it: "Telecamera posteriore", en: "Rear-view camera" },
+  'Baguettes d accent en argent':  { fr: "Inserts décoratifs argent", de: "Silberne Zierleisten", it: "Inserti decorativi argento", en: "Silver decorative trim" },
+  'Baguettes décoratives du toit dans la couleur de la carrosserie': { fr: "Baguettes de toit couleur carrosserie", de: "Dachreling in Wagenfarbe", it: "Barre tetto in tinta", en: "Roof rails in body colour" },
+  'Combiné d instruments avec dotation élargie': { fr: "Combiné d'instruments enrichi", de: "Kombiinstrument Plus", it: "Strumentazione avanzata", en: "Enhanced instrument cluster" },
+  'Freisprecheinrichtung':         { fr: "Kit mains libres", de: "Freisprecheinrichtung", it: "Vivavoce", en: "Hands-free kit" },
+  'Gurtstraffer vorne':            { fr: "Prétensionneurs de ceinture avant", de: "Gurtstraffer vorne", it: "Pretensionatori anteriori", en: "Front belt pretensioners" },
+  'Höhenverstellbare Gurten vorne': { fr: "Ceintures avant réglables en hauteur", de: "Höhenverstellbare Gurte", it: "Cinture regolabili in altezza", en: "Height-adjustable front belts" },
+  'Innenraumlicht-Paket':          { fr: "Pack éclairage intérieur", de: "Innenraumlicht-Paket", it: "Kit illuminazione interna", en: "Interior lighting package" },
+  'Jantes en alliage léger19J':    { fr: "Jantes en alliage 19 pouces", de: "Leichtmetallfelgen 19 Zoll", it: "Cerchi in lega 19"", en: "19-inch light alloy wheels" },
+  'Frontscheibe mit Color-Band':   { fr: "Pare-brise avec bandeau teinté", de: "Frontscheibe mit Farbband", it: "Parabrezza con banda colorata", en: "Windscreen with tinted band" },
+  'Fahrer-Informationssystem mit Farbdisplay': { fr: "Système d'info conducteur écran couleur", de: "Fahrerinformationssystem Farbdisplay", it: "Sistema info conducente display", en: "Colour driver info display" },
+  'Garantie: 2 Jahre ohne Kilometerbegrenzung (ab 1. Inv.)': { fr: "Garantie 2 ans kilométrage illimité", de: "2 Jahre Garantie", it: "Garanzia 2 anni km illimitati", en: "2-year unlimited mileage warranty" },
 };
 
 let _currentLangue = 'fr';
@@ -622,6 +637,19 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       .map(o => traduireOption(o))
       .filter(o => o !== null);
     console.log('OPTIONS depuis GPT (fallback):', parsed.options.length, 'options');
+  }
+
+  // Dédoublonner les options
+  if (parsed.options && parsed.options.length > 0) {
+    const seen = new Set();
+    parsed.options = parsed.options.filter(o => {
+      if (!o) return false;
+      const key = o.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    console.log('OPTIONS après dédoublonnage:', parsed.options.length);
   }
 
   // Nettoyer puissance
