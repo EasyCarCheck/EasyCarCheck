@@ -434,12 +434,12 @@ Contenu: ${scrapedData.html}${equipmentSection}
   * Berline ou SUV standard sous free service : cout_entretien_annee1 = 400, cout_total_3ans = 1200, score_entretien = 8
   * Sportive premium M AMG RS S sous free service : cout_entretien_annee1 = 800, cout_total_3ans = 2400, score_entretien = 7
   * Ultra-sportive M3 M5 RS6 C63 A45 sous free service : cout_entretien_annee1 = 1200, cout_total_3ans = 3600, score_entretien = 6
-- Sans free service (hors periode ou marque non concernee) : estimer les couts selon le modele
-  * Voiture compacte / citadine : 400-600 CHF/an
-  * Berline / break standard : 800-1200 CHF/an
-  * SUV / 4x4 standard : 1000-1500 CHF/an
-  * Voiture sportive / premium : 2000-3000 CHF/an
-  * Voiture ultra-sportive : 3000-5000 CHF/an
+- Sans free service (hors periode ou marque non concernee) : estimer les couts ENTRETIEN COURANT uniquement (vidange, filtres, revision, liquides, freins) — NE PAS inclure les reparations imprevisibles (turbo, boite, moteur) dans ce chiffre. Fourchettes realistes :
+  * Voiture compacte ou citadine : cout_entretien_annee1 = 500, cout_total_3ans = 1500, score_entretien = 8
+  * Berline ou break standard : cout_entretien_annee1 = 800, cout_total_3ans = 2400, score_entretien = 7
+  * SUV ou 4x4 standard : cout_entretien_annee1 = 1000, cout_total_3ans = 3000, score_entretien = 6
+  * Sportive premium RS AMG M S hors free service : cout_entretien_annee1 = 1200, cout_total_3ans = 3600, score_entretien = 5 (freins sport, huile performance, revision annuelle)
+  * Ultra-sportive M3 M5 RS6 C63 A45 hors free service : cout_entretien_annee1 = 1500, cout_total_3ans = 4500, score_entretien = 4 (freins sport intensif, huile specifique, pneumatiques performance)
 - BOÎTE : "Manuelle robotisée" = "Automatique (DCT)" pour Mercedes AMG
 - DESCRIPTION VENDEUR : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. "Zylinderkopf" = "culasse". Jamais "cylindre de tête" ou "cylindre tête"
 - Ne jamais inventer des points négatifs absents de l'annonce
