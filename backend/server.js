@@ -315,7 +315,7 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète), supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
 
 ÉTAPE 2 - Analyse approfondie :
-- Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste
+- Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste. IMPORTANT pour l'évaluation du prix : tiens compte de la GÉNÉRATION exacte du véhicule (phase 1 vs phase 2, facelift vs pre-facelift) car les prix varient énormément. Exemples de fourchettes réalistes sur le marché suisse 2026 : RS3 8V Phase 1 2015-2016 = 30000-40000 CHF, RS3 8V Phase 2 2017-2020 = 42000-55000 CHF, M3 F80 2014-2018 = 55000-75000 CHF (manuelle +10-15%), M3 F80 Competition manuelle rare = jusqu 85000 CHF, Golf GTI Mk7 2013-2017 = 18000-28000 CHF, RS6 C7 2013-2018 = 45000-70000 CHF, C63 AMG W205 2014-2018 = 40000-60000 CHF, M5 F10 2011-2016 = 35000-55000 CHF. Si le prix demandé depasse la fourchette haute → score_prix 3-4 et signaler clairement la surcote dans points_negatifs
 
 - PROBLÈMES CONNUS DU MODÈLE : Utilise ta connaissance réelle et documentée. Sois précis sur la génération et la motorisation exacte. Fais la distinction entre :
   * PROBLÈME SYSTÉMATIQUE (défaut de conception indépendant de l'usage) → pénalise fortement le score fiabilité
@@ -345,12 +345,12 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée", "kilométrage élevé", "kilométrage relativement élevé", "kilométrage important", "consommation élevée"
 - KILOMÉTRAGE : NE JAMAIS mentionner le kilométrage comme point négatif
 - SPORTIVES (RS, AMG, M, S, R) : Ne pas mentionner la consommation comme point négatif
-- FREE SERVICE : BMW, Audi, Mercedes, Volvo proposent tous un free service valable 10 ans OU 100'000 km (selon la première limite atteinte) depuis la première mise en circulation. VÉRIFIE AUTOMATIQUEMENT : si (2026 - année du véhicule < 10) ET (kilométrage < 100000) le vehicule est ENCORE sous free service. Main oeuvre et pieces couvertes, mais liquides, pneus et plaquettes restent a la charge du proprietaire. Estimer selon le type :
+- FREE SERVICE BMW, Audi, Mercedes, Volvo : valable 10 ans OU 100000 km depuis la 1ere mise en circulation. Calcul STRICT et OBLIGATOIRE : si (annee_vehicule + 10 > 2026) ET (kilometrage < 100000) alors ENCORE sous free service. EXEMPLES : vehicule 2015 → 2015+10=2025, 2025 < 2026 donc HORS free service. Vehicule 2017 → 2017+10=2027, 2027 > 2026 donc ENCORE sous free service. Si HORS free service : NE PAS mentionner le free service dans points_positifs, appliquer les couts sans free service. Si ENCORE sous free service, estimer les couts reels (liquides, pneus, plaquettes NON couverts) et mentionner dans points_positifs. Couts selon le type :
   * Citadine ou compacte sous free service : cout_entretien_annee1 = 250, cout_total_3ans = 750, score_entretien = 9
   * Berline ou SUV standard sous free service : cout_entretien_annee1 = 400, cout_total_3ans = 1200, score_entretien = 8
-  * Sportive premium M, AMG, RS, S sous free service : cout_entretien_annee1 = 800, cout_total_3ans = 2400, score_entretien = 7
-  * Ultra-sportive M3, M5, RS6, C63, A45 sous free service : cout_entretien_annee1 = 1200, cout_total_3ans = 3600, score_entretien = 6 Mentionner dans points_positifs ce texte traduit en ${langues[langue] || 'français'} : FR="Entretien main d'oeuvre et pièces couvert par le constructeur (liquides à la charge du propriétaire)" / DE="Arbeits- und Ersatzteile durch den Hersteller abgedeckt (Betriebsstoffe auf Kosten des Besitzers)" / IT="Manodopera e ricambi coperti dal costruttore (liquidi a carico del proprietario)" / EN="Labour and parts covered by the manufacturer (fluids at owner's expense)"
-- Sans free service (véhicule trop ancien >10 ans OU >100'000 km OU marque non concernée) : estimer les coûts selon le modèle
+  * Sportive premium M AMG RS S sous free service : cout_entretien_annee1 = 800, cout_total_3ans = 2400, score_entretien = 7
+  * Ultra-sportive M3 M5 RS6 C63 A45 sous free service : cout_entretien_annee1 = 1200, cout_total_3ans = 3600, score_entretien = 6
+- Sans free service (hors periode ou marque non concernee) : estimer les couts selon le modele
   * Voiture compacte / citadine : 400-600 CHF/an
   * Berline / break standard : 800-1200 CHF/an
   * SUV / 4x4 standard : 1000-1500 CHF/an
@@ -454,6 +454,23 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if ((!parsed.co2 || parsed.co2 === 0) && scrapedData.co2) {
     parsed.co2 = scrapedData.co2;
     console.log('CO2 injecté depuis scraping:', parsed.co2);
+  }
+
+  // Fix prix_negocie_suggere si 0 ou manquant
+  if (!parsed.prix_negocie_suggere || parsed.prix_negocie_suggere === 0) {
+    const prixBrut = parseInt(parsed.prix) || 0;
+    parsed.prix_negocie_suggere = Math.round(prixBrut * 0.93);
+    console.log('PRIX FALLBACK appliqué:', parsed.prix_negocie_suggere);
+  }
+  if (!parsed.economie_potentielle_min || parsed.economie_potentielle_min === 0) {
+    const prixBrut = parseInt(parsed.prix) || 0;
+    parsed.economie_potentielle_min = Math.round(prixBrut * 0.03);
+    parsed.economie_potentielle_max = Math.round(prixBrut * 0.08);
+  }
+  if (!parsed.fourchette_marche_min || parsed.fourchette_marche_min === 0) {
+    const prixBrut = parseInt(parsed.prix) || 0;
+    parsed.fourchette_marche_min = Math.round(prixBrut * 0.88);
+    parsed.fourchette_marche_max = Math.round(prixBrut * 1.05);
   }
 
   // FIX: Force scores entiers — si GPT retourne 0 c'est anormal, on met un minimum de 1
