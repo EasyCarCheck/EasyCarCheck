@@ -12,25 +12,14 @@ app.use(express.json());
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ─── MOIS TRADUIT ────────────────────────────────────────
-function getMoisRapport(langue) {
-  const now = new Date();
-  const mois = {
-    fr: ['JANVIER','FÉVRIER','MARS','AVRIL','MAI','JUIN','JUILLET','AOÛT','SEPTEMBRE','OCTOBRE','NOVEMBRE','DÉCEMBRE'],
-    de: ['JANUAR','FEBRUAR','MÄRZ','APRIL','MAI','JUNI','JULI','AUGUST','SEPTEMBER','OKTOBER','NOVEMBER','DEZEMBER'],
-    it: ['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO','LUGLIO','AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE'],
-    en: ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER']
-  };
-  const m = mois[langue] || mois.fr;
-  return `${m[now.getMonth()]} ${now.getFullYear()}`;
-}
-
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url, langue = 'fr') {
+  // Forcer la langue dans l'URL AutoScout24
   const langMap = { fr: 'fr', de: 'de', it: 'it', en: 'en' };
   const targetLang = langMap[langue] || 'fr';
   url = url.replace(/autoscout24\.ch\/(fr|de|it|en)\//, `autoscout24.ch/${targetLang}/`);
   try {
+    // Appel principal HTML
     const response = await axios.get('https://api.zenrows.com/v1/', {
       params: {
         apikey: process.env.ZENROWS_API_KEY,
@@ -44,7 +33,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
 
-    // Appel CSS extractor pour les équipements
+    // Appel CSS extractor pour les équipements (toujours présent sur toutes les annonces)
     let cssEquipments = [];
     try {
       const cssResponse = await axios.get('https://api.zenrows.com/v1/', {
@@ -68,12 +57,13 @@ async function scrapeAnnonce(url, langue = 'fr') {
       console.log('CSS extractor erreur:', e.message);
     }
 
+    // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
     let equipmentData = '';
     let co2Value = null;
     let optionsList = [];
 
     try {
-      // MÉTHODE 1: JSON échappé
+      // ── MÉTHODE 1: JSON échappé \"optional\":[ dans scripts Next.js (format ZenRows) ──
       const escapedOptIdx = html.indexOf('\\"optional\\":[');
       const escapedSearchIdx = html.indexOf('\\"searchAttributes\\"');
       if (escapedOptIdx !== -1 && escapedSearchIdx !== -1 && escapedSearchIdx > escapedOptIdx) {
@@ -96,7 +86,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
         }
       }
 
-      // MÉTHODE 2: <li class="chakra-list__item">
+      // ── MÉTHODE 2: <li class="chakra-list__item"> (fallback) ──
       if (optionsList.length === 0) {
         const liMatches = [...html.matchAll(/<li class="chakra-list__item">([^<]+)<\/li>/g)];
         const liNames = liMatches.map(m => m[1].trim()).filter(n => n.length > 2);
@@ -106,7 +96,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
         }
       }
 
-      // MÉTHODE 3: JSON non-échappé
+      // ── MÉTHODE 3: JSON non-échappé (ancien format) ──
       if (optionsList.length === 0) {
         const optionalIdx = html.indexOf('"optional":[');
         const searchAttrIdx = html.indexOf('"searchAttributes"');
@@ -119,10 +109,11 @@ async function scrapeAnnonce(url, langue = 'fr') {
         }
       }
 
-      // MÉTHODE 4: searchAttributes
+      // ── MÉTHODE 4: searchAttributes depuis JSON Next.js (toujours présent) ──
       const saSection = html.match(/(?:\\"searchAttributes\\":|"searchAttributes":)\s*\[([^\]]{10,}?)\]/);
       if (saSection) {
         const saItems = [...saSection[1].matchAll(/(?:\\"|")([^"\\]+)(?:\\"|")/g)].map(m => m[1]);
+        // Dictionnaire officiel AutoScout24 FR (extrait du JSON de la page)
         const saDict = {
           '360-camera': 'Caméra 360°', 'abs': 'ABS',
           'active-brake-assistant': 'Assistant de freinage automatique',
@@ -161,6 +152,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
           'traffic-sign-assistant': 'Assistant de signalisation routière',
           'traffic-sign-recognition': 'Reconnaissance des panneaux de signalisation',
           'ventilated-seats': 'Sièges ventilés', 'xenon-headlights': 'Phares au xénon',
+          'adaptive-cruise-control': 'Régulateur de vitesse adaptatif',
         };
         const saNames = saItems.map(k => saDict[k]).filter(v => v);
         if (saNames.length > 0) {
@@ -170,7 +162,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
         }
       }
 
-      // MÉTHODE 5: CSS Extractor ZenRows
+      // ── MÉTHODE 5: CSS Extractor ZenRows (le plus fiable) ──
       if (cssEquipments.length > 0) {
         const cssTranslated = cssEquipments.map(e => traduireOption(e)).filter(e => e !== null);
         optionsList = [...new Set([...cssTranslated, ...optionsList])];
@@ -179,7 +171,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
 
       console.log("OPTIONS EXTRAITES:", optionsList.length);
 
-      // CO2
+      // CO2 — schema.org: "emissionsCO2":"210 g/km" OU JSON échappé \"co2Emission\":210
       const co2Match = html.match(/"emissionsCO2":"(\d+)\s*g\/km"/) ||
                        html.match(/\\"co2Emission\\":(\d+)/) ||
                        html.match(/"co2Emission":(\d+)/) ||
@@ -199,6 +191,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
       console.log("Extraction JSON echouee:", e.message);
     }
 
+    // Nettoyer le HTML
     let cleanHtml = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
     cleanHtml = cleanHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
     cleanHtml = cleanHtml.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, "");
@@ -208,6 +201,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
     const finalContent = cleanHtml.substring(0, 35000);
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
 
+    // FIX: retourner equipmentData, co2Value et optionsList avec le html
     return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value, options: optionsList };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
@@ -218,7 +212,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
 // ─── ESTIMATION TAXE ────────────────────────────────────
 function estimerTaxe(co2, carburant) {
   if (!carburant) return 600;
-  const isElectric = carburant.toLowerCase().includes('électr') || carburant.toLowerCase().includes('elektr') || carburant.toLowerCase().includes('electr');
+  const isElectric = carburant.toLowerCase().includes('électr');
   if (isElectric) return 120;
   if (!co2 || co2 === 0) return 600;
   if (co2 <= 100) return 200;
@@ -238,12 +232,16 @@ function nettoyerPuissance(puissance) {
   return puissance.replace(/\s*\([\d\s\w]+\)\s*/g, '').replace(/PS\s*PS/g, 'PS').trim();
 }
 
-// ─── DICTIONNAIRE OPTIONS MULTILINGUE ───────────────────
+// ─── TRADUCTION OPTIONS ALLEMAND ────────────────────────
+// Dictionnaire universel: clé allemande/française → traductions par langue
 const OPTIONS_DICT = {
+  // Null = à supprimer
   'Details siehe Preisliste': null,
   'Détails consultez la liste de prix': null,
   'Keine Gewähr auf die Angaben der Serienausstattungen': null,
   'Aucune garantie sur l exactitude de l équipement de série': null,
+
+  // Termes allemands → traductions
   'Ambientebeleuchtung':           { fr: "Éclairage d'ambiance", de: "Ambientebeleuchtung", it: "Illuminazione ambientale", en: "Ambient lighting" },
   'Deaktivierung Beifahrerairbag': { fr: "Désactivation airbag passager", de: "Beifahrerairbag-Deaktivierung", it: "Disattivazione airbag passeggero", en: "Passenger airbag deactivation" },
   'Knieairbag Fahrer':             { fr: "Airbag genoux conducteur", de: "Knieairbag Fahrer", it: "Airbag ginocchio guidatore", en: "Driver knee airbag" },
@@ -262,6 +260,8 @@ const OPTIONS_DICT = {
   'Alarmanlage mit Abschleppschutz u. Innenraumabsicherung': { fr: "Alarme avec antivol", de: "Alarmanlage mit Abschleppschutz", it: "Allarme con protezione rimorchio", en: "Alarm with tow protection" },
   'Einbruch- und Diebstahlwarnanlage': { fr: "Système antivol", de: "Diebstahlwarnanlage", it: "Antifurto", en: "Anti-theft system" },
   'Soundsystem':                   { fr: "Système audio premium", de: "Soundsystem", it: "Sistema audio premium", en: "Premium sound system" },
+
+  // Termes français → traductions
   'Éclairage d ambiance':          { fr: "Éclairage d'ambiance", de: "Ambientebeleuchtung", it: "Illuminazione ambientale", en: "Ambient lighting" },
   'Éclairage d\'ambiance intérieur': { fr: "Éclairage d'ambiance", de: "Ambientebeleuchtung", it: "Illuminazione ambientale", en: "Ambient lighting" },
   'Aileron arrière':               { fr: "Aileron arrière AMG", de: "AMG Heckspoiler", it: "Spoiler posteriore AMG", en: "AMG rear spoiler" },
@@ -285,6 +285,8 @@ function traduireOption(opt) {
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
+
+  // FIX: injecter equipmentData directement dans le prompt
   const equipmentSection = scrapedData.equipmentData
     ? `\n\nDONNÉES STRUCTURÉES EXTRAITES (priorité sur le texte brut) :\n${scrapedData.equipmentData}`
     : '';
@@ -307,50 +309,73 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - Boîte de vitesses
 - Puissance en PS uniquement (ex: "306 PS")
 - CO2 en g/km : utilise la valeur de la section "DONNÉES STRUCTURÉES" si disponible (nombre entier, sinon null)
-- Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques). Si introuvable, mets "Non communiquée"
+- Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur
 - TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète), supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
 
 ÉTAPE 2 - Analyse approfondie :
 - Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste
-- Pour Mercedes A35 AMG : problème culasse moteur M260 récurrent (remplacement 5000-8000 CHF hors garantie), boîte DCT fragile
-- Pour Audi RS6 C7 (2013-2018) moteur 4.0 TFSI : consommation d'huile à surveiller (risque rupture de bielle lié au launch control), suspension pneumatique coûteuse (2000-4000 CHF), courroie de distribution à vérifier vers 100000 km, budget entretien 3000-6000 CHF/an
-- Pour TOUTES les voitures : utilise ta connaissance des problèmes récurrents documentés du modèle spécifique
-- problemes_connus_modele : TOUJOURS 2 problèmes RÉELS et SPÉCIFIQUES au modèle exact
-- questions_vendeur : adapter les questions au modèle
-- CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné → ajouter EXACTEMENT "Culasse remplacée" dans red_flags ET points_negatifs
-- Si culasse remplacée → baisser score_fiabilite de 2 points et score_global de 1 point
+
+- PROBLÈMES CONNUS DU MODÈLE : Utilise ta connaissance réelle et documentée. Sois précis sur la génération et la motorisation exacte. Fais la distinction entre :
+  * PROBLÈME SYSTÉMATIQUE (défaut de conception indépendant de l'usage) → pénalise fortement le score fiabilité
+  * PROBLÈME LIÉ À L'ABUS (launch control, circuit, mauvais entretien) → mentionne-le avec un avertissement mais pénalise moins le score
+  * Exemples SYSTÉMATIQUES : M5 F10 S63 (injecteurs défaillants, turbo fragile, consommation huile excessive même usage normal), E92 M3 S65 (pompe à huile défaillante, roulements vilebrequin), Porsche 987 Cayman/Boxster (roulement IMS), Range Rover suspension pneumatique, Mercedes A35/A45 AMG culasse M260/M139
+  * Exemples LIÉS À L'ABUS : M3 F80 S55 (rupture bielle si launch control intensif — fiable sans abus), RS6 C7 4.0 TFSI (consommation huile si launch control — solide en usage normal), Golf GTI Mk7 DSG7 DQ200 (surchauffe en usage urbain intensif)
+  * NE JAMAIS mettre des généralités vagues comme "usure des freins" ou "capteurs de stationnement" sauf si c'est un vrai problème documenté du modèle
+  * Pour les problèmes liés à l'abus : formuler comme "Risque de rupture de bielle S55 en cas d'usage intensif du launch control — à vérifier avec le vendeur" plutôt que de condamner le modèle
+- problemes_connus_modele : exactement 2 problèmes RÉELS et PRÉCIS avec génération et motorisation, en précisant si c'est systématique ou lié à l'usage
+- questions_vendeur : adapter SPÉCIFIQUEMENT aux problèmes connus du modèle. Pour les modèles à risque launch control : demander "Le véhicule a-t-il été utilisé sur circuit ou avec launch control fréquemment ?" Pour les modèles à consommation huile : "Quelle est la consommation d'huile entre deux vidanges ?"
+- checklist_visite : adapter au modèle. Pour les modèles à risque moteur : "Effectuer un relevé de compression moteur" / "Vérifier la consommation d'huile sur 1000 km" / "Inspecter les traces d'huile sous le véhicule"
+
+- SCORING RÉALISTE, NUANCÉ ET VARIÉ — NE PAS systématiquement mettre 7. Règles strictes :
+  * score_prix : 9-10=excellente affaire nettement sous-cotée, 7-8=prix correct dans la fourchette marché, 5-6=prix légèrement au-dessus, 3-4=prix trop élevé, 1-2=prix abusif
+  * score_fiabilite — nuance OBLIGATOIRE entre systématique et lié à l'abus :
+    - 9-10 : modèle très fiable et robuste (Toyota GR86, Honda Civic Type R FK8, Mazda MX-5 ND, Porsche 911 996 sans IMS)
+    - 7-8 : bonne fiabilité globale, quelques points faibles mineurs ou liés à l'entretien (BMW M3 F80 S55 bien entretenue sans abus, Audi RS6 C7 usage normal, VW Golf GTI Mk7 usage raisonnable)
+    - 5-6 : fiabilité moyenne, problèmes connus mais gérables (Audi RS3 8V turbo à surveiller, BMW 335i N55 chaîne distribution)
+    - 3-4 : problèmes systématiques sérieux indépendants de l'usage (BMW M5 F10 S63, E92 M3 S65, Porsche 987 IMS, Range Rover suspension pneumatique)
+    - 1-2 : modèle très problématique, risque financier élevé même bien entretenu
+  * score_entretien : 9-10=très économique <500 CHF/an, 7-8=raisonnable 800-1200 CHF/an, 5-6=assez coûteux 1500-2500 CHF/an, 3-4=très coûteux 3000-5000 CHF/an, 1-2=extrêmement coûteux >5000 CHF/an
+  * VERDICT : ACHETER si score_global >= 8 ET pas de red flags majeurs, NÉGOCIER si score_global 5-7 OU prix à revoir, ÉVITER si score_global <= 4 OU problèmes systématiques graves OU red flags critiques (culasse remplacée, accident grave, moteur défaillant)
+  * VARIE RÉELLEMENT les scores selon la réalité — une M5 F10 doit scorer 3-4 en fiabilité, une M3 F80 bien entretenue peut scorer 7
+
+- CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné dans l'annonce → ajouter "Culasse remplacée" dans red_flags ET points_negatifs, baisser score_fiabilite de 2 points minimum → verdict ÉVITER automatique
+- ACCIDENT : Si accident mentionné → red flag obligatoire, baisser score_fiabilite de 1-2 points selon gravité
 - INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée", "kilométrage élevé", "kilométrage relativement élevé", "kilométrage important", "consommation élevée"
 - KILOMÉTRAGE : NE JAMAIS mentionner le kilométrage comme point négatif
-- SPORTIVES (RS, AMG, M, S, R): Ne pas mentionner la consommation comme point négatif
-- FREE SERVICE (Mercedes, BMW, Audi, Volvo ou autre constructeur) : cout_entretien_annee1 = 250, cout_total_3ans = 750. Mentionner dans points_positifs ce texte traduit en ${langues[langue] || 'français'} : FR="Entretien main d'oeuvre et pièces couvert par le constructeur (liquides à la charge du propriétaire)" / DE="Arbeits- und Ersatzteile durch den Hersteller abgedeckt (Betriebsstoffe auf Kosten des Besitzers)" / IT="Manodopera e ricambi coperti dal costruttore (liquidi a carico del proprietario)" / EN="Labour and parts covered by the manufacturer (fluids at owner's expense)"
-- Sans free service : estimer les coûts selon le modèle
-  * Voiture compacte / citadine : 400-600 CHF/an
-  * Berline / break standard : 800-1200 CHF/an
+- SPORTIVES (RS, AMG, M, S, R) : Ne pas mentionner la consommation comme point négatif
+- FREE SERVICE Mercedes : cout_entretien_annee1 = 250, cout_total_3ans = 750. Mentionner dans points_positifs "Entretien main d'oeuvre et pièces couvert par Mercedes (liquides à la charge du propriétaire)"
+- Sans free service : estimer les coûts selon le modèle et la cylindrée
+  * Voiture compacte / citadine (Golf, Polo, Clio) : 400-600 CHF/an
+  * Berline / break standard (Passat, 3 Series, C-Class) : 800-1200 CHF/an
   * SUV / 4x4 standard : 1000-1500 CHF/an
-  * Voiture sportive / premium : 2000-3000 CHF/an
-  * Voiture ultra-sportive : 3000-5000 CHF/an
+  * Voiture sportive / premium (911, M3, AMG C63) : 2000-3000 CHF/an
+  * Voiture ultra-sportive / hypercars (RS6, M5, AMG GT, Cayenne Turbo) : 3000-5000 CHF/an
+  * cout_entretien_annee1 doit être réaliste pour le modèle spécifique
 - BOÎTE : "Manuelle robotisée" = "Automatique (DCT)" pour Mercedes AMG
-- DESCRIPTION VENDEUR : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'}
-- score_global = mettre 0 (calculé automatiquement)
-- taxe_cantonale_ge = mettre 0 (calculé automatiquement)
-- score_prix, score_fiabilite, score_entretien : OBLIGATOIRE entre 1 et 10
-- options : inclure TOUTES les options sans limiter
+- DESCRIPTION VENDEUR : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. "Zylinderkopf" = "culasse". Jamais "cylindre de tête" ou "cylindre tête"
+- Ne jamais inventer des points négatifs absents de l'annonce
+- score_global = mettre 0 (calculé automatiquement par le système)
+- taxe_cantonale_ge = mettre 0 (calculé automatiquement par le système)
+- score_prix, score_fiabilite, score_entretien : OBLIGATOIRE entre 1 et 10, JAMAIS 0. Un véhicule moyen = 5, bon = 7, excellent = 9, problème grave = 3
+- options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer, sans limiter
 
-QUANTITÉS STRICTES :
-- points_positifs : exactement 3 éléments en ${langues[langue] || 'français'}
-- points_negatifs : exactement 3 éléments en ${langues[langue] || 'français'}
+QUANTITÉS STRICTES — NE PAS DÉPASSER :
+- points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
+- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives)
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : exactement 2 éléments
-- conseil_achat : 2-3 phrases de conseil personnalisé
+- conseil_achat : 2-3 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché)
+
+ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
 
 RÈGLES JSON :
 1. JSON valide uniquement, rien d'autre
 2. verdict = "ACHETER", "NÉGOCIER" ou "ÉVITER"
 3. Guillemets doubles uniquement
-4. score_global = 0
+4. score_global = mettre 0 (recalculé côté serveur)
 5. taxe_cantonale_ge = 0
 
 {
@@ -421,19 +446,21 @@ RÈGLES JSON :
     }
   }
 
-  // CO2 scraping prioritaire
+  // FIX: si GPT n'a pas trouvé le CO2 mais qu'on l'a extrait côté scraping, on l'utilise
   if ((!parsed.co2 || parsed.co2 === 0) && scrapedData.co2) {
     parsed.co2 = scrapedData.co2;
     console.log('CO2 injecté depuis scraping:', parsed.co2);
   }
 
-  // Force scores entiers
+  // FIX: Force scores entiers — si GPT retourne 0 c'est anormal, on met un minimum de 1
   parsed.score_prix = Math.max(1, Math.round(parsed.score_prix || 5));
   parsed.score_fiabilite = Math.max(1, Math.round(parsed.score_fiabilite || 5));
   parsed.score_entretien = Math.max(1, Math.round(parsed.score_entretien || 5));
+
+  // FIX: recalcul score_global côté Node.js = moyenne arrondie des 3 scores
   parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
 
-  // Culasse détectée
+  // Si culasse remplacée → score_fiabilite max 5, recalculer global
   const culasseDetectee = (parsed.red_flags || []).some(r => r.toLowerCase().includes('culasse')) ||
     (parsed.points_negatifs || []).some(p => p.toLowerCase().includes('culasse'));
   if (culasseDetectee && parsed.score_fiabilite > 5) parsed.score_fiabilite = 5;
@@ -441,7 +468,8 @@ RÈGLES JSON :
     parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
   }
 
-  // Calcul taxe
+  // FIX: calcul taxe avec le CO2 réel (scraping prioritaire sur GPT)
+  // Fallback par modèle si CO2 absent du scraping ET de GPT
   let co2Final = scrapedData.co2 || parsed.co2;
   if (!co2Final && parsed.marque && parsed.modele) {
     const modeleStr = (parsed.marque + ' ' + parsed.modele).toLowerCase();
@@ -457,26 +485,33 @@ RÈGLES JSON :
   // Configurer la langue pour la traduction des options
   setLangue(langue || 'fr');
 
-  // Injecter options depuis scraping
+  // FIX OPTIONS: bypass GPT — injecter directement les options du scraping si disponibles
   if (scrapedData.options && scrapedData.options.length > 0) {
-    parsed.options = scrapedData.options.map(o => traduireOption(o)).filter(o => o !== null);
-    console.log('OPTIONS injectées depuis scraping:', parsed.options.length);
+    parsed.options = scrapedData.options
+      .map(o => traduireOption(o))
+      .filter(o => o !== null);
+    console.log('OPTIONS injectées depuis scraping:', parsed.options.length, 'options');
   } else if (parsed.options && parsed.options.length > 0) {
-    parsed.options = parsed.options.map(o => traduireOption(o)).filter(o => o !== null);
-    console.log('OPTIONS depuis GPT (fallback):', parsed.options.length);
+    // Fallback: utiliser les options GPT si scraping vide
+    parsed.options = parsed.options
+      .map(o => traduireOption(o))
+      .filter(o => o !== null);
+    console.log('OPTIONS depuis GPT (fallback):', parsed.options.length, 'options');
   }
 
+  // Nettoyer puissance
   parsed.puissance = nettoyerPuissance(parsed.puissance);
 
-  // Filtrer points négatifs interdits
-  const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation élevée', 'km élevé', 'km important', 'co2', 'CO2', 'émissions', 'emissionen', 'Emissionen', 'verbrauch', 'Verbrauch'];
+  // Limiter strictement les quantités
+  // Filtrer les points négatifs interdits
+  const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation élevée', 'km élevé', 'km important'];
   if (parsed.points_negatifs) {
-    parsed.points_negatifs = parsed.points_negatifs.filter(p =>
+    parsed.points_negatifs = parsed.points_negatifs.filter(p => 
       !mots_interdits.some(mot => p.toLowerCase().includes(mot))
     );
   }
-
-  // Traduction données brutes
+  // Nettoyer verdict_texte et conseil_achat
+  // Traduction des données brutes selon la langue
   const dataTranslations = {
     de: {
       'Essence': 'Benzin', 'Diesel': 'Diesel', 'Électrique': 'Elektrisch', 'Hybride': 'Hybrid',
@@ -500,57 +535,54 @@ RÈGLES JSON :
     if (dt[parsed.carburant]) parsed.carburant = dt[parsed.carburant];
     if (dt[parsed.boite]) parsed.boite = dt[parsed.boite];
     if (dt[parsed.transmission]) parsed.transmission = dt[parsed.transmission];
+    // Traduire points positifs qui contiennent des mots français
     if (parsed.points_positifs) parsed.points_positifs = parsed.points_positifs.map(p => {
       for (const [fr, trad] of Object.entries(dt)) p = p.replace(new RegExp(fr, 'g'), trad);
       return p;
     });
   }
 
-  // Traduction termes techniques
+  // Traduction des termes techniques récurrents
   const termesDict = {
     de: {
-      'Culasse remplacée': 'Zylinderkopf ersetzt', 'Boîte DCT fragile': 'DCT-Getriebe anfällig',
-      'Culasse': 'Zylinderkopf', 'culasse': 'Zylinderkopf',
-      'boîte DCT': 'DCT-Getriebe', 'Boîte DCT': 'DCT-Getriebe',
-      'la boîte DCT': 'das DCT-Getriebe', 'La boîte DCT': 'Das DCT-Getriebe',
+      'Culasse remplacée': 'Zylinderkopf ersetzt',
+      'Boîte DCT fragile': 'DCT-Getriebe anfällig',
+      'Culasse': 'Zylinderkopf',
+      'culasse': 'Zylinderkopf',
+      'boîte DCT': 'DCT-Getriebe',
       'Négocier': 'Verhandeln',
     },
     it: {
-      'Culasse remplacée': 'Testata sostituita', 'Boîte DCT fragile': 'Cambio DCT fragile',
-      'Culasse': 'Testata', 'culasse': 'testata',
-      'boîte DCT': 'cambio DCT', 'Boîte DCT': 'Cambio DCT',
-      'la boîte DCT': 'il cambio DCT', 'La boîte DCT': 'Il cambio DCT',
+      'Culasse remplacée': 'Testata sostituita',
+      'Boîte DCT fragile': 'Cambio DCT fragile',
+      'Culasse': 'Testata',
+      'culasse': 'testata',
     },
     en: {
-      'Culasse remplacée': 'Cylinder head replaced', 'Boîte DCT fragile': 'DCT gearbox fragile',
-      'Culasse': 'Cylinder head', 'culasse': 'cylinder head',
-      'boîte DCT': 'DCT gearbox', 'Boîte DCT': 'DCT gearbox',
-      'la boîte DCT': 'the DCT gearbox', 'La boîte DCT': 'The DCT gearbox',
+      'Culasse remplacée': 'Cylinder head replaced',
+      'Boîte DCT fragile': 'DCT gearbox fragile',
+      'Culasse': 'Cylinder head',
+      'culasse': 'cylinder head',
     }
   };
 
   const traduireTermes = (txt) => {
-    if (!txt || !termesDict[langue]) return txt;
+    if (!txt || !termesDict[parsed.langue || langue]) return txt;
     let result = txt;
-    for (const [fr, trad] of Object.entries(termesDict[langue] || {})) {
+    for (const [fr, trad] of Object.entries(termesDict[parsed.langue || langue] || {})) {
       result = result.replace(new RegExp(fr, 'g'), trad);
     }
     return result;
   };
 
+  // Appliquer traduction aux champs texte
   if (langue !== 'fr') {
     if (parsed.red_flags) parsed.red_flags = parsed.red_flags.map(traduireTermes);
     if (parsed.points_negatifs) parsed.points_negatifs = parsed.points_negatifs.map(traduireTermes);
     if (parsed.points_positifs) parsed.points_positifs = parsed.points_positifs.map(traduireTermes);
     if (parsed.verdict_texte) parsed.verdict_texte = traduireTermes(parsed.verdict_texte);
-    if (parsed.checklist_visite) parsed.checklist_visite = parsed.checklist_visite.map(traduireTermes);
-    if (parsed.questions_vendeur) parsed.questions_vendeur = parsed.questions_vendeur.map(traduireTermes);
-    if (parsed.problemes_connus_modele) parsed.problemes_connus_modele = parsed.problemes_connus_modele.map(traduireTermes);
-    if (parsed.conseil_achat) parsed.conseil_achat = traduireTermes(parsed.conseil_achat);
-    if (parsed.resume_verdict) parsed.resume_verdict = traduireTermes(parsed.resume_verdict);
   }
 
-  // Nettoyer mentions kilométrage dans textes
   const nettoyerTexte = (txt) => {
     if (!txt) return txt;
     return txt
@@ -586,78 +618,12 @@ function traduireVerdict(verdict, langue) {
 
 async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   const labels = {
-    fr: {
-      marque: 'MARQUE & MODÈLE', score_global: 'SCORE GLOBAL', rapport: 'Rapport',
-      prix: 'PRIX', fiabilite: 'FIABILITÉ', entretien: 'ENTRETIEN',
-      annee: 'ANNÉE', km: 'KILOMÉTRAGE', prix_dem: 'PRIX DEMANDÉ',
-      puissance: 'PUISSANCE', carburant: 'CARBURANT', boite: 'BOÎTE',
-      transmission: 'TRANSMISSION', couleur: 'COULEUR', desc: 'DESCRIPTION VENDEUR',
-      scores: 'DÉTAIL DES SCORES', points: 'POINTS CLÉS', options: 'ÉQUIPEMENTS & OPTIONS',
-      couts: 'COÛTS & MARCHÉ', entretien1: 'ENTRETIEN AN 1', total3: 'TOTAL 3 ANS',
-      co2: 'CO2 & TAXE CANTONALE', marche: 'FOURCHETTE MARCHÉ',
-      taxe: 'Taxe: site officiel de votre canton',
-      red: 'RED FLAGS', alerte: 'ALERTE', problemes: 'PROBLÈMES CONNUS DU MODÈLE',
-      checklist: 'CHECKLIST VISITE', questions: 'QUESTIONS À POSER AU VENDEUR',
-      conseil: "CONSEIL D'ACHAT", verdict: 'VERDICT FINAL',
-      prix_suggere: 'PRIX SUGGÉRÉ', economie: '↓ Économie :',
-      disclaimer: "Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel.",
-      co2_nr: 'Non renseigné'
-    },
-    de: {
-      marque: 'MARKE & MODELL', score_global: 'GESAMTBEWERTUNG', rapport: 'Bericht',
-      prix: 'PREIS', fiabilite: 'ZUVERLÄSSIGKEIT', entretien: 'WARTUNG',
-      annee: 'JAHR', km: 'KILOMETERSTAND', prix_dem: 'VERLANGTER PREIS',
-      puissance: 'LEISTUNG', carburant: 'KRAFTSTOFF', boite: 'GETRIEBE',
-      transmission: 'ANTRIEB', couleur: 'FARBE', desc: 'VERKÄUFERBESCHREIBUNG',
-      scores: 'BEWERTUNGSDETAILS', points: 'WICHTIGE PUNKTE', options: 'AUSSTATTUNG & OPTIONEN',
-      couts: 'KOSTEN & MARKT', entretien1: 'WARTUNG JAHR 1', total3: 'TOTAL 3 JAHRE',
-      co2: 'CO2 & KANTONSSTEUER', marche: 'MARKTPREISSPANNE',
-      taxe: 'Steuer: offizielle Kantonswebsite',
-      red: 'WARNHINWEISE', alerte: 'WARNUNG', problemes: 'BEKANNTE MODELLPROBLEME',
-      checklist: 'BESICHTIGUNGS-CHECKLISTE', questions: 'FRAGEN AN DEN VERKÄUFER',
-      conseil: 'KAUFEMPFEHLUNG', verdict: 'ENDURTEIL',
-      prix_suggere: 'EMPF. PREIS', economie: '↓ Ersparnis :',
-      disclaimer: 'Dieser Bericht ist ein Entscheidungshilfe-Tool. Er ersetzt keine physische Inspektion durch einen Fachmann.',
-      co2_nr: 'Nicht angegeben'
-    },
-    it: {
-      marque: 'MARCA & MODELLO', score_global: 'PUNTEGGIO GLOBALE', rapport: 'Rapporto',
-      prix: 'PREZZO', fiabilite: 'AFFIDABILITÀ', entretien: 'MANUTENZIONE',
-      annee: 'ANNO', km: 'CHILOMETRAGGIO', prix_dem: 'PREZZO RICHIESTO',
-      puissance: 'POTENZA', carburant: 'CARBURANTE', boite: 'CAMBIO',
-      transmission: 'TRAZIONE', couleur: 'COLORE', desc: 'DESCRIZIONE VENDITORE',
-      scores: 'DETTAGLIO PUNTEGGI', points: 'PUNTI CHIAVE', options: 'EQUIPAGGIAMENTI & OPZIONI',
-      couts: 'COSTI & MERCATO', entretien1: 'MANUTENZIONE ANNO 1', total3: 'TOTALE 3 ANNI',
-      co2: 'CO2 & TASSA CANTONALE', marche: 'FASCIA DI MERCATO',
-      taxe: 'Calcola sul sito ufficiale del tuo cantone',
-      red: 'SEGNALAZIONI', alerte: 'ATTENZIONE', problemes: 'PROBLEMI NOTI DEL MODELLO',
-      checklist: 'CHECKLIST VISITA', questions: 'DOMANDE AL VENDITORE',
-      conseil: "CONSIGLIO D'ACQUISTO", verdict: 'VERDETTO FINALE',
-      prix_suggere: 'PREZZO SUGGERITO', economie: '↓ Risparmio :',
-      disclaimer: 'Questo rapporto è uno strumento di supporto decisionale. Non sostituisce un\'ispezione fisica da parte di un professionista.',
-      co2_nr: 'Non indicato'
-    },
-    en: {
-      marque: 'MAKE & MODEL', score_global: 'OVERALL SCORE', rapport: 'Report',
-      prix: 'PRICE', fiabilite: 'RELIABILITY', entretien: 'MAINTENANCE',
-      annee: 'YEAR', km: 'MILEAGE', prix_dem: 'ASKING PRICE',
-      puissance: 'POWER', carburant: 'FUEL', boite: 'GEARBOX',
-      transmission: 'DRIVE', couleur: 'COLOUR', desc: 'SELLER DESCRIPTION',
-      scores: 'SCORE DETAILS', points: 'KEY POINTS', options: 'EQUIPMENT & OPTIONS',
-      couts: 'COSTS & MARKET', entretien1: 'MAINTENANCE YEAR 1', total3: 'TOTAL 3 YEARS',
-      co2: 'CO2 & CANTONAL TAX', marche: 'MARKET RANGE',
-      taxe: "Calculate on your canton's official website",
-      red: 'RED FLAGS', alerte: 'ALERT', problemes: 'KNOWN MODEL ISSUES',
-      checklist: 'VISIT CHECKLIST', questions: 'QUESTIONS FOR THE SELLER',
-      conseil: 'BUYING ADVICE', verdict: 'FINAL VERDICT',
-      prix_suggere: 'SUGGESTED PRICE', economie: '↓ Savings :',
-      disclaimer: 'This report is a decision-support tool. It does not replace a physical inspection by a professional.',
-      co2_nr: 'Not specified'
-    }
+    fr: { marque: 'MARQUE & MODÈLE', score_global: '${L.score_global}', rapport: 'Rapport', prix: 'PRIX', fiabilite: 'FIABILITÉ', entretien: 'ENTRETIEN', annee: 'ANNÉE', km: 'KILOMÉTRAGE', prix_dem: 'PRIX DEMANDÉ', puissance: 'PUISSANCE', carburant: 'CARBURANT', boite: 'BOÎTE', transmission: 'TRANSMISSION', couleur: 'COULEUR', desc: 'DESCRIPTION VENDEUR', scores: 'DÉTAIL DES SCORES', points: 'POINTS CLÉS', options: 'ÉQUIPEMENTS & OPTIONS', couts: 'COÛTS & MARCHÉ', entretien1: 'ENTRETIEN AN 1', total3: 'TOTAL 3 ANS', co2: 'CO2 & TAXE CANTONALE', marche: 'FOURCHETTE MARCHÉ', taxe: 'Taxe: site officiel de votre canton', red: 'RED FLAGS', alerte: 'ALERTE', problemes: 'PROBLÈMES CONNUS DU MODÈLE', checklist: 'CHECKLIST VISITE', questions: 'QUESTIONS À POSER AU VENDEUR', conseil: "CONSEIL D'ACHAT", verdict: 'VERDICT FINAL', disclaimer: "Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel." },
+    de: { marque: 'MARKE & MODELL', score_global: 'GESAMTBEWERTUNG', rapport: 'Bericht', prix: 'PREIS', fiabilite: 'ZUVERLÄSSIGKEIT', entretien: 'WARTUNG', annee: 'JAHR', km: 'KILOMETERSTAND', prix_dem: 'VERLANGTER PREIS', puissance: 'LEISTUNG', carburant: 'KRAFTSTOFF', boite: 'GETRIEBE', transmission: 'ANTRIEB', couleur: 'FARBE', desc: 'VERKÄUFERBESCHREIBUNG', scores: 'BEWERTUNGSDETAILS', points: 'WICHTIGE PUNKTE', options: 'AUSSTATTUNG & OPTIONEN', couts: 'KOSTEN & MARKT', entretien1: 'WARTUNG JAHR 1', total3: 'TOTAL 3 JAHRE', co2: 'CO2 & KANTONSSTEUER', marche: 'MARKTPREISSPANNE', taxe: 'Steuer: offizielle Kantonswebsite', red: 'WARNHINWEISE', alerte: 'WARNUNG', problemes: 'BEKANNTE MODELLPROBLEME', checklist: 'BESICHTIGUNGS-CHECKLISTE', questions: 'FRAGEN AN DEN VERKÄUFER', conseil: 'KAUFEMPFEHLUNG', verdict: 'ENDURTEIL', disclaimer: 'Dieser Bericht ist ein Entscheidungshilfe-Tool. Er ersetzt keine physische Inspektion durch einen Fachmann.' },
+    it: { marque: 'MARCA & MODELLO', score_global: 'PUNTEGGIO GLOBALE', rapport: 'Rapporto', prix: 'PREZZO', fiabilite: 'AFFIDABILITÀ', entretien: 'MANUTENZIONE', annee: 'ANNO', km: 'CHILOMETRAGGIO', prix_dem: 'PREZZO RICHIESTO', puissance: 'POTENZA', carburant: 'CARBURANTE', boite: 'CAMBIO', transmission: 'TRAZIONE', couleur: 'COLORE', desc: 'DESCRIZIONE VENDITORE', scores: 'DETTAGLIO PUNTEGGI', points: 'PUNTI CHIAVE', options: 'EQUIPAGGIAMENTI & OPZIONI', couts: 'COSTI & MERCATO', entretien1: 'MANUTENZIONE ANNO 1', total3: 'TOTALE 3 ANNI', co2: 'CO2 & TASSA CANTONALE', marche: 'FASCIA DI MERCATO', taxe: 'Calcola sul sito ufficiale del tuo cantone', red: 'SEGNALAZIONI', alerte: 'ATTENZIONE', problemes: 'PROBLEMI NOTI DEL MODELLO', checklist: 'CHECKLIST VISITA', questions: 'DOMANDE AL VENDITORE', conseil: "CONSIGLIO D'ACQUISTO", verdict: 'VERDETTO FINALE', disclaimer: 'Questo rapporto è uno strumento di supporto decisionale.' },
+    en: { marque: 'MAKE & MODEL', score_global: 'OVERALL SCORE', rapport: 'Report', prix: 'PRICE', fiabilite: 'RELIABILITY', entretien: 'MAINTENANCE', annee: 'YEAR', km: 'MILEAGE', prix_dem: 'ASKING PRICE', puissance: 'POWER', carburant: 'FUEL', boite: 'GEARBOX', transmission: 'DRIVE', couleur: 'COLOUR', desc: 'SELLER DESCRIPTION', scores: 'SCORE DETAILS', points: 'KEY POINTS', options: 'EQUIPMENT & OPTIONS', couts: 'COSTS & MARKET', entretien1: 'MAINTENANCE YEAR 1', total3: 'TOTAL 3 YEARS', co2: 'CO2 & CANTONAL TAX', marche: 'MARKET RANGE', taxe: "Calculate on your canton's official website", red: 'RED FLAGS', alerte: 'ALERT', problemes: 'KNOWN MODEL ISSUES', checklist: 'VISIT CHECKLIST', questions: 'QUESTIONS FOR THE SELLER', conseil: 'BUYING ADVICE', verdict: 'FINAL VERDICT', disclaimer: 'This report is a decision-support tool. It does not replace a physical inspection by a professional.' }
   };
-
   const L = labels[langue] || labels.fr;
-
   const verdictColor = {
     'ACHETER': '#28a745', 'NÉGOCIER': '#d4a00a', 'ÉVITER': '#dc3545',
     'VERHANDELN': '#d4a00a', 'KAUFEN': '#28a745', 'MEIDEN': '#dc3545',
@@ -675,13 +641,12 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   const badge = (score) => score >= 8 ? bm.ex : score >= 7 ? bm.bien : score >= 5 ? bm.moy : bm.ev;
   const scoreTag = (score) => score >= 8 ? bm.ex : score >= 7 ? bm.bien : score >= 5 ? bm.moy : bm.sur;
 
-  const moisRapport = getMoisRapport(langue);
-
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Emoji&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; height: auto !important; }
@@ -754,7 +719,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   <div class="header">
     <div class="header-top">
       <div class="logo">EASY<span>CAR</span>CHECK</div>
-      <div class="report-num">${L.rapport} #${reportNumber} · ${moisRapport}</div>
+      <div class="report-num">${L.rapport} #${reportNumber} · JUIN 2026</div>
     </div>
     <div class="header-main">
       <div>
@@ -859,7 +824,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       </div>
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">${L.co2}</div>
-        <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : L.co2_nr}</div>
+        <div class="cost-value" style="color:#1a3a6e;">${analyse.co2 ? analyse.co2 + ' g/km' : 'Non renseigné'}</div>
         ${analyse.co2 ? `<div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${L.taxe}</div>` : ''}
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
@@ -904,16 +869,16 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <div class="verdict-desc">${analyse.resume_verdict}</div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${L.prix_suggere}</div>
+      <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
       <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
-      <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${L.economie} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
+      <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
     </div>
   </div>
 
   <div class="footer">
     Source : ${url}<br>
     ${L.disclaimer}<br>
-    EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · Suisse
+    EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch ·  Suisse
   </div>
 
 </body>
@@ -939,79 +904,13 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
 
 // ─── ENVOI EMAIL ─────────────────────────────────────────
 async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'fr') {
-  const emailLabels = {
-    fr: {
-      subject: `Votre rapport EasyCarCheck`,
-      analyse: 'VOTRE ANALYSE',
-      pret: 'Votre rapport est prêt !',
-      pret_sub: 'Il est joint à cet email en pièce jointe PDF.',
-      ki: 'Analyse IA · Marché Suisse',
-      pdf_titre: 'Rapport PDF en pièce jointe',
-      pdf_nom: `EasyCarCheck_Rapport_${reportNumber}.pdf`,
-      contenu: 'Red flags, checklist visite, prix de négociation',
-      contenu_sub: 'Tout est dans le rapport PDF joint',
-      spam: 'Rapport non reçu ?',
-      spam_sub: 'Vérifiez vos spams',
-      disclaimer: "Ce rapport est un outil d'aide à la décision. Il ne remplace pas une inspection physique par un professionnel.",
-      footer_links: 'Site web · Mentions légales · Contact'
-    },
-    de: {
-      subject: `Ihr EasyCarCheck-Bericht`,
-      analyse: 'IHRE ANALYSE',
-      pret: 'Ihr Bericht ist bereit!',
-      pret_sub: 'Er ist als PDF-Anhang an diese E-Mail angehängt.',
-      ki: 'KI-Analyse · Schweizer Markt',
-      pdf_titre: 'PDF-Bericht im Anhang',
-      pdf_nom: `EasyCarCheck_Bericht_${reportNumber}.pdf`,
-      contenu: 'Warnhinweise, Besichtigungs-Checkliste, Verhandlungspreis',
-      contenu_sub: 'Alles im beigefügten PDF-Bericht',
-      spam: 'Bericht nicht erhalten?',
-      spam_sub: 'Überprüfen Sie Ihren Spam-Ordner',
-      disclaimer: 'Dieser Bericht ist ein Entscheidungshilfe-Tool. Er ersetzt keine physische Inspektion durch einen Fachmann.',
-      footer_links: 'Website · Impressum · Kontakt'
-    },
-    it: {
-      subject: `Il tuo rapporto EasyCarCheck`,
-      analyse: 'LA TUA ANALISI',
-      pret: 'Il tuo rapporto è pronto!',
-      pret_sub: 'È allegato a questa email in formato PDF.',
-      ki: 'Analisi IA · Mercato Svizzero',
-      pdf_titre: 'Rapporto PDF in allegato',
-      pdf_nom: `EasyCarCheck_Rapporto_${reportNumber}.pdf`,
-      contenu: 'Segnalazioni, checklist visita, prezzo di trattativa',
-      contenu_sub: 'Tutto nel rapporto PDF allegato',
-      spam: 'Rapporto non ricevuto?',
-      spam_sub: 'Controlla la cartella spam',
-      disclaimer: "Questo rapporto è uno strumento di supporto decisionale. Non sostituisce un'ispezione fisica da parte di un professionista.",
-      footer_links: 'Sito web · Note legali · Contatto'
-    },
-    en: {
-      subject: `Your EasyCarCheck Report`,
-      analyse: 'YOUR ANALYSIS',
-      pret: 'Your report is ready!',
-      pret_sub: 'It is attached to this email as a PDF.',
-      ki: 'AI Analysis · Swiss Market',
-      pdf_titre: 'PDF Report attached',
-      pdf_nom: `EasyCarCheck_Report_${reportNumber}.pdf`,
-      contenu: 'Red flags, visit checklist, negotiation price',
-      contenu_sub: 'Everything is in the attached PDF report',
-      spam: 'Report not received?',
-      spam_sub: 'Check your spam folder',
-      disclaimer: 'This report is a decision-support tool. It does not replace a physical inspection by a professional.',
-      footer_links: 'Website · Legal notice · Contact'
-    }
-  };
-
-  const EL = emailLabels[langue] || emailLabels.fr;
-
-  const verdictEmailColor = ['ACHETER','KAUFEN','BUY','ACQUISTARE'].includes(analyse.verdict) ? '#28a745'
-    : ['ÉVITER','MEIDEN','AVOID','EVITARE'].includes(analyse.verdict) ? '#dc3545' : '#d4a00a';
+  const verdictEmailColor = analyse.verdict === 'ACHETER' || analyse.verdict === 'KAUFEN' || analyse.verdict === 'BUY' || analyse.verdict === 'ACQUISTARE' ? '#28a745' : analyse.verdict === 'ÉVITER' || analyse.verdict === 'MEIDEN' || analyse.verdict === 'AVOID' || analyse.verdict === 'EVITARE' ? '#dc3545' : '#d4a00a';
   const scoreEmailColor = analyse.score_global >= 7 ? '#28a745' : analyse.score_global >= 5 ? '#d4a00a' : '#dc3545';
 
   const result = await resend.emails.send({
     from: 'EasyCarCheck <contact@easycarcheck.ch>',
     to: email,
-    subject: `● ${EL.subject} #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
+    subject: `${langue === 'de' ? '● Ihr EasyCarCheck-Bericht' : langue === 'it' ? '● Il tuo rapporto EasyCarCheck' : langue === 'en' ? '● Your EasyCarCheck Report' : '● Votre rapport EasyCarCheck'} #${reportNumber} — ${analyse.marque} ${analyse.modele}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -1023,19 +922,19 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'f
 
   <tr><td style="background:#1a3a6e;border-radius:12px 12px 0 0;padding:24px;text-align:center;">
     <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">&#9658; EASY<span style="color:#00B4D8;">CAR</span>CHECK</div>
-    <div style="font-size:12px;color:#b8d0f0;margin-top:4px;">${EL.ki}</div>
+    <div style="font-size:12px;color:#b8d0f0;margin-top:4px;">${langue === "de" ? "KI-Analyse · Schweizer Markt" : langue === "it" ? "Analisi IA · Mercato Svizzero" : langue === "en" ? "AI Analysis · Swiss Market" : "Analyse IA · Marché Suisse"}</div>
   </td></tr>
 
   <tr><td style="background:#fff;padding:32px 28px;border-left:1px solid #d0e4f7;border-right:1px solid #d0e4f7;">
 
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="width:56px;height:56px;background:rgba(40,167,69,0.1);border:2px solid #28a745;border-radius:50%;margin:0 auto 14px;line-height:56px;font-size:26px;text-align:center;">&#10003;</div>
-      <h1 style="font-size:22px;font-weight:900;color:#0d1b35;margin:0 0 6px;">${EL.pret}</h1>
-      <p style="font-size:14px;color:#5a7a9a;margin:0;">${EL.pret_sub}</p>
+      <div style="width:56px;height:56px;background:rgba(40,167,69,0.1);border:2px solid #28a745;border-radius:50%;margin:0 auto 14px;line-height:56px;font-size:26px;text-align:center;">✅</div>
+      <h1 style="font-size:22px;font-weight:900;color:#0d1b35;margin:0 0 6px;">${langue === "de" ? "Ihr Bericht ist bereit!" : langue === "it" ? "Il tuo rapporto è pronto!" : langue === "en" ? "Your report is ready!" : "Votre rapport est prêt !"}</h1>
+      <p style="font-size:14px;color:#5a7a9a;margin:0;">${langue === "de" ? "Er ist als PDF-Anhang an diese E-Mail angehängt." : langue === "it" ? "È allegato a questa email in formato PDF." : langue === "en" ? "It is attached to this email as a PDF." : "Il est joint à cet email en pièce jointe PDF."}</p>
     </div>
 
     <div style="background:#f0f6ff;border-radius:10px;padding:18px 20px;margin-bottom:24px;border:1px solid #d0e4f7;">
-      <div style="font-size:11px;color:#5a7a9a;letter-spacing:1px;margin-bottom:10px;">${EL.analyse}</div>
+      <div style="font-size:11px;color:#5a7a9a;letter-spacing:1px;margin-bottom:10px;">${langue === "de" ? "IHRE ANALYSE" : langue === "it" ? "LA TUA ANALISI" : langue === "en" ? "YOUR ANALYSIS" : "VOTRE ANALYSE"}</div>
       <div style="font-size:18px;font-weight:900;color:#0d1b35;margin-bottom:12px;">${analyse.marque?.toUpperCase()} ${analyse.modele?.toUpperCase()}</div>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
@@ -1053,7 +952,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'f
           </td>
           <td width="33%" style="padding-left:6px;">
             <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid #d0e4f7;">
-              <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">${langue === 'de' ? 'BERICHT' : langue === 'it' ? 'RAPPORTO' : langue === 'en' ? 'REPORT' : 'RAPPORT'}</div>
+              <div style="font-size:9px;color:#5a7a9a;letter-spacing:1px;margin-bottom:4px;">${langue === "de" ? "BERICHT" : langue === "it" ? "RAPPORTO" : langue === "en" ? "REPORT" : "RAPPORT"}</div>
               <div style="font-size:16px;font-weight:900;color:#1a3a6e;">#${reportNumber}</div>
             </div>
           </td>
@@ -1064,45 +963,45 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'f
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       <tr><td style="padding:12px 0;border-bottom:1px solid #f0f6ff;">
         <table><tr>
-          <td style="font-size:18px;padding-right:12px;">&#128196;</td>
+          <td style="font-size:18px;padding-right:12px;">📄</td>
           <td>
-            <div style="font-size:13px;font-weight:700;color:#0d1b35;">${EL.pdf_titre}</div>
-            <div style="font-size:12px;color:#5a7a9a;">${EL.pdf_nom}</div>
+            <div style="font-size:13px;font-weight:700;color:#0d1b35;">${langue === "de" ? "PDF-Bericht im Anhang" : langue === "it" ? "Rapporto PDF in allegato" : langue === "en" ? "PDF Report attached" : "Rapport PDF en pièce jointe"}</div>
+            <div style="font-size:12px;color:#5a7a9a;">EasyCarCheck_Rapport_${reportNumber}.pdf</div>
           </td>
         </tr></table>
       </td></tr>
       <tr><td style="padding:12px 0;border-bottom:1px solid #f0f6ff;">
         <table><tr>
-          <td style="font-size:18px;padding-right:12px;">&#128269;</td>
+          <td style="font-size:18px;padding-right:12px;">🔍</td>
           <td>
-            <div style="font-size:13px;font-weight:700;color:#0d1b35;">${EL.contenu}</div>
-            <div style="font-size:12px;color:#5a7a9a;">${EL.contenu_sub}</div>
+            <div style="font-size:13px;font-weight:700;color:#0d1b35;">Red flags, checklist visite, prix de négociation</div>
+            <div style="font-size:12px;color:#5a7a9a;">Tout est dans le rapport PDF joint</div>
           </td>
         </tr></table>
       </td></tr>
       <tr><td style="padding:12px 0;">
         <table><tr>
-          <td style="font-size:18px;padding-right:12px;">&#9888;</td>
+          <td style="font-size:18px;padding-right:12px;">⚠️</td>
           <td>
-            <div style="font-size:13px;font-weight:700;color:#0d1b35;">${EL.spam}</div>
-            <div style="font-size:12px;color:#5a7a9a;">${EL.spam_sub} · <a href="mailto:contact@easycarcheck.ch" style="color:#1a3a6e;">contact@easycarcheck.ch</a></div>
+            <div style="font-size:13px;font-weight:700;color:#0d1b35;">Rapport non reçu ?</div>
+            <div style="font-size:12px;color:#5a7a9a;">Vérifiez vos spams · <a href="mailto:contact@easycarcheck.ch" style="color:#1a3a6e;">contact@easycarcheck.ch</a></div>
           </td>
         </tr></table>
       </td></tr>
     </table>
 
     <div style="background:#f0f6ff;border-radius:10px;padding:16px;border:1px solid #d0e4f7;text-align:center;">
-      <p style="font-size:13px;color:#5a7a9a;margin:0;line-height:1.6;">${EL.disclaimer}</p>
+      <p style="font-size:13px;color:#5a7a9a;margin:0;line-height:1.6;">Ce rapport est un outil d'aide à la décision.<br>Il ne remplace pas une inspection physique par un professionnel.</p>
     </div>
 
   </td></tr>
 
   <tr><td style="background:#1a3a6e;border-radius:0 0 12px 12px;padding:20px;text-align:center;">
-    <div style="font-size:12px;color:#b8d0f0;margin-bottom:8px;">EasyCarCheck · easycarcheck.ch · Suisse</div>
+    <div style="font-size:12px;color:#b8d0f0;margin-bottom:8px;">EasyCarCheck · easycarcheck.ch ·  Suisse</div>
     <div>
-      <a href="https://easycarcheck.ch" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">${langue === 'de' ? 'Website' : langue === 'en' ? 'Website' : 'Site web'}</a>
-      <a href="https://easycarcheck.ch/mentions-legales.html" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">${langue === 'de' ? 'Impressum' : langue === 'it' ? 'Note legali' : langue === 'en' ? 'Legal notice' : 'Mentions légales'}</a>
-      <a href="mailto:contact@easycarcheck.ch" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">${langue === 'de' ? 'Kontakt' : langue === 'it' ? 'Contatto' : langue === 'en' ? 'Contact' : 'Contact'}</a>
+      <a href="https://easycarcheck.ch" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Site web</a>
+      <a href="https://easycarcheck.ch/mentions-legales.html" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Mentions légales</a>
+      <a href="mailto:contact@easycarcheck.ch" style="font-size:11px;color:#8fa8c8;text-decoration:none;margin:0 8px;">Contact</a>
     </div>
   </td></tr>
 
@@ -1113,7 +1012,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'f
 </html>
     `,
     attachments: [{
-      filename: EL.pdf_nom,
+      filename: `EasyCarCheck_Rapport_${reportNumber}.pdf`,
       content: pdfBuffer.toString('base64')
     }]
   });
