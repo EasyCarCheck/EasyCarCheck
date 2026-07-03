@@ -446,8 +446,13 @@ Contenu: ${scrapedData.html}${equipmentSection}
     - "Vanos défaillant à haut kilométrage — révision ~1500-2500 CHF (BMW moteurs N/S)"
     - "Courroie de distribution à remplacer vers 100000 km — ~2000-3500 CHF (Audi RS6 C7 4.0 TFSI)"
     - "Suspension Airmatic défaillante — ~2000-4000 CHF par corner (Mercedes GL/GLS/S-Class)"
-- problemes_connus_modele : liste entre 2 et 5 problèmes RÉELS, FRÉQUENTS et COÛTEUX pour ce modèle exact, en précisant si systématique ou lié à l'usage intensif, et en indiquant le coût approximatif de réparation
-- questions_vendeur : adapter SPÉCIFIQUEMENT aux problèmes connus du modèle. Pour les modèles à risque launch control : demander "Le véhicule a-t-il été utilisé sur circuit ou avec launch control fréquemment ?" Pour les modèles à consommation huile : "Quelle est la consommation d'huile entre deux vidanges ?"
+- problemes_connus_modele : liste entre 2 et 5 problèmes RÉELS, FRÉQUENTS et COÛTEUX pour ce modèle exact, en précisant si systématique ou lié à l'usage intensif, et en indiquant le coût approximatif de réparation. IMPORTANT : pour les véhicules récents (<3 ans) avec faible kilométrage (<30000 km), NE PAS inventer des problèmes qui n'ont aucune chance de survenir sur un véhicule quasi neuf. Mentionner uniquement les problèmes DOCUMENTÉS sur ce modèle qui pourraient apparaître à terme, en précisant "à surveiller à long terme" 
+- questions_vendeur : adapter SPÉCIFIQUEMENT au type de véhicule et à ses problèmes documentés. NE PAS poser des questions de circuit ou launch control sur une voiture familiale diesel ou une voiture quasi neuve (<3 ans, <30000 km). Adapter selon le profil :
+  * Voiture récente <3 ans ou <30000 km : "Y a-t-il eu des réparations ou incidents depuis l achat ?" / "Le carnet d entretien est-il complet et à jour ?" / "Le véhicule est-il toujours sous garantie constructeur ?"
+  * Berline ou break diesel familial <50000 km : "Le carnet d entretien est-il complet et effectué chez un concessionnaire officiel ?" / "Y a-t-il eu des voyants d alerte ou des réparations sous garantie depuis l achat ?" / "Le vehicule a-t-il été utilisé principalement sur autoroute ou en ville ?"
+  * Berline ou break diesel familial >80000 km : "Le filtre a particules DPF a-t-il fonctionné sans messages d alerte ?" / "Le systeme AdBlue a-t-il necessite des interventions ?" / "L entretien a-t-il ete effectue chez un concessionnaire officiel avec factures ?"
+  * Sportive avec risque launch control M AMG RS : "Le véhicule a-t-il été utilisé sur circuit ou avec launch control fréquemment ?" / "Quelle est la consommation d huile entre deux vidanges ?"
+  * Modèle à problème spécifique documenté : adapter la question au problème exact (boîte, turbo, culasse, etc.)
 - checklist_visite : adapter au modèle. Pour les modèles à risque moteur : "Effectuer un relevé de compression moteur" / "Vérifier la consommation d'huile sur 1000 km" / "Inspecter les traces d'huile sous le véhicule"
 
 - SCORING RÉALISTE, ÉQUILIBRÉ ET VARIÉ — les bonnes voitures DOIVENT avoir des scores élevés (8-9). NE PAS systématiquement mettre 5-6-7. Règles STRICTES :
@@ -479,12 +484,19 @@ Contenu: ${scrapedData.html}${equipmentSection}
     - ÉVITER : score_global <= 4 OU red flags critiques OU prix >15% au-dessus fourchette max
 
   * EXEMPLES OBLIGATOIRES à respecter :
+    - BMW 320d G21 2025, 23000 km, free service actif, garantie BMW, prix correct → score_fiabilite=9, score_entretien=9, score_prix=7, score_global=8, verdict=ACHETER
     - Porsche Macan S 2020, 64000 km, sans accident, garantie, prix correct → score_fiabilite=7, score_entretien=7, score_prix=7, score_global=7, verdict=ACHETER
     - BMW 320d F30 2015, 90000 km, bien entretenu, prix correct → score_fiabilite=8, score_entretien=6, score_prix=7, verdict=ACHETER
     - Audi A4 B9 2019, 50000 km, prix correct → score_fiabilite=8, score_entretien=7, score_prix=8, verdict=ACHETER
     - Golf GTI Mk7 Phase 1 2015, 90000 km, prix correct → score_fiabilite=6, score_entretien=6, score_prix=7, verdict=NÉGOCIER
     - BMW M5 F10 2012, 120000 km → score_fiabilite=3, score_entretien=4, verdict=NÉGOCIER ou ÉVITER
     - Mercedes A35 AMG culasse remplacée → score_fiabilite=4, verdict=ÉVITER
+    
+  * RÈGLE IMPORTANTE sur les véhicules récents :
+    - Voiture <3 ans, <30000 km, free service actif, moteur robuste et fiable (diesel B47, essence B48, 4cyl récent) → score_fiabilite 9-10, score_entretien 9-10, verdict ACHETER
+    - Voiture <3 ans mais moteur avec faiblesses connues même récent → score_fiabilite 7-8 maximum
+    - NE PAS inventer des problèmes sur des voitures quasi neuves — mentionner uniquement les points à surveiller à long terme
+    - NE PAS poser des questions de circuit ou launch control sur une voiture familiale diesel ou quasi neuve
 
 - CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné dans l'annonce → ajouter "Culasse remplacée" dans red_flags ET points_negatifs, baisser score_fiabilite de 2 points minimum → verdict ÉVITER automatique
 - ACCIDENT : Si accident mentionné → red flag obligatoire, baisser score_fiabilite de 1-2 points selon gravité
@@ -516,7 +528,7 @@ QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : entre 2 et 5 éléments selon le modèle
-- conseil_achat : 2-4 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché). IMPORTANT : si le véhicule est une Phase 1 ou première génération connue pour avoir des problèmes corrigés dans une Phase 2 ou génération suivante, mentionner cette alternative de manière neutre et bienveillante. Exemple de formulation : "Si vous êtes attaché à ce modèle, la Phase 2 (à partir de XXXX) corrige la plupart des problèmes de [boîte/moteur/pompe à eau etc.] et mérite d'être considérée. La Phase 1 reste néanmoins intéressante si le prix reflète les risques et selon vos préférences esthétiques personnelles." Ne pas imposer ce choix — c'est une suggestion respectueuse, le client décide selon ses goûts et son budget.
+- conseil_achat : 2-4 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché). IMPORTANT : si le véhicule est une Phase 1 ou première génération connue pour avoir des problèmes corrigés dans une Phase 2 ou génération suivante, mentionner cette alternative de manière neutre et bienveillante. NE PAS mentionner de Phase 2 si le véhicule est déjà récent (<3 ans), dernière génération, ou si aucune génération suivante n'existe encore. Exemple de formulation : "Si vous êtes attaché à ce modèle, la Phase 2 (à partir de XXXX) corrige la plupart des problèmes de [boîte/moteur/pompe à eau etc.] et mérite d'être considérée. La Phase 1 reste néanmoins intéressante si le prix reflète les risques et selon vos préférences esthétiques personnelles." Ne pas imposer ce choix — c'est une suggestion respectueuse, le client décide selon ses goûts et son budget.
 
 ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
 
