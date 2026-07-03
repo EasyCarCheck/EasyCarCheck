@@ -492,7 +492,7 @@ QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : entre 2 et 5 éléments selon le modèle
-- conseil_achat : 2-3 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché)
+- conseil_achat : 2-4 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché). IMPORTANT : si le véhicule est une Phase 1 ou première génération connue pour avoir des problèmes corrigés dans une Phase 2 ou génération suivante, mentionner cette alternative de manière neutre et bienveillante. Exemple de formulation : "Si vous êtes attaché à ce modèle, la Phase 2 (à partir de XXXX) corrige la plupart des problèmes de [boîte/moteur/pompe à eau etc.] et mérite d'être considérée. La Phase 1 reste néanmoins intéressante si le prix reflète les risques et selon vos préférences esthétiques personnelles." Ne pas imposer ce choix — c'est une suggestion respectueuse, le client décide selon ses goûts et son budget.
 
 ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
 
