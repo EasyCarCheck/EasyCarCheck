@@ -450,17 +450,41 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - questions_vendeur : adapter SPÉCIFIQUEMENT aux problèmes connus du modèle. Pour les modèles à risque launch control : demander "Le véhicule a-t-il été utilisé sur circuit ou avec launch control fréquemment ?" Pour les modèles à consommation huile : "Quelle est la consommation d'huile entre deux vidanges ?"
 - checklist_visite : adapter au modèle. Pour les modèles à risque moteur : "Effectuer un relevé de compression moteur" / "Vérifier la consommation d'huile sur 1000 km" / "Inspecter les traces d'huile sous le véhicule"
 
-- SCORING RÉALISTE, NUANCÉ ET VARIÉ — NE PAS systématiquement mettre 7. Règles strictes :
-  * score_prix : 9-10=excellente affaire nettement sous-cotée, 7-8=prix correct dans la fourchette marché, 5-6=prix légèrement au-dessus, 3-4=prix trop élevé, 1-2=prix abusif
-  * score_fiabilite — nuance OBLIGATOIRE entre systématique et lié à l'abus :
-    - 9-10 : modèle très fiable et robuste (Toyota GR86, Honda Civic Type R FK8, Mazda MX-5 ND, Porsche 911 996 sans IMS)
-    - 7-8 : bonne fiabilité globale, quelques points faibles mineurs ou liés à l'entretien (BMW M3 F80 S55 bien entretenue sans abus, Audi RS6 C7 usage normal, VW Golf GTI Mk7 usage raisonnable)
-    - 5-6 : fiabilité moyenne, problèmes connus mais gérables (Audi RS3 8V turbo à surveiller, BMW 335i N55 chaîne distribution)
-    - 3-4 : problèmes systématiques sérieux indépendants de l'usage (BMW M5 F10 S63, E92 M3 S65, Porsche 987 IMS, Range Rover suspension pneumatique)
-    - 1-2 : modèle très problématique, risque financier élevé même bien entretenu
-  * score_entretien : 9-10=très économique <500 CHF/an, 7-8=raisonnable 800-1200 CHF/an, 5-6=assez coûteux 1500-2500 CHF/an, 3-4=très coûteux 3000-5000 CHF/an, 1-2=extrêmement coûteux >5000 CHF/an
-  * VERDICT : ACHETER si score_global >= 8 ET pas de red flags majeurs, NÉGOCIER si score_global 5-7 OU prix à revoir, ÉVITER si score_global <= 4 OU problèmes systématiques graves OU red flags critiques (culasse remplacée, accident grave, moteur défaillant)
-  * VARIE RÉELLEMENT les scores selon la réalité — une M5 F10 doit scorer 3-4 en fiabilité, une M3 F80 bien entretenue peut scorer 7
+- SCORING RÉALISTE, ÉQUILIBRÉ ET VARIÉ — les bonnes voitures DOIVENT avoir des scores élevés (8-9). NE PAS systématiquement mettre 5-6-7. Règles STRICTES :
+
+  * score_prix :
+    - 9-10 : prix nettement sous la fourchette marché (>10% sous le min) — excellente affaire
+    - 7-8 : prix correct, dans la fourchette ou légèrement sous le milieu
+    - 5-6 : prix légèrement au-dessus de la fourchette (5-15% au-dessus du max)
+    - 3-4 : prix clairement trop élevé (15-30% au-dessus du max)
+    - 1-2 : prix abusif (>30% au-dessus du max)
+
+  * score_fiabilite — nuance OBLIGATOIRE :
+    - 9-10 : modèle TRÈS fiable, peu ou pas de problèmes documentés (Toyota GR86, Honda Civic FK8, Mazda MX-5 ND, Porsche 911 991.2+)
+    - 7-8 : bonne fiabilité, quelques points faibles mineurs ou liés uniquement à l'abus (Porsche Macan S 95B Phase 2, BMW M3 F80 bien entretenue, Audi A4 B9, BMW 320d F30, VW Golf R Mk7 Phase 2)
+    - 5-6 : fiabilité moyenne, problèmes connus mais gérables (Golf GTI Mk7, BMW M135i F20, Audi RS3 8V Phase 1, Golf R Mk7 Phase 1)
+    - 3-4 : problèmes sérieux documentés, coûts élevés probables (BMW M5 F10 S63, Mercedes A35 AMG culasse, E92 M3 S65, Porsche 987 IMS)
+    - 1-2 : très problématique, risque financier élevé même bien entretenu
+
+  * score_entretien :
+    - 9-10 : free service actif ET voiture économique (citadine/compacte) — quasi gratuit
+    - 7-8 : free service actif sur berline/SUV standard OU entretien <800 CHF/an sans free service
+    - 5-6 : free service actif sur sportive premium OU entretien 800-1500 CHF/an sans free service
+    - 3-4 : entretien coûteux 1500-3000 CHF/an, sportive hors garantie
+    - 1-2 : entretien très coûteux >3000 CHF/an
+
+  * VERDICT — règles CLAIRES et GÉNÉREUSES pour les bonnes voitures :
+    - ACHETER : score_global >= 7 ET pas de red flags graves ET prix dans la fourchette ET véhicule en bon état
+    - NÉGOCIER : score_global 5-6 OU prix légèrement au-dessus OU quelques points à vérifier
+    - ÉVITER : score_global <= 4 OU red flags critiques OU prix >15% au-dessus fourchette max
+
+  * EXEMPLES OBLIGATOIRES à respecter :
+    - Porsche Macan S 2020, 64000 km, sans accident, garantie, prix correct → score_fiabilite=7, score_entretien=7, score_prix=7, score_global=7, verdict=ACHETER
+    - BMW 320d F30 2015, 90000 km, bien entretenu, prix correct → score_fiabilite=8, score_entretien=6, score_prix=7, verdict=ACHETER
+    - Audi A4 B9 2019, 50000 km, prix correct → score_fiabilite=8, score_entretien=7, score_prix=8, verdict=ACHETER
+    - Golf GTI Mk7 Phase 1 2015, 90000 km, prix correct → score_fiabilite=6, score_entretien=6, score_prix=7, verdict=NÉGOCIER
+    - BMW M5 F10 2012, 120000 km → score_fiabilite=3, score_entretien=4, verdict=NÉGOCIER ou ÉVITER
+    - Mercedes A35 AMG culasse remplacée → score_fiabilite=4, verdict=ÉVITER
 
 - CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné dans l'annonce → ajouter "Culasse remplacée" dans red_flags ET points_negatifs, baisser score_fiabilite de 2 points minimum → verdict ÉVITER automatique
 - ACCIDENT : Si accident mentionné → red flag obligatoire, baisser score_fiabilite de 1-2 points selon gravité
