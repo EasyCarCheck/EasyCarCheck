@@ -425,14 +425,18 @@ Contenu: ${scrapedData.html}${equipmentSection}
   * Porsche 911 991 2011-2019 : 70000-120000 CHF
   Pour les modèles non listés, estime selon le segment et l'année. Si le prix demandé dépasse la fourchette haute de plus de 15% → score_prix 3-4 et signaler dans points_negatifs. Si le prix est dans la fourchette → score_prix 6-8 selon la précision.
 
-- PROBLÈMES CONNUS DU MODÈLE : Utilise ta connaissance réelle et documentée. Sois précis sur la génération et la motorisation exacte. Fais la distinction entre :
-  * PROBLÈME SYSTÉMATIQUE (défaut de conception indépendant de l'usage) → pénalise fortement le score fiabilité
-  * PROBLÈME LIÉ À L'ABUS (launch control, circuit, mauvais entretien) → mentionne-le avec un avertissement mais pénalise moins le score
-  * Exemples SYSTÉMATIQUES : M5 F10 S63 (injecteurs défaillants, turbo fragile, consommation huile excessive même usage normal), E92 M3 S65 (pompe à huile défaillante, roulements vilebrequin), Porsche 987 Cayman/Boxster (roulement IMS), Range Rover suspension pneumatique, Mercedes A35/A45 AMG culasse M260/M139
-  * Exemples LIÉS À L'ABUS : M3 F80 S55 (rupture bielle si launch control intensif — fiable sans abus), RS6 C7 4.0 TFSI (consommation huile si launch control — solide en usage normal), Golf GTI Mk7 DSG7 DQ200 (surchauffe en usage urbain intensif)
-  * NE JAMAIS mettre des généralités vagues comme "usure des freins" ou "capteurs de stationnement" sauf si c'est un vrai problème documenté du modèle
-  * Pour les problèmes liés à l'abus : formuler comme "Risque de rupture de bielle S55 en cas d'usage intensif du launch control — à vérifier avec le vendeur" plutôt que de condamner le modèle
-- problemes_connus_modele : exactement 2 problèmes RÉELS et PRÉCIS avec génération et motorisation, en précisant si c'est systématique ou lié à l'usage
+- PROBLÈMES CONNUS DU MODÈLE : Utilise ta connaissance réelle et documentée des défauts FRÉQUENTS et COÛTEUX. Sois précis sur la génération et la motorisation exacte. Liste TOUS les problèmes importants, pas seulement 2. Fais la distinction entre :
+  * PROBLÈME SYSTÉMATIQUE (défaut de conception, arrive même sans abus) → formuler clairement ex: "Culasse M260 défaillante — remplacement 5000-8000 CHF, problème documenté sur ce moteur"
+  * PROBLÈME LIÉ À L'USAGE INTENSIF (circuit, launch control, mauvais entretien) → formuler clairement ex: "Risque de rupture de bielle S55 si usage intensif du launch control ou circuit — vérifier historique d'utilisation avec le vendeur"
+  * NE JAMAIS mettre des généralités vagues comme "usure normale des freins" ou "capteurs de stationnement défaillants" sauf si c'est vraiment documenté sur ce modèle
+  * FOCUS sur les problèmes COÛTEUX (>500 CHF de réparation) et FRÉQUENTS sur ce modèle spécifique
+  * Exemples de bonne formulation :
+    - "Turbo IHI défaillant à haut kilométrage — remplacement ~2500-4000 CHF (RS3 8V 2.5 TFSI, problème fréquent)"
+    - "Boîte DSG7 DQ200 qui surchauffe en usage urbain intensif — révision ~2000-3500 CHF (Golf GTI/R Mk7)"
+    - "Chaîne de distribution N55 qui s'étire prématurément — remplacement ~1500-2500 CHF (BMW M135i F20)"
+    - "Injecteurs défaillants S63 — remplacement ~3000-5000 CHF (BMW M5 F10, problème systématique)"
+    - "Suspension pneumatique défaillante — ~2000-4000 CHF par essieu (Range Rover Sport)"
+- problemes_connus_modele : liste entre 2 et 5 problèmes RÉELS, FRÉQUENTS et COÛTEUX pour ce modèle exact, en précisant si systématique ou lié à l'usage intensif, et en indiquant le coût approximatif de réparation
 - questions_vendeur : adapter SPÉCIFIQUEMENT aux problèmes connus du modèle. Pour les modèles à risque launch control : demander "Le véhicule a-t-il été utilisé sur circuit ou avec launch control fréquemment ?" Pour les modèles à consommation huile : "Quelle est la consommation d'huile entre deux vidanges ?"
 - checklist_visite : adapter au modèle. Pour les modèles à risque moteur : "Effectuer un relevé de compression moteur" / "Vérifier la consommation d'huile sur 1000 km" / "Inspecter les traces d'huile sous le véhicule"
 
@@ -477,7 +481,7 @@ QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives)
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
-- problemes_connus_modele : exactement 2 éléments
+- problemes_connus_modele : entre 2 et 5 éléments selon le modèle
 - conseil_achat : 2-3 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché)
 
 ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
@@ -777,7 +781,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if (parsed.points_negatifs?.length > 3) parsed.points_negatifs = parsed.points_negatifs.slice(0, 3);
   if (parsed.checklist_visite?.length > 4) parsed.checklist_visite = parsed.checklist_visite.slice(0, 4);
   if (parsed.questions_vendeur?.length > 3) parsed.questions_vendeur = parsed.questions_vendeur.slice(0, 3);
-  if (parsed.problemes_connus_modele?.length > 2) parsed.problemes_connus_modele = parsed.problemes_connus_modele.slice(0, 2);
+  if (parsed.problemes_connus_modele?.length > 5) parsed.problemes_connus_modele = parsed.problemes_connus_modele.slice(0, 5);
 
   return parsed;
 }
