@@ -399,7 +399,31 @@ Contenu: ${scrapedData.html}${equipmentSection}
 - TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète), supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
 
 ÉTAPE 2 - Analyse approfondie :
-- Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste. IMPORTANT pour l'évaluation du prix : tiens compte de la GÉNÉRATION exacte du véhicule (phase 1 vs phase 2, facelift vs pre-facelift) car les prix varient énormément. Exemples de fourchettes réalistes sur le marché suisse 2026 : RS3 8V Phase 1 2015-2016 = 30000-40000 CHF, RS3 8V Phase 2 2017-2020 = 42000-55000 CHF, M3 F80 2014-2018 = 55000-75000 CHF (manuelle +10-15%), M3 F80 Competition manuelle rare = jusqu 85000 CHF, Golf GTI Mk7 2013-2017 = 18000-28000 CHF, RS6 C7 2013-2018 = 45000-70000 CHF, C63 AMG W205 2014-2018 = 40000-60000 CHF, M5 F10 2011-2016 = 35000-55000 CHF. Si le prix demandé depasse la fourchette haute → score_prix 3-4 et signaler clairement la surcote dans points_negatifs
+- Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste. IMPORTANT : tiens compte de la GÉNÉRATION exacte, de la carrosserie, et de l'équipement. Fourchettes réalistes sur le marché suisse 2026 :
+  * RS3 8V Phase 1 2015-2016 : 30000-40000 CHF
+  * RS3 8V Phase 2 2017-2020 : 42000-55000 CHF
+  * RS3 8P 2007-2012 : 20000-32000 CHF
+  * M3 F80 2014-2018 berline : 52000-72000 CHF
+  * M3 F80 Competition berline : 58000-78000 CHF
+  * M3 F80 manuelle rare : +10-15% sur la fourchette
+  * M4 F82 Competition : 55000-75000 CHF
+  * M5 F10 2011-2016 : 35000-52000 CHF
+  * Golf GTI Mk7 2013-2017 : 18000-28000 CHF
+  * Golf R Mk7 2014-2019 : 25000-38000 CHF
+  * RS6 C7 2013-2018 : 48000-72000 CHF
+  * RS6 C8 2019+ : 80000-110000 CHF
+  * C63 AMG W205 berline/break 2015-2018 : 42000-58000 CHF
+  * C63 S AMG W205 berline/break 2015-2018 : 48000-65000 CHF
+  * C63 AMG W205 Coupé 2015-2018 : 50000-68000 CHF
+  * C63 S AMG W205 Coupé 2015-2018 : 58000-78000 CHF
+  * C63 S AMG W205 2019-2021 : 68000-90000 CHF
+  * A35 AMG W177 2019-2022 : 28000-42000 CHF
+  * A45 S AMG W177 2019-2022 : 42000-58000 CHF
+  * BMW M135i F20 2012-2016 : 20000-32000 CHF
+  * BMW 320i/330i F30 2012-2018 : 15000-28000 CHF
+  * Porsche Macan 2014-2018 : 35000-55000 CHF
+  * Porsche 911 991 2011-2019 : 70000-120000 CHF
+  Pour les modèles non listés, estime selon le segment et l'année. Si le prix demandé dépasse la fourchette haute de plus de 15% → score_prix 3-4 et signaler dans points_negatifs. Si le prix est dans la fourchette → score_prix 6-8 selon la précision.
 
 - PROBLÈMES CONNUS DU MODÈLE : Utilise ta connaissance réelle et documentée. Sois précis sur la génération et la motorisation exacte. Fais la distinction entre :
   * PROBLÈME SYSTÉMATIQUE (défaut de conception indépendant de l'usage) → pénalise fortement le score fiabilité
