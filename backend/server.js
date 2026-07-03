@@ -832,6 +832,29 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if (parsed.conseil_achat) parsed.conseil_achat = nettoyerTexte(parsed.conseil_achat);
   if (parsed.verdict_texte) parsed.verdict_texte = nettoyerTexte(parsed.verdict_texte);
 
+  // Supprimer mention Phase 2 si véhicule récent (<4 ans)
+  const anneeVehicule = parseInt(parsed.annee) || 0;
+  const vehiculeRecent = anneeVehicule >= 2022;
+  if (vehiculeRecent && parsed.conseil_achat) {
+    parsed.conseil_achat = parsed.conseil_achat
+      .replace(/[^.]*[Pp]hase\s*2[^.]*\./g, '')
+      .replace(/[^.]*génération suivante[^.]*\./g, '')
+      .replace(/[^.]*version plus récente[^.]*\./g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    console.log('Phase 2 supprimée du conseil — véhicule récent:', anneeVehicule);
+  }
+
+  // Supprimer problèmes vagues sur véhicules quasi neufs (<3 ans, <30000 km)
+  const kmVehicule = parseInt(parsed.kilometrage) || 0;
+  if (anneeVehicule >= 2023 && kmVehicule < 30000 && parsed.problemes_connus_modele) {
+    const problemesVagues = ['capteurs de stationnement', 'usure normale', 'capteurs', 'stationnement'];
+    parsed.problemes_connus_modele = parsed.problemes_connus_modele.filter(p =>
+      !problemesVagues.some(v => p.toLowerCase().includes(v))
+    );
+    console.log('Problèmes vagues supprimés pour véhicule quasi neuf');
+  }
+
   if (parsed.points_positifs?.length > 3) parsed.points_positifs = parsed.points_positifs.slice(0, 3);
   if (parsed.points_negatifs?.length > 3) parsed.points_negatifs = parsed.points_negatifs.slice(0, 3);
   if (parsed.checklist_visite?.length > 4) parsed.checklist_visite = parsed.checklist_visite.slice(0, 4);
