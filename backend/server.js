@@ -436,6 +436,16 @@ Contenu: ${scrapedData.html}${equipmentSection}
     - "Chaîne de distribution N55 qui s'étire prématurément — remplacement ~1500-2500 CHF (BMW M135i F20)"
     - "Injecteurs défaillants S63 — remplacement ~3000-5000 CHF (BMW M5 F10, problème systématique)"
     - "Suspension pneumatique défaillante — ~2000-4000 CHF par essieu (Range Rover Sport)"
+    - "Boîte 9G-Tronic fragile en usage sportif intensif — révision ~3000-5000 CHF (Mercedes C63/C63S W205, surtout si conduite sur circuit ou usage intensif)"
+    - "Consommation huile M177 4.0 V8 biturbo — surtout si conduite sportive intensive, surveiller niveau entre vidanges (Mercedes C63S W205)"
+    - "Turbos M177 fragiles en usage intensif ou circuit — remplacement ~4000-7000 CHF la paire (Mercedes C63S W205)"
+    - "Culasse M260 défaillante — remplacement 5000-8000 CHF, problème systématique documenté (Mercedes A35/A45 AMG)"
+    - "Pompe à huile défaillante S65 V8 — remplacement ~3000-5000 CHF, risque moteur grave (BMW M3 E92)"
+    - "Roulement intermédiaire IMS — remplacement préventif ~2000-3000 CHF recommandé (Porsche Boxster/Cayman 987)"
+    - "Bielles S55 fragiles si launch control répété — dommages moteur >10000 CHF (BMW M3/M4 F80/F82, lié à abus)"
+    - "Vanos défaillant à haut kilométrage — révision ~1500-2500 CHF (BMW moteurs N/S)"
+    - "Courroie de distribution à remplacer vers 100000 km — ~2000-3500 CHF (Audi RS6 C7 4.0 TFSI)"
+    - "Suspension Airmatic défaillante — ~2000-4000 CHF par corner (Mercedes GL/GLS/S-Class)"
 - problemes_connus_modele : liste entre 2 et 5 problèmes RÉELS, FRÉQUENTS et COÛTEUX pour ce modèle exact, en précisant si systématique ou lié à l'usage intensif, et en indiquant le coût approximatif de réparation
 - questions_vendeur : adapter SPÉCIFIQUEMENT aux problèmes connus du modèle. Pour les modèles à risque launch control : demander "Le véhicule a-t-il été utilisé sur circuit ou avec launch control fréquemment ?" Pour les modèles à consommation huile : "Quelle est la consommation d'huile entre deux vidanges ?"
 - checklist_visite : adapter au modèle. Pour les modèles à risque moteur : "Effectuer un relevé de compression moteur" / "Vérifier la consommation d'huile sur 1000 km" / "Inspecter les traces d'huile sous le véhicule"
@@ -568,21 +578,30 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     console.log('CO2 injecté depuis scraping:', parsed.co2);
   }
 
-  // Fix prix_negocie_suggere si 0 ou manquant
+  // Fix prix_negocie_suggere si 0 ou manquant — arrondi à la centaine
+  const arrondir = (val, multiple = 500) => Math.round(val / multiple) * multiple;
   if (!parsed.prix_negocie_suggere || parsed.prix_negocie_suggere === 0) {
     const prixBrut = parseInt(parsed.prix) || 0;
-    parsed.prix_negocie_suggere = Math.round(prixBrut * 0.93);
+    parsed.prix_negocie_suggere = arrondir(prixBrut * 0.93);
     console.log('PRIX FALLBACK appliqué:', parsed.prix_negocie_suggere);
+  } else {
+    parsed.prix_negocie_suggere = arrondir(parsed.prix_negocie_suggere);
   }
   if (!parsed.economie_potentielle_min || parsed.economie_potentielle_min === 0) {
     const prixBrut = parseInt(parsed.prix) || 0;
-    parsed.economie_potentielle_min = Math.round(prixBrut * 0.03);
-    parsed.economie_potentielle_max = Math.round(prixBrut * 0.08);
+    parsed.economie_potentielle_min = arrondir(prixBrut * 0.03);
+    parsed.economie_potentielle_max = arrondir(prixBrut * 0.08);
+  } else {
+    parsed.economie_potentielle_min = arrondir(parsed.economie_potentielle_min);
+    parsed.economie_potentielle_max = arrondir(parsed.economie_potentielle_max);
   }
   if (!parsed.fourchette_marche_min || parsed.fourchette_marche_min === 0) {
     const prixBrut = parseInt(parsed.prix) || 0;
-    parsed.fourchette_marche_min = Math.round(prixBrut * 0.88);
-    parsed.fourchette_marche_max = Math.round(prixBrut * 1.05);
+    parsed.fourchette_marche_min = arrondir(prixBrut * 0.88);
+    parsed.fourchette_marche_max = arrondir(prixBrut * 1.05);
+  } else {
+    parsed.fourchette_marche_min = arrondir(parsed.fourchette_marche_min);
+    parsed.fourchette_marche_max = arrondir(parsed.fourchette_marche_max);
   }
 
   // FIX: Force scores entiers — si GPT retourne 0 c'est anormal, on met un minimum de 1
