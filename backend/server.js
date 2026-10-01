@@ -369,12 +369,9 @@ function traduireOption(opt) {
 // ─── RECHERCHE TAVILY ────────────────────────────────────
 async function rechercherInfosVehicule(marque, modele, annee) {
   try {
-    // Requête 1 : prix marché suisse
-    // Requête 2 : problèmes connus documentés sur forums et rappels constructeurs
-    // On fait 2 requêtes en parallèle (limite plan gratuit Tavily)
     const queries = [
       `${marque} ${modele} ${annee} prix marché occasion suisse`,
-      `${marque} ${modele} problèmes connus défauts récurrents rappel constructeur forum`
+      `${marque} ${modele} ${annee} problèmes connus défauts récurrents rappel constructeur forum fiabilité`
     ];
     const results = await Promise.all(queries.map(q =>
       axios.post('https://api.tavily.com/search', {
@@ -385,23 +382,58 @@ async function rechercherInfosVehicule(marque, modele, annee) {
         include_answer: true
       }, { timeout: 10000 })
     ));
+
     const prix = results[0].data.answer || '';
-    const problemesRaw = results[1].data.answer || '';
-    // Extraire aussi les snippets des résultats pour plus de détails
+
+    // ── Problèmes : extraire les snippets bruts, ne PAS passer par GPT ──
+    const problemesAnswer = results[1].data.answer || '';
     const problemesSnippets = (results[1].data.results || [])
       .map(r => r.content || r.snippet || '')
       .filter(Boolean)
-      .slice(0, 3)
-      .join(' | ');
-    const problemes = problemesRaw || problemesSnippets || '';
+      .slice(0, 4);
+
+    // Construire une liste de problèmes RÉELS à partir des snippets
+    // On cherche des phrases courtes qui mentionnent des composants/défauts
+    const motsCles = ['défaut', 'problème', 'rappel', 'panne', 'casse', 'usure prématurée', 'fissure', 'fuite', 'surchauffe', 'boîte', 'moteur', 'pompe', 'turbo', 'transmission', 'embrayage', 'distribution', 'culasse'];
+    let problemesListe = [];
+
+    // D'abord essayer d'extraire depuis la réponse synthétique de Tavily
+    if (problemesAnswer && problemesAnswer.length > 30) {
+      // Découper en phrases et garder celles qui mentionnent un problème réel
+      const phrases = problemesAnswer.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 20);
+      for (const phrase of phrases) {
+        if (motsCles.some(m => phrase.toLowerCase().includes(m))) {
+          problemesListe.push(phrase);
+        }
+      }
+    }
+
+    // Si pas assez de résultats, chercher dans les snippets
+    if (problemesListe.length < 2) {
+      for (const snippet of problemesSnippets) {
+        const phrases = snippet.split(/[.!?\n]/).map(s => s.trim()).filter(s => s.length > 20 && s.length < 200);
+        for (const phrase of phrases) {
+          if (motsCles.some(m => phrase.toLowerCase().includes(m))) {
+            problemesListe.push(phrase);
+            if (problemesListe.length >= 4) break;
+          }
+        }
+        if (problemesListe.length >= 4) break;
+      }
+    }
+
+    // Dédoublonner et limiter à 4
+    problemesListe = [...new Set(problemesListe)].slice(0, 4);
+
+    console.log(`Tavily problèmes trouvés: ${problemesListe.length}`);
 
     return {
       prix: prix,
-      problemesDocumentes: problemes
+      problemesDocumentes: problemesListe  // tableau de strings, pas une string
     };
   } catch (e) {
     console.log('Tavily erreur (non bloquant):', e.message);
-    return { prix: '', problemesDocumentes: '' };
+    return { prix: '', problemesDocumentes: [] };
   }
 }
 
@@ -452,17 +484,18 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   }
 
   const tavilyPrix = tavilyContext?.prix || '';
-  const tavilyProblemes = tavilyContext?.problemesDocumentes || '';
+  const tavilyProblemes = tavilyContext?.problemesDocumentes || [];  // tableau de strings
 
-  const tavilySection = (tavilyPrix || tavilyProblemes)
+  // Tavily injecte UNIQUEMENT le prix dans le prompt GPT.
+  // Les problèmes connus sont injectés directement dans le PDF APRÈS GPT — GPT ne les voit pas.
+  const tavilySection = tavilyPrix
     ? `\n\nDONNÉES WEB RÉELLES SUR CE VÉHICULE :
-- Prix marché occasion suisse (données web) : ${tavilyPrix || 'non trouvé'}
-- PROBLÈMES DOCUMENTÉS SUR FORUMS ET SOURCES OFFICIELLES : ${tavilyProblemes || 'aucun problème documenté trouvé'}
+- Prix marché occasion suisse (données web) : ${tavilyPrix}
 
-RÈGLES STRICTES :
+RÈGLE STRICTE :
 1. Pour le prix marché : utilise ces données web en priorité sur ta connaissance interne.
-2. Pour "problemes_connus_modele" : utilise UNIQUEMENT les problèmes listés ci-dessus. NE JAMAIS inventer ou ajouter des problèmes de ta propre connaissance. Si "aucun problème documenté trouvé" → retourne un tableau VIDE []. Un problème non documenté par des sources réelles ne doit JAMAIS apparaître dans le rapport.\n`
-    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE. Pour "problemes_connus_modele" : retourne un tableau VIDE [] — ne jamais inventer de problèmes.\n`;
+2. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — les problèmes connus sont gérés par un autre système. NE JAMAIS remplir ce champ.\n`
+    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
 
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
@@ -573,7 +606,7 @@ QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives). Chaque point doit être PRÉCIS et CHIFFRÉ si possible. Si le véhicule est encore sous free service (BMW/Audi/Mercedes/Volvo dont année+10 > 2026 ET km < 100000), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
-- problemes_connus_modele : entre 2 et 5 éléments selon le modèle
+- problemes_connus_modele : retourne TOUJOURS un tableau VIDE []. Ce champ est géré par un autre système — tu ne dois JAMAIS le remplir.
 - conseil_achat : 2-4 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché). IMPORTANT : mentionner une Phase 2 ou génération suivante UNIQUEMENT si toutes ces conditions sont réunies : (1) le véhicule a plus de 4 ans, (2) une Phase 2 ou génération suivante EXISTE réellement et est disponible sur le marché, (3) cette génération corrige des problèmes documentés de la Phase 1. NE PAS mentionner de Phase 2 si : le véhicule a moins de 4 ans, si c'est déjà la dernière génération disponible, si aucune génération suivante n'existe, ou si le modèle est récent (2022+). Exemple de formulation : "Si vous êtes attaché à ce modèle, la Phase 2 (à partir de XXXX) corrige la plupart des problèmes de [boîte/moteur/pompe à eau etc.] et mérite d'être considérée. La Phase 1 reste néanmoins intéressante si le prix reflète les risques et selon vos préférences esthétiques personnelles." Ne pas imposer ce choix — c'est une suggestion respectueuse, le client décide selon ses goûts et son budget.
 
 ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
@@ -917,7 +950,15 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if (parsed.points_negatifs?.length > 3) parsed.points_negatifs = parsed.points_negatifs.slice(0, 3);
   if (parsed.checklist_visite?.length > 4) parsed.checklist_visite = parsed.checklist_visite.slice(0, 4);
   if (parsed.questions_vendeur?.length > 3) parsed.questions_vendeur = parsed.questions_vendeur.slice(0, 3);
-  if (parsed.problemes_connus_modele?.length > 5) parsed.problemes_connus_modele = parsed.problemes_connus_modele.slice(0, 5);
+  // ── INJECTION DIRECTE TAVILY : problèmes connus sans passer par GPT ──
+  // GPT retourne toujours [] pour ce champ — on injecte ici les données réelles Tavily
+  if (Array.isArray(tavilyProblemes) && tavilyProblemes.length > 0) {
+    parsed.problemes_connus_modele = tavilyProblemes.slice(0, 5);
+    console.log('PROBLÈMES injectés depuis Tavily (bypass GPT):', parsed.problemes_connus_modele.length);
+  } else {
+    parsed.problemes_connus_modele = [];
+    console.log('PROBLÈMES : aucun trouvé par Tavily → tableau vide');
+  }
 
   return parsed;
 }
