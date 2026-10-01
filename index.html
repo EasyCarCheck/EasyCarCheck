@@ -114,11 +114,11 @@
   .promo-banner small { color: rgba(0,0,0,0.7); font-size: 12px; display: block; margin-top: 3px; font-weight: 600; }
 
   /* STATS */
-  .stats { display: flex; justify-content: center; background: #fff; border-top: 1px solid #d0e4f7; border-bottom: 1px solid #d0e4f7; }
-  .stat { text-align: center; padding: 36px 50px; border-right: 1px solid #d0e4f7; flex: 1; max-width: 220px; }
+  .stats { display: flex; justify-content: center; align-items: center; background: #fff; border-top: 1px solid #d0e4f7; border-bottom: 1px solid #d0e4f7; }
+  .stat { display: flex; align-items: center; gap: 12px; padding: 22px 40px; border-right: 1px solid #d0e4f7; flex: 1; max-width: 280px; }
   .stat:last-child { border-right: none; }
-  .stat-num { font-size: 38px; font-weight: 900; color: #0090B0; }
-  .stat-label { color: #3a5a7a; font-size: 14px; margin-top: 6px; font-weight: 700; }
+  .stat-num { font-size: 32px; font-weight: 900; color: #0090B0; white-space: nowrap; line-height: 1; flex-shrink: 0; }
+  .stat-label { color: #3a5a7a; font-size: 13px; font-weight: 600; line-height: 1.3; }
 
   /* HOW IT WORKS */
   .how { padding: 80px 20px; text-align: center; background: #f0f6ff; }
@@ -340,7 +340,7 @@
   <div class="form-box">
     <div class="promo-banner">
       <span id="promo-text">🔥 Offre de lancement — 9 CHF au lieu de 12 CHF</span>
-      <small id="promo-sub">Pendant 7 jours seulement · Code automatiquement appliqué</small>
+      <small id="promo-sub">Offre de lancement · Code automatiquement appliqué</small>
     </div>
     <h2 id="form-title">🔍 Analysez votre annonce</h2>
     <div class="url-input-wrapper">
@@ -391,10 +391,10 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">⚡</div><div class="stat-label" id="stat1">30s · Analyse</div></div>
-  <div class="stat"><div class="stat-num">🌍</div><div class="stat-label" id="stat2">4 · Langues</div></div>
-  <div class="stat"><div class="stat-num">💳</div><div class="stat-label" id="stat3">Dès 9 CHF</div></div>
-  <div class="stat"><div class="stat-num">🇨🇭</div><div class="stat-label" id="stat4">100% Suisse</div></div>
+  <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat1">Temps<br>d&#39;analyse</div></div>
+  <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat2">Langues<br>disponibles</div></div>
+  <div class="stat"><div class="stat-num">9 CHF</div><div class="stat-label" id="stat3">Dès</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label" id="stat4">Marché<br>suisse</div></div>
 </div>
 
 <div class="how" id="how">
@@ -681,7 +681,7 @@
       'hero-h1': 'Analysez n\'importe quelle<br><span id="hero-span">voiture d\'occasion</span> en Suisse',
       'form-title': '🔍 Analysez votre annonce', 'btn-analyse': 'Analyser →',
       'form-hint': '⚡ Résultat gratuit en 30 secondes · Sans inscription',
-      'stat1': '30s · Analyse', 'stat2': '4 · Langues', 'stat3': 'Dès 9 CHF', 'stat4': '100% Suisse',
+      'stat1': 'Temps<br>d\'analyse', 'stat2': 'Langues<br>disponibles', 'stat3': 'Dès', 'stat4': 'Marché<br>suisse',
       'how-title': 'Comment ça marche ?', 'how-sub': 'Simple, rapide, fiable — en 3 étapes',
       'step1-title': 'Collez le lien', 'step1-desc': "Copiez l'URL de n'importe quelle annonce AutoScout24, Ricardo, Tutti ou Anibis.",
       'step2-title': "L'IA analyse", 'step2-desc': "Notre IA scrape l'annonce, analyse le prix, la fiabilité et détecte les red flags en 30 secondes.",
@@ -717,7 +717,7 @@
       'hero-h1': 'Analysieren Sie jeden<br><span id="hero-span">Gebrauchtwagen</span> in der Schweiz',
       'form-title': '🔍 Anzeige analysieren', 'btn-analyse': 'Analysieren →',
       'form-hint': '⚡ Kostenloses Ergebnis in 30 Sekunden · Ohne Registrierung',
-      'stat1': '30s · Analyse', 'stat2': '4 · Sprachen', 'stat3': 'Ab 9 CHF', 'stat4': '100% Schweiz',
+      'stat1': 'Analysezeit', 'stat2': 'Verfügbare<br>Sprachen', 'stat3': 'Ab', 'stat4': 'Schweizer<br>Markt',
       'how-title': 'Wie funktioniert es?', 'how-sub': 'Einfach, schnell, zuverlässig — in 3 Schritten',
       'step1-title': 'Link einfügen', 'step1-desc': 'Kopieren Sie die URL einer beliebigen AutoScout24, Ricardo, Tutti oder Anibis-Anzeige.',
       'step2-title': 'KI analysiert', 'step2-desc': 'Unsere KI analysiert die Anzeige, vergleicht den Preis und erkennt Red Flags in 30 Sekunden.',
@@ -753,7 +753,7 @@
       'hero-h1': 'Analizza qualsiasi<br><span id="hero-span">auto usata</span> in Svizzera',
       'form-title': '🔍 Analizza il tuo annuncio', 'btn-analyse': 'Analizza →',
       'form-hint': '⚡ Risultato gratuito in 30 secondi · Senza registrazione',
-      'stat1': '30s · Analisi', 'stat2': '4 · Lingue', 'stat3': 'Da 9 CHF', 'stat4': '100% Svizzera',
+      'stat1': 'Tempo di<br>analisi', 'stat2': 'Lingue<br>disponibili', 'stat3': 'Da', 'stat4': 'Mercato<br>svizzero',
       'how-title': 'Come funziona?', 'how-sub': 'Semplice, veloce, affidabile — in 3 passi',
       'step1-title': 'Incolla il link', 'step1-desc': "Copia l'URL di qualsiasi annuncio AutoScout24, Ricardo, Tutti o Anibis.",
       'step2-title': "L'IA analizza", 'step2-desc': "La nostra IA analizza l'annuncio, confronta il prezzo e rileva i red flag in 30 secondi.",
@@ -789,7 +789,7 @@
       'hero-h1': 'Analyze any<br><span id="hero-span">used car</span> in Switzerland',
       'form-title': '🔍 Analyze your listing', 'btn-analyse': 'Analyze →',
       'form-hint': '⚡ Free result in 30 seconds · No registration required',
-      'stat1': '30s · Analysis', 'stat2': '4 · Languages', 'stat3': 'From 9 CHF', 'stat4': '100% Swiss',
+      'stat1': 'Analysis<br>time', 'stat2': 'Available<br>languages', 'stat3': 'From', 'stat4': 'Swiss<br>market',
       'how-title': 'How does it work?', 'how-sub': 'Simple, fast, reliable — in 3 steps',
       'step1-title': 'Paste the link', 'step1-desc': 'Copy the URL of any AutoScout24, Ricardo, Tutti or Anibis listing.',
       'step2-title': 'AI analyzes', 'step2-desc': 'Our AI analyzes the listing, compares the price and detects red flags in 30 seconds.',
@@ -830,7 +830,7 @@
       const el = document.getElementById(id);
       if (el) {
         if (id === 'placeholder') { document.getElementById('urlInput').placeholder = t[id]; }
-        else if (id === 'hero-h1') { el.innerHTML = t[id]; }
+        else if (id === 'hero-h1' || id === 'stat1' || id === 'stat2' || id === 'stat3' || id === 'stat4') { el.innerHTML = t[id]; }
           else { el.textContent = t[id]; }
       }
     });
