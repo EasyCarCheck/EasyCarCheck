@@ -248,8 +248,9 @@
     .pricing { padding: 24px 0 20px; }
     .pricing h2 { font-size: 18px; margin-bottom: 6px; padding: 0 16px; }
     .pricing-sub { font-size: 12px; margin-bottom: 14px; padding: 0 16px; }
-    .pricing-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
-    .pricing-card { padding: 20px 16px; }
+    .pricing-grid { display: flex; flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding: 4px 16px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; justify-content: flex-start; max-width: 100%; }
+    .pricing-grid::-webkit-scrollbar { display: none; }
+    .pricing-card { min-width: 272px; max-width: 272px; scroll-snap-align: center; flex-shrink: 0; padding: 24px 18px; }
     footer { padding: 20px 14px; }
     .footer-logo { font-size: 16px; }
     .footer-desc { font-size: 12px; margin-bottom: 14px; }
@@ -357,7 +358,9 @@
 
 <div class="stats">
   <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat3">Temps d'analyse</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label" id="stat5">Marché suisse</div></div>
   <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat4">Langues disponibles</div></div>
+  <div class="stat"><div class="stat-num">9 CHF</div><div class="stat-label" id="stat6">Rapport complet</div></div>
 </div>
 
 <div class="how" id="how">
@@ -443,9 +446,9 @@
       <div class="pricing-price">0</div>
       <div class="pricing-period">CHF</div>
       <ul class="pricing-features">
-        <li id="p0-f1">Score global /10</li>
-        <li id="p0-f2">Verdict Acheter/Négocier/Éviter</li>
-        <li id="p0-f3">Résultat instantané</li>
+        <li id="p0-f1">📊 Score global /10</li>
+        <li id="p0-f2">✅ Verdict Acheter/Négocier/Éviter</li>
+        <li id="p0-f3">⚡ Résultat instantané</li>
       </ul>
       <button class="pricing-btn secondary" onclick="document.getElementById('urlInput').focus(); window.scrollTo({top:0,behavior:'smooth'})" id="p0-btn">Commencer</button>
     </div>
@@ -455,12 +458,12 @@
       <div class="pricing-price" style="color:#1a3a6e;">9 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">12</span></div>
       <div class="pricing-period" id="p1-period">CHF · Offre de lancement</div>
       <ul class="pricing-features">
-        <li id="p1-f1">Rapport PDF complet</li>
-        <li id="p1-f2">Red flags & problèmes connus</li>
-        <li id="p1-f3">Checklist visite</li>
-        <li id="p1-f4">Prix négociation suggéré</li>
-        <li id="p1-f5">Taxe cantonale GE</li>
-        <li id="p1-f6">Envoi par email</li>
+        <li id="p1-f1">📄 Rapport PDF complet</li>
+        <li id="p1-f2">🚩 Red flags & problèmes connus</li>
+        <li id="p1-f3">✅ Checklist visite</li>
+        <li id="p1-f4">💰 Prix négociation suggéré</li>
+        <li id="p1-f5">🇨🇭 Taxe cantonale GE</li>
+        <li id="p1-f6">📧 Envoi par email</li>
       </ul>
       <button class="pricing-btn primary" onclick="payerRapport('single')" id="p1-btn">Obtenir le rapport</button>
     </div>
@@ -469,9 +472,9 @@
       <div class="pricing-price">27 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">30</span></div>
       <div class="pricing-period" id="p2-period">CHF · 9 CHF/rapport</div>
       <ul class="pricing-features">
-        <li id="p2-f1">3 rapports complets PDF</li>
-        <li id="p2-f2">Valable 6 mois</li>
-        <li id="p2-f3">Idéal pour comparer</li>
+        <li id="p2-f1">📄 3 rapports complets PDF</li>
+        <li id="p2-f2">📅 Valable 6 mois</li>
+        <li id="p2-f3">🔍 Idéal pour comparer</li>
       </ul>
       <button class="pricing-btn secondary" onclick="payerRapport('pack3')" id="p2-btn">Choisir ce pack</button>
     </div>
@@ -480,9 +483,9 @@
       <div class="pricing-price">40 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">45</span></div>
       <div class="pricing-period" id="p3-period">CHF · 8 CHF/rapport</div>
       <ul class="pricing-features">
-        <li id="p3-f1">5 rapports complets PDF</li>
-        <li id="p3-f2">Valable 6 mois</li>
-        <li id="p3-f3">Meilleur rapport qualité/prix</li>
+        <li id="p3-f1">📄 5 rapports complets PDF</li>
+        <li id="p3-f2">📅 Valable 6 mois</li>
+        <li id="p3-f3">🏆 Meilleur rapport qualité/prix</li>
       </ul>
       <button class="pricing-btn secondary" onclick="payerRapport('pack5')" id="p3-btn">Choisir ce pack</button>
     </div>
@@ -552,7 +555,7 @@
       'promo-sub': 'Pendant 7 jours seulement · Code automatiquement appliqué',
       'form-title': '🔍 Analysez votre annonce', 'btn-analyse': 'Analyser →',
       'form-hint': '⚡ Résultat gratuit en 30 secondes · Sans inscription',
-      'stat3': "Temps d'analyse", 'stat4': 'Langues disponibles',
+      'stat3': "Temps d'analyse", 'stat4': 'Langues disponibles', 'stat5': 'Marché suisse', 'stat6': 'Rapport complet',
       'how-title': 'Comment ça marche ?', 'how-sub': 'Simple, rapide, fiable — en 3 étapes',
       'step1-title': 'Collez le lien', 'step1-desc': "Copiez l'URL de n'importe quelle annonce AutoScout24, Ricardo, Tutti ou Anibis.",
       'step2-title': "L'IA analyse", 'step2-desc': "Notre IA scrape l'annonce, analyse le prix, la fiabilité et détecte les red flags en 30 secondes.",
@@ -583,7 +586,7 @@
       'promo-text': '🔥 Einführungsangebot — 9 CHF statt 12 CHF', 'promo-sub': 'Nur 7 Tage · Automatisch angewendet',
       'form-title': '🔍 Anzeige analysieren', 'btn-analyse': 'Analysieren →',
       'form-hint': '⚡ Kostenloses Ergebnis in 30 Sekunden · Ohne Registrierung',
-      'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen',
+      'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen', 'stat5': 'Schweizer Markt', 'stat6': 'Vollständiger Bericht',
       'how-title': 'Wie funktioniert es?', 'how-sub': 'Einfach, schnell, zuverlässig — in 3 Schritten',
       'step1-title': 'Link einfügen', 'step1-desc': 'Kopieren Sie die URL einer beliebigen AutoScout24, Ricardo, Tutti oder Anibis-Anzeige.',
       'step2-title': 'KI analysiert', 'step2-desc': 'Unsere KI analysiert die Anzeige, vergleicht den Preis und erkennt Red Flags in 30 Sekunden.',
@@ -614,7 +617,7 @@
       'promo-text': '🔥 Offerta di lancio — 9 CHF invece di 12 CHF', 'promo-sub': 'Solo 7 giorni · Applicato automaticamente',
       'form-title': '🔍 Analizza il tuo annuncio', 'btn-analyse': 'Analizza →',
       'form-hint': '⚡ Risultato gratuito in 30 secondi · Senza registrazione',
-      'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili',
+      'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili', 'stat5': 'Mercato svizzero', 'stat6': 'Rapporto completo',
       'how-title': 'Come funziona?', 'how-sub': 'Semplice, veloce, affidabile — in 3 passi',
       'step1-title': 'Incolla il link', 'step1-desc': "Copia l'URL di qualsiasi annuncio AutoScout24, Ricardo, Tutti o Anibis.",
       'step2-title': "L'IA analizza", 'step2-desc': "La nostra IA analizza l'annuncio, confronta il prezzo e rileva i red flag in 30 secondi.",
@@ -645,7 +648,7 @@
       'promo-text': '🔥 Launch offer — 9 CHF instead of 12 CHF', 'promo-sub': 'For 7 days only · Automatically applied',
       'form-title': '🔍 Analyze your listing', 'btn-analyse': 'Analyze →',
       'form-hint': '⚡ Free result in 30 seconds · No registration required',
-      'stat3': 'Analysis time', 'stat4': 'Available languages',
+      'stat3': 'Analysis time', 'stat4': 'Available languages', 'stat5': 'Swiss market', 'stat6': 'Full report',
       'how-title': 'How does it work?', 'how-sub': 'Simple, fast, reliable — in 3 steps',
       'step1-title': 'Paste the link', 'step1-desc': 'Copy the URL of any AutoScout24, Ricardo, Tutti or Anibis listing.',
       'step2-title': 'AI analyzes', 'step2-desc': 'Our AI analyzes the listing, compares the price and detects red flags in 30 seconds.',
