@@ -397,12 +397,31 @@ async function rechercherInfosVehicule(marque, modele, annee) {
     const motsCles = ['défaut', 'problème', 'rappel', 'panne', 'casse', 'usure prématurée', 'fissure', 'fuite', 'surchauffe', 'boîte', 'moteur', 'pompe', 'turbo', 'transmission', 'embrayage', 'distribution', 'culasse'];
     let problemesListe = [];
 
+    // Mots anglais fréquents pour détecter les phrases en anglais (à exclure)
+    const motsAnglais = ['the ', ' and ', ' of ', ' in ', ' is ', ' are ', ' have ', ' has ', ' with ', ' can ', 'brake', 'gearbox', 'clutch', 'engine', 'failure', 'issue', 'problem', 'recall', 'warning', 'check', 'fault', 'sensor'];
+
+    function estEnFrancais(phrase) {
+      const p = phrase.toLowerCase();
+      // Si contient plus de 2 mots anglais typiques → probablement anglais
+      const scoreAnglais = motsAnglais.filter(m => p.includes(m)).length;
+      return scoreAnglais < 2;
+    }
+
+    function estDonneeValide(phrase) {
+      // Filtrer les lignes de données brutes de base de données
+      if (phrase.startsWith(']')) return false;
+      if ((phrase.match(/\|/g) || []).length >= 2) return false;  // lignes de tableau avec pipes
+      if (phrase.includes('~') && phrase.includes('€') && phrase.includes('km')) return false;  // données de coûts
+      if (phrase.match(/^\s*[\[\]{}]/)) return false;  // fragments JSON
+      return true;
+    }
+
     // D'abord essayer d'extraire depuis la réponse synthétique de Tavily
     if (problemesAnswer && problemesAnswer.length > 30) {
       // Découper en phrases et garder celles qui mentionnent un problème réel
       const phrases = problemesAnswer.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 20);
       for (const phrase of phrases) {
-        if (motsCles.some(m => phrase.toLowerCase().includes(m))) {
+        if (motsCles.some(m => phrase.toLowerCase().includes(m)) && estEnFrancais(phrase) && estDonneeValide(phrase)) {
           problemesListe.push(phrase);
         }
       }
@@ -413,7 +432,7 @@ async function rechercherInfosVehicule(marque, modele, annee) {
       for (const snippet of problemesSnippets) {
         const phrases = snippet.split(/[.!?\n]/).map(s => s.trim()).filter(s => s.length > 20 && s.length < 200);
         for (const phrase of phrases) {
-          if (motsCles.some(m => phrase.toLowerCase().includes(m))) {
+          if (motsCles.some(m => phrase.toLowerCase().includes(m)) && estEnFrancais(phrase) && estDonneeValide(phrase)) {
             problemesListe.push(phrase);
             if (problemesListe.length >= 4) break;
           }
@@ -821,9 +840,21 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // Filtrer les points négatifs interdits
   const mots_interdits = ['kilométrage', 'kilometrage', 'consommation de carburant', 'consommation élevée', 'km élevé', 'km important'];
   if (parsed.points_negatifs) {
-    parsed.points_negatifs = parsed.points_negatifs.filter(p => 
+    parsed.points_negatifs = parsed.points_negatifs.filter(p =>
       !mots_interdits.some(mot => p.toLowerCase().includes(mot))
     );
+    // S'assurer qu'il y a toujours exactement 3 points négatifs
+    // Si le filtre en a supprimé, utiliser des points génériques mais pertinents
+    const pointsNegatifsFallback = [
+      `Prix légèrement au-dessus de la fourchette du marché suisse`,
+      `Contrôle technique approfondi recommandé avant achat`,
+      `Valeur de revente à surveiller selon l'évolution du marché`
+    ];
+    while (parsed.points_negatifs.length < 3) {
+      const fallback = pointsNegatifsFallback[parsed.points_negatifs.length];
+      if (fallback) parsed.points_negatifs.push(fallback);
+      else break;
+    }
   }
   // Nettoyer verdict_texte et conseil_achat
   // Traduction des données brutes selon la langue
@@ -1218,7 +1249,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
   </div>
 
-  <div style="page-break-before:always; display:flex; flex-direction:column; min-height:297mm;">
+  <div style="page-break-before:always; display:flex; flex-direction:column; height:277mm; overflow:hidden;">
     <div class="verdict-section">
       <div>
         <div class="verdict-label">${L.verdict}</div>
