@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>À propos — EasyCarCheck</title>
+<meta name="description" content="EasyCarCheck analyse les annonces de voitures d'occasion en Suisse grâce à l'IA. Découvrez notre mission, notre technologie et pourquoi nous avons créé ce service.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://easycarcheck.ch/apropos.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://easycarcheck.ch/apropos.html">
+<meta property="og:title" content="À propos — EasyCarCheck">
+<meta property="og:description" content="EasyCarCheck analyse les annonces de voitures d'occasion en Suisse grâce à l'IA. Notre mission, notre technologie.">
+<meta property="og:locale" content="fr_CH">
+<meta property="og:site_name" content="EasyCarCheck">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Arial', sans-serif; background: #f0f6ff; color: #0d1b35; min-height: 100vh; }
+
+  /* HEADER */
+  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 40px; border-bottom: 1px solid rgba(255,255,255,0.15); position: sticky; top: 0; background: #1a3a6e; z-index: 100; }
+  .logo { font-size: 22px; font-weight: bold; letter-spacing: 1px; color: #fff; text-decoration: none; }
+  .logo span { color: #00B4D8; }
+  nav { display: flex; align-items: center; gap: 20px; }
+  nav a { color: #d0e8ff; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+  nav a:hover { color: #fff; }
+  .lang-select { display: flex; gap: 6px; }
+  .lang-btn { background: transparent; border: 1px solid rgba(208,232,255,0.5); color: #d0e8ff; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700; transition: all 0.2s; }
+  .lang-btn.active, .lang-btn:hover { border-color: #00B4D8; color: #fff; background: rgba(0,180,216,0.1); }
+
+  /* MOBILE MENU */
+  .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+  .hamburger span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; border-radius: 2px; transition: all 0.3s; }
+  .mobile-menu { display: none; }
+
+  /* PAGE HERO */
+  .page-hero { background: #1a3a6e; color: #fff; text-align: center; padding: 80px 20px 70px; }
+  .page-hero .badge { background: rgba(0,180,216,0.15); border: 1px solid rgba(0,180,216,0.4); color: #7dd6ed; padding: 7px 18px; border-radius: 20px; font-size: 13px; display: inline-block; margin-bottom: 24px; font-weight: 700; letter-spacing: 0.5px; }
+  .page-hero h1 { font-size: 46px; font-weight: 900; line-height: 1.15; letter-spacing: -1px; margin-bottom: 18px; }
+  .page-hero h1 span { color: #00B4D8; }
+  .page-hero p { color: rgba(255,255,255,0.75); font-size: 18px; max-width: 560px; margin: 0 auto; line-height: 1.65; }
+
+  /* MAIN CONTENT */
+  main { max-width: 820px; margin: 0 auto; padding: 72px 24px 100px; }
+
+  /* SECTION BLOCKS */
+  .section { margin-bottom: 72px; }
+  .section-label { font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #0090B0; text-transform: uppercase; margin-bottom: 12px; }
+  .section h2 { font-size: 28px; font-weight: 900; color: #0d1b35; margin-bottom: 18px; line-height: 1.25; }
+  .section p { color: #3a5a7a; font-size: 16px; line-height: 1.75; margin-bottom: 14px; }
+  .section p:last-child { margin-bottom: 0; }
+  .section p strong { color: #0d1b35; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: #d0e4f7; margin: 0 0 72px; }
+
+  /* HOW IT WORKS — 3-step row */
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 32px; }
+  .step { background: #fff; border: 1px solid #d0e4f7; border-radius: 16px; padding: 28px 24px; text-align: center; }
+  .step-num { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; font-size: 18px; font-weight: 900; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .step h3 { font-size: 15px; font-weight: 800; color: #0d1b35; margin-bottom: 8px; }
+  .step p { font-size: 13px; color: #3a5a7a; line-height: 1.6; margin: 0; }
+
+  /* WHAT'S IN REPORT — 2-col list */
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+  .report-item { display: flex; align-items: flex-start; gap: 12px; background: #fff; border: 1px solid #d0e4f7; border-radius: 12px; padding: 18px; }
+  .report-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(0,180,216,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .report-item-text h4 { font-size: 14px; font-weight: 800; color: #0d1b35; margin-bottom: 4px; }
+  .report-item-text p { font-size: 12px; color: #5a7a9a; line-height: 1.5; margin: 0; }
+
+  /* VALUES — horizontal pills */
+  .values { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 28px; }
+  .value-pill { background: #fff; border: 1px solid #d0e4f7; border-radius: 12px; padding: 18px 22px; display: flex; align-items: center; gap: 12px; }
+  .value-icon { font-size: 22px; }
+  .value-pill span { font-size: 14px; font-weight: 700; color: #0d1b35; }
+
+  /* QUOTE */
+  .quote-block { background: #1a3a6e; border-radius: 20px; padding: 48px 48px; color: #fff; text-align: center; margin-bottom: 72px; }
+  .quote-block blockquote { font-size: 22px; font-weight: 300; line-height: 1.65; color: rgba(255,255,255,0.9); font-style: italic; max-width: 620px; margin: 0 auto 24px; }
+  .quote-block blockquote strong { color: #00B4D8; font-style: normal; font-weight: 800; }
+  .quote-author { font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 0.5px; }
+
+  /* CTA */
+  .cta-block { background: #fff; border: 1px solid #d0e4f7; border-radius: 20px; padding: 56px 48px; text-align: center; box-shadow: 0 8px 40px rgba(26,58,110,0.08); }
+  .cta-block h2 { font-size: 28px; font-weight: 900; color: #0d1b35; margin-bottom: 12px; }
+  .cta-block p { color: #3a5a7a; font-size: 16px; margin-bottom: 28px; line-height: 1.6; }
+  .btn-primary { display: inline-block; background: linear-gradient(135deg, #00B4D8, #0090B0); color: #fff; padding: 16px 36px; border-radius: 12px; font-size: 16px; font-weight: 800; text-decoration: none; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.9; }
+  .cta-note { margin-top: 14px; font-size: 12px; color: #5a7a9a; }
+
+  /* FOOTER */
+  footer { background: #0d1b35; color: rgba(255,255,255,0.5); text-align: center; padding: 32px 20px; font-size: 12px; }
+  footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin: 0 10px; }
+  footer a:hover { color: #fff; }
+
+  /* RESPONSIVE */
+  @media (max-width: 700px) {
+    header { padding: 16px 20px; }
+    nav { display: none; }
+    .hamburger { display: block; }
+    .mobile-menu.open { display: flex; flex-direction: column; gap: 0; background: #1a3a6e; padding: 10px 20px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .mobile-menu a { color: #d0e8ff; text-decoration: none; font-size: 15px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .mobile-menu .lang-select { margin-top: 12px; }
+    .page-hero h1 { font-size: 32px; }
+    .page-hero p { font-size: 16px; }
+    main { padding: 48px 16px 80px; }
+    .steps { grid-template-columns: 1fr; }
+    .report-grid { grid-template-columns: 1fr; }
+    .values { flex-direction: column; }
+    .quote-block { padding: 36px 24px; }
+    .quote-block blockquote { font-size: 18px; }
+    .cta-block { padding: 36px 24px; }
+  }
+
+  /* LANGUAGE HIDDEN */
+  [lang-content] { display: none; }
+  [lang-content].active { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">Easy<span>Car</span>Check</a>
+  <nav>
+    <a href="/" data-i18n="nav_home">Accueil</a>
+    <a href="/apropos.html" data-i18n="nav_about" style="color:#fff; font-weight:700;">À propos</a>
+    <div class="lang-select">
+      <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+      <button class="lang-btn" onclick="setLang('de')">DE</button>
+      <button class="lang-btn" onclick="setLang('it')">IT</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+  </nav>
+  <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/">Accueil</a>
+  <a href="/apropos.html" style="font-weight:700;">À propos</a>
+  <div class="lang-select">
+    <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+    <button class="lang-btn" onclick="setLang('de')">DE</button>
+    <button class="lang-btn" onclick="setLang('it')">IT</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+</div>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="badge" id="hero-badge">🇨🇭 Fait en Suisse</div>
+  <h1 id="hero-title">Qui sommes-<span>nous</span>&nbsp;?</h1>
+  <p id="hero-sub">Un service indépendant, créé pour remettre l'acheteur dans une position de force face aux vendeurs.</p>
+</div>
+
+<main>
+
+  <!-- ORIGIN STORY -->
+  <section class="section">
+    <div class="section-label" id="label-story">Notre histoire</div>
+    <h2 id="title-story">L'achat d'une voiture d'occasion ne devrait pas être un pari.</h2>
+    <p id="p-story-1">En Suisse, le marché de l'occasion regorge d'annonces alléchantes — et de pièges discrets. Prix légèrement surévalué, kilométrage suspect, historique d'entretien lacunaire&nbsp;: il faut des heures de recherche et une vraie expertise mécanique pour évaluer sérieusement une voiture. La plupart des acheteurs n'ont ni l'un ni l'autre.</p>
+    <p id="p-story-2">EasyCarCheck est né de ce constat simple&nbsp;: <strong>l'information existe, mais elle est éparpillée.</strong> Côtes Eurotax, historiques de fiabilité, analyses de marché, spécificités de chaque modèle — tout est là, mais pas structuré pour l'acheteur lambda qui doit décider en quelques heures.</p>
+    <p id="p-story-3">Nous avons construit un service qui agrège ces données, les croise avec l'intelligence artificielle, et produit en 30 secondes un rapport d'analyse clair, factuel et actionnable — pour que chaque acheteur puisse aborder une négociation avec les bons arguments.</p>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section class="section">
+    <div class="section-label" id="label-how">Comment ça fonctionne</div>
+    <h2 id="title-how">Trois étapes. Trente secondes.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3 id="step1-title">Vous collez une URL</h3>
+        <p id="step1-text">AutoScout24, Ricardo, Tutti ou Anibis — on accepte les quatre grandes plateformes suisses d'annonces automobiles.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3 id="step2-title">L'IA analyse l'annonce</h3>
+        <p id="step2-text">Notre modèle lit les données de l'annonce, les compare aux références du marché et évalue chaque dimension&nbsp;: prix, fiabilité, entretien.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3 id="step3-title">Vous recevez le rapport</h3>
+        <p id="step3-text">Un PDF complet vous arrive par email en moins d'une minute&nbsp;: scores, red flags, checklist visite et prix de négociation suggéré.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- WHAT'S IN THE REPORT -->
+  <section class="section">
+    <div class="section-label" id="label-report">Le rapport</div>
+    <h2 id="title-report">Ce que contient chaque analyse</h2>
+    <div class="report-grid">
+      <div class="report-item">
+        <div class="report-icon">🎯</div>
+        <div class="report-item-text">
+          <h4 id="ri1-title">Score global</h4>
+          <p id="ri1-text">Une note sur 10 pour le prix, la fiabilité et l'entretien — avec un verdict clair&nbsp;: Acheter, Négocier ou Éviter.</p>
+        </div>
+      </div>
+      <div class="report-item">
+        <div class="report-icon">⚠️</div>
+        <div class="report-item-text">
+          <h4 id="ri2-title">Red flags</h4>
+          <p id="ri2-text">Les points d'attention identifiés sur l'annonce&nbsp;: données manquantes, anomalies, signaux faibles à vérifier.</p>
+        </div>
+      </div>
+      <div class="report-item">
+        <div class="report-icon">📋</div>
+        <div class="report-item-text">
+          <h4 id="ri3-title">Checklist de visite</h4>
+          <p id="ri3-text">Les éléments spécifiques à inspecter lors de la visite physique, adaptés au modèle et à son historique connu.</p>
+        </div>
+      </div>
+      <div class="report-item">
+        <div class="report-icon">💬</div>
+        <div class="report-item-text">
+          <h4 id="ri4-title">Conseil de négociation</h4>
+          <p id="ri4-text">Une fourchette de marché, un prix de négociation suggéré et les arguments pour l'obtenir.</p>
+        </div>
+      </div>
+      <div class="report-item">
+        <div class="report-icon">🔧</div>
+        <div class="report-item-text">
+          <h4 id="ri5-title">Coûts prévisionnels</h4>
+          <p id="ri5-text">Estimation des entretiens à prévoir et des taxes cantonales, pour évaluer le vrai coût de possession.</p>
+        </div>
+      </div>
+      <div class="report-item">
+        <div class="report-icon">📊</div>
+        <div class="report-item-text">
+          <h4 id="ri6-title">Position marché</h4>
+          <p id="ri6-text">Positionnement du prix par rapport à la fourchette actuelle du marché suisse pour ce modèle et ce kilométrage.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- VALUES -->
+  <section class="section">
+    <div class="section-label" id="label-values">Nos engagements</div>
+    <h2 id="title-values">Ce en quoi nous croyons</h2>
+    <p id="p-values">EasyCarCheck est un service indépendant&nbsp;: nous ne sommes affiliés à aucun vendeur, aucune plateforme d'annonces, aucun garage. Nous n'avons aucun intérêt à vous pousser à acheter ou à éviter une voiture précise. Notre seul objectif est que vous preniez la meilleure décision possible.</p>
+    <div class="values">
+      <div class="value-pill"><div class="value-icon">🔒</div><span id="v1">100% indépendant</span></div>
+      <div class="value-pill"><div class="value-icon">⚡</div><span id="v2">Résultat en &lt; 1 minute</span></div>
+      <div class="value-pill"><div class="value-icon">🇨🇭</div><span id="v3">Marché suisse uniquement</span></div>
+      <div class="value-pill"><div class="value-icon">📧</div><span id="v4">Rapport par email, à vie</span></div>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <div class="quote-block">
+    <blockquote id="quote-text">«&nbsp;Acheter une voiture d'occasion, c'est souvent la <strong>deuxième plus grande dépense</strong> après l'immobilier. Personne ne devrait le faire à l'aveugle.&nbsp;»</blockquote>
+    <div class="quote-author" id="quote-author">— L'équipe EasyCarCheck</div>
+  </div>
+
+  <!-- TECH (transparent, brief) -->
+  <section class="section">
+    <div class="section-label" id="label-tech">Technologie</div>
+    <h2 id="title-tech">Construit sur une IA de pointe</h2>
+    <p id="p-tech-1">Notre pipeline repose sur GPT-4o, le modèle d'OpenAI, combiné à une extraction en temps réel des données de l'annonce. Chaque rapport est généré à la demande — il n'y a pas de base de données statique&nbsp;: l'analyse reflète l'annonce telle qu'elle est au moment de votre requête.</p>
+    <p id="p-tech-2">Les données de marché sont actualisées régulièrement pour refléter les tendances du marché suisse de l'occasion. Le rapport est produit en PDF et envoyé par email via Resend, sans jamais stocker vos données personnelles au-delà du strict nécessaire à la livraison.</p>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CTA -->
+  <div class="cta-block">
+    <h2 id="cta-title">Prêt à analyser votre prochain achat&nbsp;?</h2>
+    <p id="cta-sub">Collez l'URL de n'importe quelle annonce suisse et recevez votre rapport complet par email.</p>
+    <a href="/" class="btn-primary" id="cta-btn">Lancer une analyse — dès 9 CHF</a>
+    <p class="cta-note" id="cta-note">AutoScout24 · Ricardo · Tutti · Anibis</p>
+  </div>
+
+</main>
+
+<footer>
+  <p style="margin-bottom: 10px;">
+    <a href="/">Accueil</a>
+    <a href="/apropos.html">À propos</a>
+    <a href="/Cgu.html">CGU</a>
+    <a href="/confidentialite.html">Confidentialité</a>
+    <a href="/mentions-legales.html">Mentions légales</a>
+  </p>
+  <p>© 2026 EasyCarCheck — Analyse IA de voitures d'occasion en Suisse</p>
+</footer>
+
+<script>
+// ─── TRANSLATIONS ────────────────────────────────────────────────────────────
+const T = {
+  fr: {
+    'hero-badge': '🇨🇭 Fait en Suisse',
+    'hero-title': 'Qui sommes-<span>nous</span>&nbsp;?',
+    'hero-sub': 'Un service indépendant, créé pour remettre l\'acheteur dans une position de force face aux vendeurs.',
+    'label-story': 'Notre histoire',
+    'title-story': 'L\'achat d\'une voiture d\'occasion ne devrait pas être un pari.',
+    'p-story-1': 'En Suisse, le marché de l\'occasion regorge d\'annonces alléchantes — et de pièges discrets. Prix légèrement surévalué, kilométrage suspect, historique d\'entretien lacunaire&nbsp;: il faut des heures de recherche et une vraie expertise mécanique pour évaluer sérieusement une voiture. La plupart des acheteurs n\'ont ni l\'un ni l\'autre.',
+    'p-story-2': 'EasyCarCheck est né de ce constat simple&nbsp;: <strong>l\'information existe, mais elle est éparpillée.</strong> Côtes Eurotax, historiques de fiabilité, analyses de marché, spécificités de chaque modèle — tout est là, mais pas structuré pour l\'acheteur lambda qui doit décider en quelques heures.',
+    'p-story-3': 'Nous avons construit un service qui agrège ces données, les croise avec l\'intelligence artificielle, et produit en 30 secondes un rapport d\'analyse clair, factuel et actionnable — pour que chaque acheteur puisse aborder une négociation avec les bons arguments.',
+    'label-how': 'Comment ça fonctionne',
+    'title-how': 'Trois étapes. Trente secondes.',
+    'step1-title': 'Vous collez une URL',
+    'step1-text': 'AutoScout24, Ricardo, Tutti ou Anibis — on accepte les quatre grandes plateformes suisses d\'annonces automobiles.',
+    'step2-title': 'L\'IA analyse l\'annonce',
+    'step2-text': 'Notre modèle lit les données de l\'annonce, les compare aux références du marché et évalue chaque dimension&nbsp;: prix, fiabilité, entretien.',
+    'step3-title': 'Vous recevez le rapport',
+    'step3-text': 'Un PDF complet vous arrive par email en moins d\'une minute&nbsp;: scores, red flags, checklist visite et prix de négociation suggéré.',
+    'label-report': 'Le rapport',
+    'title-report': 'Ce que contient chaque analyse',
+    'ri1-title': 'Score global', 'ri1-text': 'Une note sur 10 pour le prix, la fiabilité et l\'entretien — avec un verdict clair&nbsp;: Acheter, Négocier ou Éviter.',
+    'ri2-title': 'Red flags', 'ri2-text': 'Les points d\'attention identifiés sur l\'annonce&nbsp;: données manquantes, anomalies, signaux faibles à vérifier.',
+    'ri3-title': 'Checklist de visite', 'ri3-text': 'Les éléments spécifiques à inspecter lors de la visite physique, adaptés au modèle et à son historique connu.',
+    'ri4-title': 'Conseil de négociation', 'ri4-text': 'Une fourchette de marché, un prix de négociation suggéré et les arguments pour l\'obtenir.',
+    'ri5-title': 'Coûts prévisionnels', 'ri5-text': 'Estimation des entretiens à prévoir et des taxes cantonales, pour évaluer le vrai coût de possession.',
+    'ri6-title': 'Position marché', 'ri6-text': 'Positionnement du prix par rapport à la fourchette actuelle du marché suisse pour ce modèle et ce kilométrage.',
+    'label-values': 'Nos engagements',
+    'title-values': 'Ce en quoi nous croyons',
+    'p-values': 'EasyCarCheck est un service indépendant&nbsp;: nous ne sommes affiliés à aucun vendeur, aucune plateforme d\'annonces, aucun garage. Nous n\'avons aucun intérêt à vous pousser à acheter ou à éviter une voiture précise. Notre seul objectif est que vous preniez la meilleure décision possible.',
+    'v1': '100% indépendant', 'v2': 'Résultat en < 1 minute', 'v3': 'Marché suisse uniquement', 'v4': 'Rapport par email, à vie',
+    'quote-text': '«&nbsp;Acheter une voiture d\'occasion, c\'est souvent la <strong>deuxième plus grande dépense</strong> après l\'immobilier. Personne ne devrait le faire à l\'aveugle.&nbsp;»',
+    'quote-author': '— L\'équipe EasyCarCheck',
+    'label-tech': 'Technologie',
+    'title-tech': 'Construit sur une IA de pointe',
+    'p-tech-1': 'Notre pipeline repose sur GPT-4o, le modèle d\'OpenAI, combiné à une extraction en temps réel des données de l\'annonce. Chaque rapport est généré à la demande — il n\'y a pas de base de données statique&nbsp;: l\'analyse reflète l\'annonce telle qu\'elle est au moment de votre requête.',
+    'p-tech-2': 'Les données de marché sont actualisées régulièrement pour refléter les tendances du marché suisse de l\'occasion. Le rapport est produit en PDF et envoyé par email via Resend, sans jamais stocker vos données personnelles au-delà du strict nécessaire à la livraison.',
+    'cta-title': 'Prêt à analyser votre prochain achat&nbsp;?',
+    'cta-sub': 'Collez l\'URL de n\'importe quelle annonce suisse et recevez votre rapport complet par email.',
+    'cta-btn': 'Lancer une analyse — dès 9 CHF',
+    'cta-note': 'AutoScout24 · Ricardo · Tutti · Anibis',
+    'nav_home': 'Accueil', 'nav_about': 'À propos'
+  },
+  de: {
+    'hero-badge': '🇨🇭 Made in Switzerland',
+    'hero-title': 'Wer sind <span>wir</span>?',
+    'hero-sub': 'Ein unabhängiger Dienst, der Käufer gegenüber Verkäufern in eine stärkere Position bringt.',
+    'label-story': 'Unsere Geschichte',
+    'title-story': 'Den Kauf eines Gebrauchtwagens sollte kein Glücksspiel sein.',
+    'p-story-1': 'Der Schweizer Gebrauchtwagenmarkt ist voll verlockender Angebote — und versteckter Fallen. Leicht überhöhter Preis, verdächtige Laufleistung, lückenhafte Wartungshistorie&nbsp;: Es braucht stundenlange Recherche und echtes mechanisches Know-how, um ein Fahrzeug ernsthaft zu beurteilen.',
+    'p-story-2': 'EasyCarCheck entstand aus dieser einfachen Erkenntnis&nbsp;: <strong>Die Informationen existieren, sind aber verstreut.</strong> Eurotax-Bewertungen, Zuverlässigkeitshistorien, Marktanalysen — alles vorhanden, aber nicht für den normalen Käufer aufbereitet.',
+    'p-story-3': 'Wir haben einen Dienst aufgebaut, der diese Daten aggregiert, mit künstlicher Intelligenz verknüpft und in 30 Sekunden einen klaren, faktischen und umsetzbaren Analysebericht erstellt.',
+    'label-how': 'So funktioniert es',
+    'title-how': 'Drei Schritte. Dreißig Sekunden.',
+    'step1-title': 'URL einfügen',
+    'step1-text': 'AutoScout24, Ricardo, Tutti oder Anibis — wir akzeptieren die vier grossen Schweizer Fahrzeugbörsen.',
+    'step2-title': 'KI analysiert',
+    'step2-text': 'Unser Modell liest die Anzeigendaten, vergleicht sie mit Marktrichtwerten und bewertet jede Dimension&nbsp;: Preis, Zuverlässigkeit, Wartung.',
+    'step3-title': 'Bericht erhalten',
+    'step3-text': 'Ein vollständiges PDF kommt in weniger als einer Minute per E-Mail&nbsp;: Scores, Red Flags, Besichtigungs-Checkliste und empfohlener Verhandlungspreis.',
+    'label-report': 'Der Bericht',
+    'title-report': 'Was jede Analyse enthält',
+    'ri1-title': 'Gesamtbewertung', 'ri1-text': 'Eine Note von 10 für Preis, Zuverlässigkeit und Wartung — mit klarem Urteil&nbsp;: Kaufen, Verhandeln oder Meiden.',
+    'ri2-title': 'Red Flags', 'ri2-text': 'Identifizierte Auffälligkeiten in der Anzeige&nbsp;: fehlende Daten, Anomalien, schwache Signale zur Überprüfung.',
+    'ri3-title': 'Besichtigungs-Checkliste', 'ri3-text': 'Spezifische Punkte, die bei der physischen Besichtigung geprüft werden sollten, angepasst an das Modell.',
+    'ri4-title': 'Verhandlungsrat', 'ri4-text': 'Eine Marktbandbreite, ein empfohlener Verhandlungspreis und die Argumente dafür.',
+    'ri5-title': 'Voraussichtliche Kosten', 'ri5-text': 'Schätzung der zu erwartenden Wartungsarbeiten und kantonalen Steuern.',
+    'ri6-title': 'Marktposition', 'ri6-text': 'Einordnung des Preises in die aktuelle Marktbandbreite für dieses Modell und diese Laufleistung.',
+    'label-values': 'Unsere Werte',
+    'title-values': 'Woran wir glauben',
+    'p-values': 'EasyCarCheck ist ein unabhängiger Dienst&nbsp;: Wir sind keinem Verkäufer, keiner Plattform, keinem Händler angeschlossen. Unser einziges Ziel ist, dass Sie die bestmögliche Entscheidung treffen.',
+    'v1': '100% unabhängig', 'v2': 'Ergebnis in < 1 Minute', 'v3': 'Nur Schweizer Markt', 'v4': 'Bericht per E-Mail, für immer',
+    'quote-text': '«&nbsp;Ein Gebrauchtwagen zu kaufen ist oft die <strong>zweitgrösste Ausgabe</strong> nach dem Wohnen. Das sollte niemand blindlings tun.&nbsp;»',
+    'quote-author': '— Das EasyCarCheck-Team',
+    'label-tech': 'Technologie',
+    'title-tech': 'Gebaut auf modernster KI',
+    'p-tech-1': 'Unsere Pipeline basiert auf GPT-4o von OpenAI, kombiniert mit einer Echtzeit-Extraktion der Anzeigendaten. Jeder Bericht wird auf Anfrage generiert — es gibt keine statische Datenbank.',
+    'p-tech-2': 'Die Marktdaten werden regelmässig aktualisiert, um die Trends auf dem Schweizer Gebrauchtwagenmarkt widerzuspiegeln. Der Bericht wird als PDF per E-Mail über Resend versandt.',
+    'cta-title': 'Bereit, Ihren nächsten Kauf zu analysieren?',
+    'cta-sub': 'Fügen Sie die URL einer beliebigen Schweizer Anzeige ein und erhalten Sie Ihren vollständigen Bericht per E-Mail.',
+    'cta-btn': 'Analyse starten — ab 9 CHF',
+    'cta-note': 'AutoScout24 · Ricardo · Tutti · Anibis',
+    'nav_home': 'Startseite', 'nav_about': 'Über uns'
+  },
+  it: {
+    'hero-badge': '🇨🇭 Made in Switzerland',
+    'hero-title': 'Chi <span>siamo</span>?',
+    'hero-sub': 'Un servizio indipendente, creato per rimettere l\'acquirente in una posizione di forza rispetto ai venditori.',
+    'label-story': 'La nostra storia',
+    'title-story': 'Comprare un\'auto usata non dovrebbe essere una scommessa.',
+    'p-story-1': 'Il mercato dell\'usato svizzero è pieno di annunci allettanti — e di trappole discrete. Prezzo leggermente sopravvalutato, chilometraggio sospetto, storico di manutenzione lacunoso&nbsp;: ci vogliono ore di ricerca e una vera competenza meccanica per valutare seriamente un veicolo.',
+    'p-story-2': 'EasyCarCheck è nato da una semplice constatazione&nbsp;: <strong>le informazioni esistono, ma sono sparse.</strong> Quotazioni Eurotax, storici di affidabilità, analisi di mercato — tutto c\'è, ma non strutturato per l\'acquirente comune.',
+    'p-story-3': 'Abbiamo costruito un servizio che aggrega questi dati, li incrocia con l\'intelligenza artificiale e produce in 30 secondi un rapporto di analisi chiaro, fattuale e concreto.',
+    'label-how': 'Come funziona',
+    'title-how': 'Tre passi. Trenta secondi.',
+    'step1-title': 'Incollate un URL',
+    'step1-text': 'AutoScout24, Ricardo, Tutti o Anibis — accettiamo le quattro grandi piattaforme svizzere.',
+    'step2-title': 'L\'IA analizza l\'annuncio',
+    'step2-text': 'Il nostro modello legge i dati dell\'annuncio, li confronta con i riferimenti di mercato e valuta ogni dimensione&nbsp;: prezzo, affidabilità, manutenzione.',
+    'step3-title': 'Ricevete il rapporto',
+    'step3-text': 'Un PDF completo arriva per email in meno di un minuto&nbsp;: punteggi, red flag, checklist visita e prezzo di trattativa suggerito.',
+    'label-report': 'Il rapporto',
+    'title-report': 'Cosa contiene ogni analisi',
+    'ri1-title': 'Punteggio globale', 'ri1-text': 'Un voto su 10 per prezzo, affidabilità e manutenzione — con un verdetto chiaro&nbsp;: Acquistare, Trattare o Evitare.',
+    'ri2-title': 'Red flag', 'ri2-text': 'I punti di attenzione identificati nell\'annuncio&nbsp;: dati mancanti, anomalie, segnali deboli da verificare.',
+    'ri3-title': 'Checklist visita', 'ri3-text': 'Gli elementi specifici da ispezionare durante la visita fisica, adattati al modello e al suo storico.',
+    'ri4-title': 'Consiglio di trattativa', 'ri4-text': 'Una fascia di mercato, un prezzo di trattativa suggerito e gli argomenti per ottenerlo.',
+    'ri5-title': 'Costi previsionali', 'ri5-text': 'Stima della manutenzione prevista e delle tasse cantonali, per valutare il vero costo di possesso.',
+    'ri6-title': 'Posizione di mercato', 'ri6-text': 'Posizionamento del prezzo rispetto alla fascia attuale del mercato svizzero per questo modello e chilometraggio.',
+    'label-values': 'I nostri impegni',
+    'title-values': 'In cosa crediamo',
+    'p-values': 'EasyCarCheck è un servizio indipendente&nbsp;: non siamo affiliati ad alcun venditore, piattaforma o officina. Il nostro unico obiettivo è che prendiate la migliore decisione possibile.',
+    'v1': '100% indipendente', 'v2': 'Risultato in < 1 minuto', 'v3': 'Solo mercato svizzero', 'v4': 'Rapporto via email, per sempre',
+    'quote-text': '«&nbsp;Comprare un\'auto usata è spesso la <strong>seconda spesa più grande</strong> dopo l\'immobiliare. Nessuno dovrebbe farlo alla cieca.&nbsp;»',
+    'quote-author': '— Il team EasyCarCheck',
+    'label-tech': 'Tecnologia',
+    'title-tech': 'Costruito su IA all\'avanguardia',
+    'p-tech-1': 'La nostra pipeline si basa su GPT-4o di OpenAI, combinato con un\'estrazione in tempo reale dei dati dell\'annuncio. Ogni rapporto viene generato su richiesta — non esiste un database statico.',
+    'p-tech-2': 'I dati di mercato vengono aggiornati regolarmente per riflettere le tendenze del mercato svizzero dell\'usato. Il rapporto viene prodotto in PDF e inviato per email tramite Resend.',
+    'cta-title': 'Pronto ad analizzare il vostro prossimo acquisto?',
+    'cta-sub': 'Incollate l\'URL di qualsiasi annuncio svizzero e ricevete il vostro rapporto completo per email.',
+    'cta-btn': 'Avvia un\'analisi — da 9 CHF',
+    'cta-note': 'AutoScout24 · Ricardo · Tutti · Anibis',
+    'nav_home': 'Home', 'nav_about': 'Chi siamo'
+  },
+  en: {
+    'hero-badge': '🇨🇭 Made in Switzerland',
+    'hero-title': 'Who are <span>we</span>?',
+    'hero-sub': 'An independent service, built to put buyers back in a position of strength against sellers.',
+    'label-story': 'Our story',
+    'title-story': 'Buying a used car shouldn\'t be a gamble.',
+    'p-story-1': 'Switzerland\'s used car market is full of enticing listings — and hidden traps. Slightly inflated prices, suspicious mileage, incomplete service history&nbsp;: it takes hours of research and real mechanical expertise to seriously evaluate a vehicle. Most buyers have neither.',
+    'p-story-2': 'EasyCarCheck was born from a simple observation&nbsp;: <strong>the information exists, but it\'s scattered.</strong> Eurotax valuations, reliability histories, market analyses — it\'s all there, but not structured for the average buyer who has to decide in a few hours.',
+    'p-story-3': 'We built a service that aggregates this data, combines it with artificial intelligence, and produces in 30 seconds a clear, factual and actionable analysis report — so every buyer can enter a negotiation with the right arguments.',
+    'label-how': 'How it works',
+    'title-how': 'Three steps. Thirty seconds.',
+    'step1-title': 'Paste a URL',
+    'step1-text': 'AutoScout24, Ricardo, Tutti or Anibis — we support all four major Swiss automotive platforms.',
+    'step2-title': 'AI analyses the listing',
+    'step2-text': 'Our model reads the listing data, compares it to market benchmarks and evaluates each dimension: price, reliability, maintenance.',
+    'step3-title': 'You receive the report',
+    'step3-text': 'A complete PDF arrives by email in under a minute&nbsp;: scores, red flags, visit checklist and suggested negotiation price.',
+    'label-report': 'The report',
+    'title-report': 'What every analysis contains',
+    'ri1-title': 'Overall score', 'ri1-text': 'A rating out of 10 for price, reliability and maintenance — with a clear verdict&nbsp;: Buy, Negotiate or Avoid.',
+    'ri2-title': 'Red flags', 'ri2-text': 'Attention points identified in the listing&nbsp;: missing data, anomalies, weak signals to verify.',
+    'ri3-title': 'Visit checklist', 'ri3-text': 'Specific elements to inspect during the physical visit, adapted to the model and its known history.',
+    'ri4-title': 'Negotiation advice', 'ri4-text': 'A market range, a suggested negotiation price and the arguments to achieve it.',
+    'ri5-title': 'Projected costs', 'ri5-text': 'Estimated upcoming maintenance and cantonal taxes, to assess the true cost of ownership.',
+    'ri6-title': 'Market position', 'ri6-text': 'Positioning of the price against the current Swiss market range for this model and mileage.',
+    'label-values': 'Our commitments',
+    'title-values': 'What we believe in',
+    'p-values': 'EasyCarCheck is an independent service&nbsp;: we are affiliated with no seller, no listing platform, no garage. We have no interest in pushing you to buy or avoid any specific car. Our only goal is for you to make the best possible decision.',
+    'v1': '100% independent', 'v2': 'Result in < 1 minute', 'v3': 'Swiss market only', 'v4': 'Email report, kept forever',
+    'quote-text': '«&nbsp;Buying a used car is often the <strong>second-largest purchase</strong> after real estate. No one should do it blindly.&nbsp;»',
+    'quote-author': '— The EasyCarCheck team',
+    'label-tech': 'Technology',
+    'title-tech': 'Built on cutting-edge AI',
+    'p-tech-1': 'Our pipeline is built on GPT-4o by OpenAI, combined with real-time extraction of listing data. Each report is generated on demand — there is no static database&nbsp;: the analysis reflects the listing as it exists at the time of your request.',
+    'p-tech-2': 'Market data is regularly updated to reflect trends in the Swiss used car market. The report is produced as a PDF and sent by email via Resend, without ever storing your personal data beyond what is strictly necessary for delivery.',
+    'cta-title': 'Ready to analyse your next purchase?',
+    'cta-sub': 'Paste the URL of any Swiss listing and receive your complete report by email.',
+    'cta-btn': 'Start an analysis — from CHF 9',
+    'cta-note': 'AutoScout24 · Ricardo · Tutti · Anibis',
+    'nav_home': 'Home', 'nav_about': 'About'
+  }
+};
+
+// ─── LANGUAGE SWITCH ─────────────────────────────────────────────────────────
+let currentLang = localStorage.getItem('ecc-lang') || 'fr';
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('ecc-lang', lang);
+  document.documentElement.lang = lang;
+
+  // Update lang buttons
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent === lang.toUpperCase());
+  });
+
+  // Update all translatable elements
+  const t = T[lang] || T.fr;
+  for (const [id, text] of Object.entries(t)) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = text;
+  }
+
+  // Update nav link text
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (t[key]) el.textContent = t[key];
+  });
+
+  // Update CTA href (stays /)
+  const ctaBtn = document.getElementById('cta-btn');
+  if (ctaBtn) ctaBtn.href = '/';
+}
+
+// ─── MOBILE MENU ─────────────────────────────────────────────────────────────
+function toggleMenu() {
+  const m = document.getElementById('mobileMenu');
+  m.classList.toggle('open');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+setLang(currentLang);
+</script>
+</body>
+</html>
