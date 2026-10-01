@@ -430,11 +430,11 @@ Contenu: ${scrapedData.html}${equipmentSection}
   * PROBLÈME LIÉ À L'USAGE INTENSIF (circuit, launch control, mauvais entretien) → formuler clairement ex: "Risque de rupture de bielle S55 si usage intensif du launch control ou circuit — vérifier historique d'utilisation avec le vendeur"
   * NE JAMAIS mettre des généralités vagues comme "usure normale des freins" ou "capteurs de stationnement défaillants" sauf si c'est vraiment documenté sur ce modèle
   * FOCUS sur les problèmes COÛTEUX (>500 CHF de réparation) et FRÉQUENTS sur ce modèle spécifique
-  * Exemples de bonne formulation :
-    - "Turbo IHI défaillant à haut kilométrage — remplacement ~2500-4000 CHF (RS3 8V 2.5 TFSI, problème fréquent)"
-    - "Boîte DSG7 DQ200 qui surchauffe en usage urbain intensif — révision ~2000-3500 CHF (Golf GTI/R Mk7)"
-    - "Chaîne de distribution N55 qui s'étire prématurément — remplacement ~1500-2500 CHF (BMW M135i F20)"
-    - "Injecteurs défaillants S63 — remplacement ~3000-5000 CHF (BMW M5 F10, problème systématique)"
+  * Exemples de bonne formulation (ne jamais copier ces exemples — ils sont là pour illustrer le format uniquement) :
+    - "[Composant] défaillant à haut kilométrage — remplacement ~XXXX-XXXX CHF ([modèle exact analysé], problème fréquent)"
+    - "[Composant] qui surchauffe en usage intensif — révision ~XXXX-XXXX CHF ([modèle exact analysé])"
+    - "[Composant] qui s'étire prématurément — remplacement ~XXXX-XXXX CHF ([modèle exact analysé])"
+  * RÈGLE ABSOLUE : utilise l'année exacte du véhicule pour déterminer la génération (ex: RS3 2021+ = châssis 8Y, RS3 2011-2020 = châssis 8V). Les problèmes doivent correspondre à la génération réelle du véhicule analysé, pas à une autre génération du même modèle.
     - "Suspension pneumatique défaillante — ~2000-4000 CHF par essieu (Range Rover Sport)"
     - "Boîte 9G-Tronic fragile en usage sportif intensif — révision ~3000-5000 CHF (Mercedes C63/C63S W205, surtout si conduite sur circuit ou usage intensif)"
     - "Consommation huile M177 4.0 V8 biturbo — surtout si conduite sportive intensive, surveiller niveau entre vidanges (Mercedes C63S W205)"
