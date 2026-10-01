@@ -119,6 +119,7 @@
   .stat:last-child { border-right: none; }
   .stat-num { font-size: 38px; font-weight: 900; color: #0090B0; }
   .stat-label { color: #3a5a7a; font-size: 13px; margin-top: 4px; font-weight: 600; }
+  .flag-mobile { display: none; }
 
   /* HOW IT WORKS */
   .how { padding: 80px 20px; text-align: center; background: #f0f6ff; }
@@ -252,6 +253,7 @@
     .stat:nth-child(odd) { border-right: 1px solid #d0e4f7; }
     .stat:nth-child(3), .stat:nth-child(4) { border-bottom: none; }
     .stat-num { font-size: 26px; }
+    .flag-mobile { display: inline; }
     .stat-label { font-size: 10px; }
     .how { padding: 24px 0 20px; }
     .how h2 { font-size: 18px; margin-bottom: 4px; padding: 0 16px; }
@@ -391,10 +393,10 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat1">Temps d'analyse</div></div>
-  <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat2">Langues disponibles</div></div>
-  <div class="stat"><div class="stat-num">9 CHF</div><div class="stat-label" id="stat3">Dès</div></div>
-  <div class="stat"><div class="stat-num">100%</div><div class="stat-label" id="stat4">Marché suisse</div></div>
+  <div class="stat"><div class="stat-num">⚡ 30s</div><div class="stat-label" id="stat1">Temps d'analyse</div></div>
+  <div class="stat"><div class="stat-num">🌍 4</div><div class="stat-label" id="stat2">Langues disponibles</div></div>
+  <div class="stat"><div class="stat-num">💰 9 CHF</div><div class="stat-label" id="stat3">Dès</div></div>
+  <div class="stat"><div class="stat-num"><span class="flag-mobile">🇨🇭 </span>100%</div><div class="stat-label" id="stat4">Marché suisse</div></div>
 </div>
 
 <div class="how" id="how">
@@ -473,6 +475,7 @@
       <a href="mailto:hello@easycarcheck.ch?subject=Mon avis EasyCarCheck" class="avis-cta-btn" id="avis-cta-btn">✍️ Laisser un avis</a>
     </div>
   </div>
+</div>
 
 <div class="faq" id="faq">
   <h2 id="faq-title">Questions fréquentes</h2>
