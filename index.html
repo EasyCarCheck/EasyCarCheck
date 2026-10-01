@@ -164,6 +164,8 @@
   .pricing h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; color: #0d1b35; }
   .pricing-sub { color: #3a5a7a; margin-bottom: 50px; font-size: 16px; }
   .pricing-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
+  .pricing-carousel { display: none; }
+  .pricing-carousel-dots { display: none; }
   .pricing-card { background: #fff; border: 1px solid #d0e4f7; border-radius: 20px; padding: 32px 24px; width: 220px; position: relative; transition: transform 0.2s; box-shadow: 0 4px 16px rgba(26,58,110,0.06); }
   .pricing-card:hover { transform: translateY(-4px); }
   .pricing-card.popular { border: 2px solid #1a3a6e; }
@@ -430,33 +432,7 @@
 
 <div class="testimonials">
   <h2 id="test-title">Ce que disent nos clients</h2>
-  <p class="testimonials-sub" id="test-sub">Des économies réelles grâce à EasyCarCheck</p>
-  <div class="testimonials-grid">
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t1-text">"J'allais acheter une BMW M135i à 28'000 CHF. EasyCarCheck m'a alerté sur un problème de chaîne de distribution. J'ai négocié à 25'500 CHF. 2'500 CHF économisés !"</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">ML</div>
-        <div><div class="testimonial-name">Marc L.</div><div class="testimonial-location">Genève, CH</div></div>
-      </div>
-    </div>
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t2-text">"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">SF</div>
-        <div><div class="testimonial-name">Sophie F.</div><div class="testimonial-location">Lausanne, CH</div></div>
-      </div>
-    </div>
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t3-text">"J'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d'occasion."</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">AT</div>
-        <div><div class="testimonial-name">Alessandro T.</div><div class="testimonial-location">Lugano, CH</div></div>
-      </div>
-    </div>
-  </div>
+  <p class="testimonials-sub" id="test-sub">Soyez parmi les premiers à laisser un avis</p>
 </div>
 
 <div class="faq" id="faq">
@@ -657,10 +633,10 @@
   const translations = {
     fr: {
       'hero-badge': '⭐ Analyse IA · Marché Suisse · Résultat en 30 secondes',
-      'hero-h1': 'Analysez n\'importe quelle<br><span id="hero-span">voiture d\'occasion</span> en Suisse',
       'hero-p': "Collez le lien de l'annonce AutoScout24, Ricardo, Tutti ou Anibis et obtenez une analyse complète avec score, red flags et prix de négociation.",
       'promo-text': '🔥 Offre de lancement — 9 CHF au lieu de 12 CHF',
-      'promo-sub': 'Pendant 7 jours seulement · Code automatiquement appliqué',
+      'promo-sub': 'Offre de lancement · Code automatiquement appliqué',
+      'hero-h1': 'Analysez n\'importe quelle<br><span id="hero-span">voiture d\'occasion</span> en Suisse',
       'form-title': '🔍 Analysez votre annonce', 'btn-analyse': 'Analyser →',
       'form-hint': '⚡ Résultat gratuit en 30 secondes · Sans inscription',
       'stat1': 'Rapports générés', 'stat2': 'Satisfaction client', 'stat3': "Temps d'analyse", 'stat4': 'Langues disponibles',
@@ -668,7 +644,7 @@
       'step1-title': 'Collez le lien', 'step1-desc': "Copiez l'URL de n'importe quelle annonce AutoScout24, Ricardo, Tutti ou Anibis.",
       'step2-title': "L'IA analyse", 'step2-desc': "Notre IA scrape l'annonce, analyse le prix, la fiabilité et détecte les red flags en 30 secondes.",
       'step3-title': 'Recevez le rapport', 'step3-desc': 'Un rapport PDF complet avec score, verdict, checklist visite et prix de négociation suggéré.',
-      'test-title': 'Ce que disent nos clients', 'test-sub': 'Des économies réelles grâce à EasyCarCheck',
+      'test-title': 'Ce que disent nos clients', 'test-sub': 'Soyez parmi les premiers à laisser un avis',
       't1-text': '"J\'allais acheter une BMW M135i à 28\'000 CHF. EasyCarCheck m\'a alerté sur un problème de chaîne de distribution. J\'ai négocié à 25\'500 CHF. 2\'500 CHF économisés !"',
       't2-text': '"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."',
       't3-text': '"J\'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d\'occasion."',
@@ -694,9 +670,9 @@
     },
     de: {
       'hero-badge': '⭐ KI-Analyse · Schweizer Markt · Ergebnis in 30 Sekunden',
-      'hero-h1': 'Analysieren Sie jeden<br><span id="hero-span">Gebrauchtwagen</span> in der Schweiz',
       'hero-p': 'Fügen Sie den Link einer AutoScout24, Ricardo, Tutti oder Anibis-Anzeige ein und erhalten Sie eine vollständige Analyse.',
-      'promo-text': '🔥 Einführungsangebot — 9 CHF statt 12 CHF', 'promo-sub': 'Nur 7 Tage · Automatisch angewendet',
+      'promo-text': '🔥 Einführungsangebot — 9 CHF statt 12 CHF', 'promo-sub': 'Einführungsangebot · Automatisch angewendet',
+      'hero-h1': 'Analysieren Sie jeden<br><span id="hero-span">Gebrauchtwagen</span> in der Schweiz',
       'form-title': '🔍 Anzeige analysieren', 'btn-analyse': 'Analysieren →',
       'form-hint': '⚡ Kostenloses Ergebnis in 30 Sekunden · Ohne Registrierung',
       'stat1': 'Berichte erstellt', 'stat2': 'Kundenzufriedenheit', 'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen',
@@ -704,7 +680,7 @@
       'step1-title': 'Link einfügen', 'step1-desc': 'Kopieren Sie die URL einer beliebigen AutoScout24, Ricardo, Tutti oder Anibis-Anzeige.',
       'step2-title': 'KI analysiert', 'step2-desc': 'Unsere KI analysiert die Anzeige, vergleicht den Preis und erkennt Red Flags in 30 Sekunden.',
       'step3-title': 'Bericht erhalten', 'step3-desc': 'Ein vollständiger PDF-Bericht mit Score, Urteil, Besichtigungscheckliste und empfohlenem Verhandlungspreis.',
-      'test-title': 'Was unsere Kunden sagen', 'test-sub': 'Echte Einsparungen dank EasyCarCheck',
+      'test-title': 'Was unsere Kunden sagen', 'test-sub': 'Seien Sie unter den Ersten, die eine Bewertung hinterlassen',
       't1-text': '"Ich wollte einen BMW M135i für 28\'000 CHF kaufen. EasyCarCheck warnte mich vor einem Steuerkettenproblem. Ich habe auf 25\'500 CHF verhandelt. 2\'500 CHF gespart!"',
       't2-text': '"Ultradetaillierter Bericht für 12 CHF. Das PDF ist wirklich professionell."',
       't3-text': '"Ich habe 5 Autos mit dem Pack verglichen. Analyse in 30 Sekunden, Red Flags klar angezeigt."',
@@ -730,9 +706,9 @@
     },
     it: {
       'hero-badge': '⭐ Analisi IA · Mercato Svizzero · Risultato in 30 secondi',
-      'hero-h1': 'Analizza qualsiasi<br><span id="hero-span">auto usata</span> in Svizzera',
       'hero-p': "Incolla il link dell'annuncio AutoScout24, Ricardo, Tutti o Anibis e ottieni un'analisi completa.",
-      'promo-text': '🔥 Offerta di lancio — 9 CHF invece di 12 CHF', 'promo-sub': 'Solo 7 giorni · Applicato automaticamente',
+      'promo-text': '🔥 Offerta di lancio — 9 CHF invece di 12 CHF', 'promo-sub': 'Offerta di lancio · Applicato automaticamente',
+      'hero-h1': 'Analizza qualsiasi<br><span id="hero-span">auto usata</span> in Svizzera',
       'form-title': '🔍 Analizza il tuo annuncio', 'btn-analyse': 'Analizza →',
       'form-hint': '⚡ Risultato gratuito in 30 secondi · Senza registrazione',
       'stat1': 'Rapporti generati', 'stat2': 'Soddisfazione cliente', 'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili',
@@ -740,7 +716,7 @@
       'step1-title': 'Incolla il link', 'step1-desc': "Copia l'URL di qualsiasi annuncio AutoScout24, Ricardo, Tutti o Anibis.",
       'step2-title': "L'IA analizza", 'step2-desc': "La nostra IA analizza l'annuncio, confronta il prezzo e rileva i red flag in 30 secondi.",
       'step3-title': 'Ricevi il rapporto', 'step3-desc': 'Un rapporto PDF completo con punteggio, verdetto, checklist visita e prezzo di negoziazione suggerito.',
-      'test-title': 'Cosa dicono i nostri clienti', 'test-sub': 'Risparmi reali grazie a EasyCarCheck',
+      'test-title': 'Cosa dicono i nostri clienti', 'test-sub': 'Siate tra i primi a lasciare una recensione',
       't1-text': '"Stavo per comprare una BMW M135i a 28\'000 CHF. EasyCarCheck mi ha avvisato di un problema. Ho negoziato a 25\'500 CHF. 2\'500 CHF risparmiati!"',
       't2-text': '"Rapporto ultra completo per 12 CHF. Il PDF è davvero professionale."',
       't3-text': '"Ho confrontato 5 auto con il pack. Analisi in 30 secondi, red flag chiaramente indicati."',
@@ -766,9 +742,9 @@
     },
     en: {
       'hero-badge': '⭐ AI Analysis · Swiss Market · Result in 30 seconds',
-      'hero-h1': 'Analyze any<br><span id="hero-span">used car</span> in Switzerland',
       'hero-p': 'Paste the link of any AutoScout24, Ricardo, Tutti or Anibis listing and get a complete analysis.',
       'promo-text': '🔥 Launch offer — 9 CHF instead of 12 CHF', 'promo-sub': 'Launch offer · Automatically applied',
+      'hero-h1': 'Analyze any<br><span id="hero-span">used car</span> in Switzerland',
       'form-title': '🔍 Analyze your listing', 'btn-analyse': 'Analyze →',
       'form-hint': '⚡ Free result in 30 seconds · No registration required',
       'stat1': 'Reports generated', 'stat2': 'Customer satisfaction', 'stat3': 'Analysis time', 'stat4': 'Available languages',
@@ -776,7 +752,7 @@
       'step1-title': 'Paste the link', 'step1-desc': 'Copy the URL of any AutoScout24, Ricardo, Tutti or Anibis listing.',
       'step2-title': 'AI analyzes', 'step2-desc': 'Our AI analyzes the listing, compares the price and detects red flags in 30 seconds.',
       'step3-title': 'Receive the report', 'step3-desc': 'A complete PDF report with score, verdict, visit checklist and suggested negotiation price.',
-      'test-title': 'What our customers say', 'test-sub': 'Real savings thanks to EasyCarCheck',
+      'test-title': 'What our customers say', 'test-sub': 'Be among the first to leave a review',
       't1-text': '"I was about to buy a BMW M135i for 28\'000 CHF. EasyCarCheck warned me about a timing chain issue. I negotiated down to 25\'500 CHF. 2\'500 CHF saved!"',
       't2-text': '"Ultra-complete report for 12 CHF. The PDF is truly professional."',
       't3-text': '"I compared 5 cars with the pack. Analysis in 30 seconds, red flags clearly indicated."',
@@ -813,7 +789,7 @@
       if (el) {
         if (id === 'placeholder') { document.getElementById('urlInput').placeholder = t[id]; }
         else if (id === 'hero-h1') { el.innerHTML = t[id]; }
-        else { el.textContent = t[id]; }
+          else { el.textContent = t[id]; }
       }
     });
     document.documentElement.lang = langue;
