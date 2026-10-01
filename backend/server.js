@@ -369,27 +369,39 @@ function traduireOption(opt) {
 // ─── RECHERCHE TAVILY ────────────────────────────────────
 async function rechercherInfosVehicule(marque, modele, annee) {
   try {
+    // Requête 1 : prix marché suisse
+    // Requête 2 : problèmes connus documentés sur forums et rappels constructeurs
+    // On fait 2 requêtes en parallèle (limite plan gratuit Tavily)
     const queries = [
-      `${marque} ${modele} ${annee} problèmes fiabilité défauts fréquents`,
-      `${marque} ${modele} ${annee} prix marché occasion suisse`
+      `${marque} ${modele} ${annee} prix marché occasion suisse`,
+      `${marque} ${modele} problèmes connus défauts récurrents rappel constructeur forum`
     ];
     const results = await Promise.all(queries.map(q =>
       axios.post('https://api.tavily.com/search', {
         api_key: process.env.TAVILY_API_KEY,
         query: q,
         search_depth: 'basic',
-        max_results: 3,
+        max_results: 5,
         include_answer: true
       }, { timeout: 10000 })
     ));
-    const fiabilite = results[0].data.answer || '';
-    const prix = results[1].data.answer || '';
-    return `DONNÉES WEB RÉCENTES SUR CE VÉHICULE (sources fiables) :
-- Fiabilité/problèmes documentés : ${fiabilite}
-- Prix marché occasion suisse : ${prix}`;
+    const prix = results[0].data.answer || '';
+    const problemesRaw = results[1].data.answer || '';
+    // Extraire aussi les snippets des résultats pour plus de détails
+    const problemesSnippets = (results[1].data.results || [])
+      .map(r => r.content || r.snippet || '')
+      .filter(Boolean)
+      .slice(0, 3)
+      .join(' | ');
+    const problemes = problemesRaw || problemesSnippets || '';
+
+    return {
+      prix: prix,
+      problemesDocumentes: problemes
+    };
   } catch (e) {
     console.log('Tavily erreur (non bloquant):', e.message);
-    return '';
+    return { prix: '', problemesDocumentes: '' };
   }
 }
 
@@ -426,19 +438,31 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     const annee = anneeMatch?.[0] || '';
     console.log('Tavily extraction :', marque, modele, annee);
     if (marque && modele) {
-      tavilyContext = await rechercherInfosVehicule(marque, modele, annee);
-      if (tavilyContext) console.log('Tavily OK :', marque, modele, annee);
+      const tavilyResult = await rechercherInfosVehicule(marque, modele, annee);
+      tavilyContext = tavilyResult;
+      if (tavilyResult.prix || tavilyResult.problemesDocumentes) console.log('Tavily OK :', marque, modele, annee);
       else console.log('Tavily vide (non bloquant)');
     } else {
       console.log('Tavily skip — marque/modele non trouvés');
+      tavilyContext = { prix: '', problemesDocumentes: '' };
     }
   } catch(e) {
     console.log('Tavily extraction erreur:', e.message);
+    tavilyContext = { prix: '', problemesDocumentes: '' };
   }
 
-  const tavilySection = tavilyContext
-    ? `\n\n${tavilyContext}\nUTILISE ces données web en priorité pour les problèmes de fiabilité et le prix marché. Si elles contredisent ta connaissance interne, fais confiance aux données web.\n`
-    : '';
+  const tavilyPrix = tavilyContext?.prix || '';
+  const tavilyProblemes = tavilyContext?.problemesDocumentes || '';
+
+  const tavilySection = (tavilyPrix || tavilyProblemes)
+    ? `\n\nDONNÉES WEB RÉELLES SUR CE VÉHICULE :
+- Prix marché occasion suisse (données web) : ${tavilyPrix || 'non trouvé'}
+- PROBLÈMES DOCUMENTÉS SUR FORUMS ET SOURCES OFFICIELLES : ${tavilyProblemes || 'aucun problème documenté trouvé'}
+
+RÈGLES STRICTES :
+1. Pour le prix marché : utilise ces données web en priorité sur ta connaissance interne.
+2. Pour "problemes_connus_modele" : utilise UNIQUEMENT les problèmes listés ci-dessus. NE JAMAIS inventer ou ajouter des problèmes de ta propre connaissance. Si "aucun problème documenté trouvé" → retourne un tableau VIDE []. Un problème non documenté par des sources réelles ne doit JAMAIS apparaître dans le rapport.\n`
+    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE. Pour "problemes_connus_modele" : retourne un tableau VIDE [] — ne jamais inventer de problèmes.\n`;
 
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
@@ -546,7 +570,7 @@ Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur 
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
-- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives). Chaque point doit être PRÉCIS et CHIFFRÉ si possible (ex: "Entretien ~1 200 CHF/an hors free service" plutôt que "Coûts d'entretien élevés"). Si le véhicule est encore sous free service, NE PAS mentionner les coûts d'entretien comme point négatif.
+- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives). Chaque point doit être PRÉCIS et CHIFFRÉ si possible. Si le véhicule est encore sous free service (BMW/Audi/Mercedes/Volvo dont année+10 > 2026 ET km < 100000), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : entre 2 et 5 éléments selon le modèle
