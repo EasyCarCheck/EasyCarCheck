@@ -402,18 +402,35 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     ? `\n\nDONNÉES STRUCTURÉES EXTRAITES (priorité sur le texte brut) :\n${scrapedData.equipmentData}`
     : '';
 
-  // Extraire marque/modele/annee rapidement pour Tavily
+  // Extraire marque/modele/annee pour Tavily — depuis le titre de la page ou le début du texte
   let tavilyContext = '';
   try {
-    const marqueMatch = scrapedData.html.match(/("make"|"marque"|"Marke")[^"]*"([^"]+)"/i);
-    const modeleMatch = scrapedData.html.match(/("model"|"modele"|"Modell")[^"]*"([^"]+)"/i);
-    const anneeMatch = scrapedData.html.match(/\b(20\d{2}|19\d{2})\b/);
-    const marque = marqueMatch?.[2] || '';
-    const modele = modeleMatch?.[2] || '';
+    const html = scrapedData.html || '';
+    // Cherche marque/modele dans les premières 3000 chars du HTML scrappé
+    const snippet = html.substring(0, 3000);
+    const marquePatterns = ['Audi', 'BMW', 'Mercedes', 'Volkswagen', 'VW', 'Porsche', 'Ferrari', 'Lamborghini', 'Toyota', 'Honda', 'Ford', 'Renault', 'Peugeot', 'Citroën', 'Volvo', 'Skoda', 'Seat', 'Kia', 'Hyundai', 'Mazda', 'Subaru', 'Mitsubishi', 'Nissan', 'Opel', 'Fiat', 'Alfa Romeo', 'Lancia', 'Maserati', 'Bentley', 'Rolls-Royce', 'Jaguar', 'Land Rover', 'Range Rover', 'Mini', 'Smart', 'Tesla', 'Lexus', 'Infiniti', 'Acura', 'Genesis', 'Aston Martin', 'McLaren', 'Bugatti', 'Koenigsegg', 'Pagani'];
+    let marque = '';
+    let modele = '';
+    for (const m of marquePatterns) {
+      const idx = snippet.toLowerCase().indexOf(m.toLowerCase());
+      if (idx !== -1) {
+        marque = m;
+        // Prend les mots qui suivent comme modele (jusqu'à 4 mots)
+        const after = snippet.substring(idx + m.length).trim();
+        const modelWords = after.match(/^([A-Za-zÀ-ú0-9]{1,15}(?:\s+[A-Za-zÀ-ú0-9]{1,15}){0,2})/);
+        modele = modelWords?.[1]?.trim() || '';
+        break;
+      }
+    }
+    const anneeMatch = snippet.match(/\b(20[012]\d|19[89]\d)\b/);
     const annee = anneeMatch?.[0] || '';
+    console.log('Tavily extraction :', marque, modele, annee);
     if (marque && modele) {
       tavilyContext = await rechercherInfosVehicule(marque, modele, annee);
       if (tavilyContext) console.log('Tavily OK :', marque, modele, annee);
+      else console.log('Tavily vide (non bloquant)');
+    } else {
+      console.log('Tavily skip — marque/modele non trouvés');
     }
   } catch(e) {
     console.log('Tavily extraction erreur:', e.message);
@@ -688,7 +705,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
 
   // 3. Verdict EVITER automatique si prix dépasse fourchette de plus de 15%
   if (fourchMax > 0 && prixDemande > fourchMax * 1.15) {
-    parsed.verdict = 'EVITER';
+    parsed.verdict = 'ÉVITER';
     parsed.score_prix = Math.min(parsed.score_prix, 3);
     parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
     if (!parsed.resume_verdict) parsed.resume_verdict = 'Prix demandé nettement au-dessus de la valeur marché.';
