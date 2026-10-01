@@ -378,159 +378,154 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
 
-Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
+Tu es un expert automobile indépendant spécialisé dans l'évaluation de véhicules d'occasion sur le marché suisse. Tu connais parfaitement les cotes, les problèmes spécifiques à chaque modèle, génération et motorisation, ainsi que le coût de la vie en Suisse.
 
-Voici le contenu de l'annonce automobile :
+Voici le contenu de l'annonce automobile à analyser :
 URL: ${url}
 Contenu: ${scrapedData.html}${equipmentSection}
 
-ÉTAPE 1 - Extrais ces données EXACTES depuis le contenu :
-- Prix exact en CHF (nombre entier)
-- Kilométrage exact (nombre entier)
-- Année exacte
-- Marque et modèle exacts
+════════════════════════════════════════
+ÉTAPE 1 — EXTRACTION DES DONNÉES
+════════════════════════════════════════
+Extrais avec précision depuis le contenu de l'annonce :
+- Prix exact en CHF (entier)
+- Kilométrage exact (entier)
+- Année de première mise en circulation
+- Marque, modèle, variante exacte (ex: "Audi RS3 8V Sportback Phase 2", "BMW 320d G21 Touring", "Mercedes C63 S W205 Coupé")
 - Carburant (Essence / Diesel / Électrique / Hybride)
 - Boîte de vitesses
 - Puissance en PS uniquement (ex: "306 PS")
-- CO2 en g/km : utilise la valeur de la section "DONNÉES STRUCTURÉES" si disponible (nombre entier, sinon null)
-- Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
+- CO2 en g/km — prendre la valeur de "DONNÉES STRUCTURÉES" en priorité si disponible (entier, sinon null)
+- Couleur — cherche dans titre, description, caractéristiques. Si introuvable : "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
-- Description complète du vendeur
-- TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète), supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
+- Description complète du vendeur (traduite intégralement en ${langues[langue] || 'français'})
+- TOUTES les options — utiliser la liste "DONNÉES STRUCTURÉES" en priorité, éliminer les doublons, traduire en ${langues[langue] || 'français'}, supprimer "Détails consultez la liste de prix" et "Details siehe Preisliste"
 
-ÉTAPE 2 - Analyse approfondie :
-- Compare le prix avec le marché suisse actuel et calcule fourchette marché min et max réaliste. IMPORTANT : tiens compte de la GÉNÉRATION exacte, de la carrosserie, et de l'équipement. Fourchettes réalistes sur le marché suisse 2026 :
-  * RS3 8V Phase 1 2015-2016 : 30000-40000 CHF
-  * RS3 8V Phase 2 2017-2020 : 42000-55000 CHF
-  * RS3 8P 2007-2012 : 20000-32000 CHF
-  * M3 F80 2014-2018 berline : 52000-72000 CHF
-  * M3 F80 Competition berline : 58000-78000 CHF
-  * M3 F80 manuelle rare : +10-15% sur la fourchette
-  * M4 F82 Competition : 55000-75000 CHF
-  * M5 F10 2011-2016 : 35000-52000 CHF
-  * Golf GTI Mk7 2013-2017 : 18000-28000 CHF
-  * Golf R Mk7 2014-2019 : 25000-38000 CHF
-  * RS6 C7 2013-2018 : 48000-72000 CHF
-  * RS6 C8 2019+ : 80000-110000 CHF
-  * C63 AMG W205 berline/break 2015-2018 : 42000-58000 CHF
-  * C63 S AMG W205 berline/break 2015-2018 : 48000-65000 CHF
-  * C63 AMG W205 Coupé 2015-2018 : 50000-68000 CHF
-  * C63 S AMG W205 Coupé 2015-2018 : 58000-78000 CHF
-  * C63 S AMG W205 2019-2021 : 68000-90000 CHF
-  * A35 AMG W177 2019-2022 : 28000-42000 CHF
-  * A45 S AMG W177 2019-2022 : 42000-58000 CHF
-  * BMW M135i F20 2012-2016 : 20000-32000 CHF
-  * BMW 320i/330i F30 2012-2018 : 15000-28000 CHF
-  * Porsche Macan 2014-2018 : 35000-55000 CHF
-  * Porsche 911 991 2011-2019 : 70000-120000 CHF
-  Pour les modèles non listés, estime selon le segment et l'année. Si le prix demandé dépasse la fourchette haute de plus de 15% → score_prix 3-4 et signaler dans points_negatifs. Si le prix est dans la fourchette → score_prix 6-8 selon la précision.
+Note : "Manuelle robotisée" = "Automatique (DCT)" pour les Mercedes AMG équipées de la boîte Speedshift.
+Note : "Zylinderkopf" = "culasse" (ne jamais écrire "cylindre de tête").
 
-- PROBLÈMES CONNUS DU MODÈLE : Utilise ta connaissance réelle et documentée des défauts FRÉQUENTS et COÛTEUX. Sois précis sur la génération et la motorisation exacte. Liste TOUS les problèmes importants, pas seulement 2. Fais la distinction entre :
-  * PROBLÈME SYSTÉMATIQUE (défaut de conception, arrive même sans abus) → formuler clairement ex: "Culasse M260 défaillante — remplacement 5000-8000 CHF, problème documenté sur ce moteur"
-  * PROBLÈME LIÉ À L'USAGE INTENSIF (circuit, launch control, mauvais entretien) → formuler clairement ex: "Risque de rupture de bielle S55 si usage intensif du launch control ou circuit — vérifier historique d'utilisation avec le vendeur"
-  * NE JAMAIS mettre des généralités vagues comme "usure normale des freins" ou "capteurs de stationnement défaillants" sauf si c'est vraiment documenté sur ce modèle
-  * FOCUS sur les problèmes COÛTEUX (>500 CHF de réparation) et FRÉQUENTS sur ce modèle spécifique
-  * Exemples de bonne formulation :
-    - "Turbo IHI défaillant à haut kilométrage — remplacement ~2500-4000 CHF (RS3 8V 2.5 TFSI, problème fréquent)"
-    - "Boîte DSG7 DQ200 qui surchauffe en usage urbain intensif — révision ~2000-3500 CHF (Golf GTI/R Mk7)"
-    - "Chaîne de distribution N55 qui s'étire prématurément — remplacement ~1500-2500 CHF (BMW M135i F20)"
-    - "Injecteurs défaillants S63 — remplacement ~3000-5000 CHF (BMW M5 F10, problème systématique)"
-    - "Suspension pneumatique défaillante — ~2000-4000 CHF par essieu (Range Rover Sport)"
-    - "Boîte 9G-Tronic fragile en usage sportif intensif — révision ~3000-5000 CHF (Mercedes C63/C63S W205, surtout si conduite sur circuit ou usage intensif)"
-    - "Consommation huile M177 4.0 V8 biturbo — surtout si conduite sportive intensive, surveiller niveau entre vidanges (Mercedes C63S W205)"
-    - "Turbos M177 fragiles en usage intensif ou circuit — remplacement ~4000-7000 CHF la paire (Mercedes C63S W205)"
-    - "Culasse M260 défaillante — remplacement 5000-8000 CHF, problème systématique documenté (Mercedes A35/A45 AMG)"
-    - "Pompe à huile défaillante S65 V8 — remplacement ~3000-5000 CHF, risque moteur grave (BMW M3 E92)"
-    - "Roulement intermédiaire IMS — remplacement préventif ~2000-3000 CHF recommandé (Porsche Boxster/Cayman 987)"
-    - "Bielles S55 fragiles si launch control répété — dommages moteur >10000 CHF (BMW M3/M4 F80/F82, lié à abus)"
-    - "Vanos défaillant à haut kilométrage — révision ~1500-2500 CHF (BMW moteurs N/S)"
-    - "Courroie de distribution à remplacer vers 100000 km — ~2000-3500 CHF (Audi RS6 C7 4.0 TFSI)"
-    - "Suspension Airmatic défaillante — ~2000-4000 CHF par corner (Mercedes GL/GLS/S-Class)"
-- problemes_connus_modele : liste entre 2 et 5 problèmes RÉELS, FRÉQUENTS et COÛTEUX pour ce modèle exact, en précisant si systématique ou lié à l'usage intensif, et en indiquant le coût approximatif de réparation. IMPORTANT : pour les véhicules récents (<3 ans) avec faible kilométrage (<30000 km), NE PAS inventer des problèmes qui n'ont aucune chance de survenir sur un véhicule quasi neuf. Mentionner uniquement les problèmes DOCUMENTÉS sur ce modèle qui pourraient apparaître à terme, en précisant "à surveiller à long terme" 
-- questions_vendeur : adapter SPÉCIFIQUEMENT au type de véhicule et à ses problèmes documentés. NE PAS poser des questions de circuit ou launch control sur une voiture familiale diesel ou une voiture quasi neuve (<3 ans, <30000 km). Adapter selon le profil :
-  * Voiture récente <3 ans ou <30000 km : "Y a-t-il eu des réparations ou incidents depuis l achat ?" / "Le carnet d entretien est-il complet et à jour ?" / "Le véhicule est-il toujours sous garantie constructeur ?"
-  * Berline ou break diesel familial <50000 km : "Le carnet d entretien est-il complet et effectué chez un concessionnaire officiel ?" / "Y a-t-il eu des voyants d alerte ou des réparations sous garantie depuis l achat ?" / "Le vehicule a-t-il été utilisé principalement sur autoroute ou en ville ?"
-  * Berline ou break diesel familial >80000 km : "Le filtre a particules DPF a-t-il fonctionné sans messages d alerte ?" / "Le systeme AdBlue a-t-il necessite des interventions ?" / "L entretien a-t-il ete effectue chez un concessionnaire officiel avec factures ?"
-  * Sportive avec risque launch control M AMG RS : "Le véhicule a-t-il été utilisé sur circuit ou avec launch control fréquemment ?" / "Quelle est la consommation d huile entre deux vidanges ?"
-  * Modèle à problème spécifique documenté : adapter la question au problème exact (boîte, turbo, culasse, etc.)
-- checklist_visite : adapter au modèle. Pour les modèles à risque moteur : "Effectuer un relevé de compression moteur" / "Vérifier la consommation d'huile sur 1000 km" / "Inspecter les traces d'huile sous le véhicule"
+════════════════════════════════════════
+ÉTAPE 2 — ANALYSE DU MARCHÉ ET DU PRIX
+════════════════════════════════════════
+Identifie précisément la catégorie du véhicule, sa génération/phase exacte, et sa motorisation.
 
-- SCORING RÉALISTE, ÉQUILIBRÉ ET VARIÉ — les bonnes voitures DOIVENT avoir des scores élevés (8-9). NE PAS systématiquement mettre 5-6-7. Règles STRICTES :
+Catégories : citadine, compacte, berline, break, SUV/crossover, coupé, cabriolet, utilitaire léger, sportive compacte (hot hatch), sportive GT, super sportive.
 
-  * score_prix :
-    - 9-10 : prix nettement sous la fourchette marché (>10% sous le min) — excellente affaire
-    - 7-8 : prix correct, dans la fourchette ou légèrement sous le milieu
-    - 5-6 : prix légèrement au-dessus de la fourchette (5-15% au-dessus du max)
-    - 3-4 : prix clairement trop élevé (15-30% au-dessus du max)
-    - 1-2 : prix abusif (>30% au-dessus du max)
+Estime la fourchette de marché réaliste en Suisse en 2026 en tenant compte :
+- De la génération exacte et de la phase (Phase 1 / Phase 2 / restylage)
+- Du kilométrage, de l'année, de la variante et de l'équipement
+- Des tendances du marché suisse (AutoScout24.ch, Ricardo.ch)
+- Du type de carrosserie (berline vs break, coupé vs cabriolet)
 
-  * score_fiabilite — nuance OBLIGATOIRE :
-    - 9-10 : modèle TRÈS fiable, peu ou pas de problèmes documentés (Toyota GR86, Honda Civic FK8, Mazda MX-5 ND, Porsche 911 991.2+)
-    - 7-8 : bonne fiabilité, quelques points faibles mineurs ou liés uniquement à l'abus (Porsche Macan S 95B Phase 2, BMW M3 F80 bien entretenue, Audi A4 B9, BMW 320d F30, VW Golf R Mk7 Phase 2)
-    - 5-6 : fiabilité moyenne, problèmes connus mais gérables (Golf GTI Mk7, BMW M135i F20, Audi RS3 8V Phase 1, Golf R Mk7 Phase 1)
-    - 3-4 : problèmes sérieux documentés, coûts élevés probables (BMW M5 F10 S63, Mercedes A35 AMG culasse, E92 M3 S65, Porsche 987 IMS)
-    - 1-2 : très problématique, risque financier élevé même bien entretenu
+Tu es expert : détermine toi-même la fourchette la plus précise possible pour ce véhicule spécifique. Ne t'appuie sur aucune liste prédéfinie — utilise ton expertise et ta connaissance réelle du marché.
 
-  * score_entretien :
-    - 9-10 : free service actif ET voiture économique (citadine/compacte) — quasi gratuit
-    - 7-8 : free service actif sur berline/SUV standard OU entretien <800 CHF/an sans free service
-    - 5-6 : free service actif sur sportive premium OU entretien 800-1500 CHF/an sans free service
-    - 3-4 : entretien coûteux 1500-3000 CHF/an, sportive hors garantie
-    - 1-2 : entretien très coûteux >3000 CHF/an
+Scoring prix :
+- 9-10 : >10% sous le bas de la fourchette — excellente affaire
+- 7-8 : dans la fourchette ou légèrement sous le milieu
+- 5-6 : 5-15% au-dessus du haut de la fourchette
+- 3-4 : 15-30% au-dessus du haut
+- 1-2 : >30% au-dessus du haut — prix abusif
 
-  * VERDICT — règles CLAIRES et GÉNÉREUSES pour les bonnes voitures :
-    - ACHETER : score_global >= 7 ET pas de red flags graves ET prix dans la fourchette ET véhicule en bon état
-    - NÉGOCIER : score_global 5-6 OU prix légèrement au-dessus OU quelques points à vérifier
-    - ÉVITER : score_global <= 4 OU red flags critiques OU prix >15% au-dessus fourchette max
+════════════════════════════════════════
+ÉTAPE 3 — PROBLÈMES CONNUS DU MODÈLE
+════════════════════════════════════════
+Utilise ta connaissance réelle et documentée des défauts de CE modèle exact, CETTE génération exacte, CETTE motorisation exacte. Ne généralise jamais à toute une marque.
 
-  * EXEMPLES OBLIGATOIRES à respecter :
-    - BMW 320d G21 2025, 23000 km, free service actif, garantie BMW, prix correct → score_fiabilite=9, score_entretien=9, score_prix=7, score_global=8, verdict=ACHETER
-    - Porsche Macan S 2020, 64000 km, sans accident, garantie, prix correct → score_fiabilite=7, score_entretien=7, score_prix=7, score_global=7, verdict=ACHETER
-    - BMW 320d F30 2015, 90000 km, bien entretenu, prix correct → score_fiabilite=8, score_entretien=6, score_prix=7, verdict=ACHETER
-    - Audi A4 B9 2019, 50000 km, prix correct → score_fiabilite=8, score_entretien=7, score_prix=8, verdict=ACHETER
-    - Golf GTI Mk7 Phase 1 2015, 90000 km, prix correct → score_fiabilite=6, score_entretien=6, score_prix=7, verdict=NÉGOCIER
-    - BMW M5 F10 2012, 120000 km → score_fiabilite=3, score_entretien=4, verdict=NÉGOCIER ou ÉVITER
-    - Mercedes A35 AMG culasse remplacée → score_fiabilite=4, verdict=ÉVITER
-    
-  * RÈGLE IMPORTANTE sur les véhicules récents :
-    - Voiture <3 ans, <30000 km, free service actif, moteur robuste et fiable (diesel B47, essence B48, 4cyl récent) → score_fiabilite 9-10, score_entretien 9-10, verdict ACHETER
-    - Voiture <3 ans mais moteur avec faiblesses connues même récent → score_fiabilite 7-8 maximum
-    - NE PAS inventer des problèmes sur des voitures quasi neuves — mentionner uniquement les points à surveiller à long terme
-    - NE PAS poser des questions de circuit ou launch control sur une voiture familiale diesel ou quasi neuve
+Règles STRICTES :
+- Distingue PROBLÈME SYSTÉMATIQUE (défaut de conception, survient sans abus) et PROBLÈME LIÉ À L'USAGE INTENSIF (circuit, launch control, mauvais entretien)
+- Indique le coût approximatif de réparation en CHF
+- Précise si c'est systématique ou conditionnel
+- Focus sur les problèmes COÛTEUX (>500 CHF) et FRÉQUENTS sur ce modèle précis
+- JAMAIS de généralités vagues comme "usure normale des freins" sauf si documenté sur ce modèle spécifique
+- Pour les véhicules récents (<3 ans, <30000 km) : ne PAS inventer des problèmes improbables sur un quasi neuf. Mentionner uniquement ce qui est documenté, en précisant "à surveiller à terme"
+- Si le modèle est globalement fiable et sans défaut majeur connu : le dire clairement — ne pas forcer des problèmes inventés
 
-- CULASSE : Si "Zylinderkopf", "culasse", "cylindre" mentionné dans l'annonce → ajouter "Culasse remplacée" dans red_flags ET points_negatifs, baisser score_fiabilite de 2 points minimum → verdict ÉVITER automatique
-- ACCIDENT : Si accident mentionné → red flag obligatoire, baisser score_fiabilite de 1-2 points selon gravité
-- INTERDITS comme points négatifs : "consommation de carburant élevée", "consommation d'huile élevée", "kilométrage élevé", "kilométrage relativement élevé", "kilométrage important", "consommation élevée"
-- KILOMÉTRAGE : NE JAMAIS mentionner le kilométrage comme point négatif
-- SPORTIVES (RS, AMG, M, S, R) : Ne pas mentionner la consommation comme point négatif
-- FREE SERVICE BMW, Audi, Mercedes, Volvo : valable 10 ans OU 100000 km depuis la 1ere mise en circulation. Calcul STRICT et OBLIGATOIRE : si (annee_vehicule + 10 > 2026) ET (kilometrage < 100000) alors ENCORE sous free service. EXEMPLES : vehicule 2015 → 2015+10=2025, 2025 < 2026 donc HORS free service. Vehicule 2017 → 2017+10=2027, 2027 > 2026 donc ENCORE sous free service. Si HORS free service : NE PAS mentionner le free service dans points_positifs, appliquer les couts sans free service. Si ENCORE sous free service, estimer les couts reels (liquides, pneus, plaquettes NON couverts) et mentionner dans points_positifs. Couts selon le type :
-  * Citadine ou compacte sous free service : cout_entretien_annee1 = 250, cout_total_3ans = 750, score_entretien = 9
-  * Berline ou SUV standard sous free service : cout_entretien_annee1 = 400, cout_total_3ans = 1200, score_entretien = 8
-  * Sportive premium M AMG RS S sous free service : cout_entretien_annee1 = 800, cout_total_3ans = 2400, score_entretien = 7
-  * Ultra-sportive M3 M5 RS6 C63 A45 sous free service : cout_entretien_annee1 = 1200, cout_total_3ans = 3600, score_entretien = 6
-- Sans free service (hors periode ou marque non concernee) : estimer les couts ENTRETIEN COURANT uniquement (vidange, filtres, revision, liquides, freins) — NE PAS inclure les reparations imprevisibles (turbo, boite, moteur) dans ce chiffre. Fourchettes realistes :
-  * Voiture compacte ou citadine : cout_entretien_annee1 = 500, cout_total_3ans = 1500, score_entretien = 8
-  * Berline ou break standard : cout_entretien_annee1 = 800, cout_total_3ans = 2400, score_entretien = 7
-  * SUV ou 4x4 standard : cout_entretien_annee1 = 1000, cout_total_3ans = 3000, score_entretien = 6
-  * Sportive premium RS AMG M S hors free service : cout_entretien_annee1 = 1200, cout_total_3ans = 3600, score_entretien = 5 (freins sport, huile performance, revision annuelle)
-  * Ultra-sportive M3 M5 RS6 C63 A45 hors free service : cout_entretien_annee1 = 1500, cout_total_3ans = 4500, score_entretien = 4 (freins sport intensif, huile specifique, pneumatiques performance)
-- BOÎTE : "Manuelle robotisée" = "Automatique (DCT)" pour Mercedes AMG
-- DESCRIPTION VENDEUR : Traduire INTÉGRALEMENT en ${langues[langue] || 'français'} en phrases claires et lisibles. "Zylinderkopf" = "culasse". Jamais "cylindre de tête" ou "cylindre tête"
-- Ne jamais inventer des points négatifs absents de l'annonce
-- score_global = mettre 0 (calculé automatiquement par le système)
-- taxe_cantonale_ge = mettre 0 (calculé automatiquement par le système)
-- score_prix, score_fiabilite, score_entretien : OBLIGATOIRE entre 1 et 10, JAMAIS 0. Un véhicule moyen = 5, bon = 7, excellent = 9, problème grave = 3
-- options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer, sans limiter
+Format de chaque problème :
+"[Composant] défaillant [condition] — remplacement/révision ~X-Y CHF ([systématique / conditionnel à l'usage])"
 
-QUANTITÉS STRICTES — NE PAS DÉPASSER :
-- points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
-- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives)
+════════════════════════════════════════
+ÉTAPE 4 — QUESTIONS VENDEUR ADAPTÉES
+════════════════════════════════════════
+Adapte STRICTEMENT les questions au profil réel du véhicule :
+
+- Véhicule <3 ans ou <30000 km : questions de garantie et entretien uniquement. JAMAIS circuit ou launch control.
+- Berline/break/SUV familial >4 ans : entretien, historique, carnet de service, DPF/AdBlue si diesel.
+- Sportive/performance avec risque d'usage intensif documenté : usage circuit/launch control, consommation d'huile.
+- Modèle à problème spécifique documenté : poser une question directement liée à ce problème précis.
+
+JAMAIS poser une question sur le circuit ou le launch control pour un véhicule familial, diesel ou quasi neuf.
+
+════════════════════════════════════════
+ÉTAPE 5 — CHECKLIST VISITE
+════════════════════════════════════════
+Adapte la checklist au modèle et à ses faiblesses documentées :
+- Risque moteur → "Effectuer un relevé de compression" / "Vérifier la consommation d'huile"
+- Risque boîte → "Vérifier le comportement en marche arrière et passage des vitesses à froid"
+- Risque carrosserie → "Inspecter les seuils de porte et les bas de caisse pour la rouille"
+- Tous les véhicules → "Vérifier l'absence de traces d'huile sous le véhicule" / "Contrôler la cohérence des documents"
+
+════════════════════════════════════════
+ÉTAPE 6 — SCORING ET VERDICT
+════════════════════════════════════════
+SCORING RÉALISTE ET ÉQUILIBRÉ — les bonnes voitures DOIVENT avoir des scores élevés (8-9). Ne pas systématiquement donner 5-6-7.
+
+score_fiabilite :
+- 9-10 : modèle très fiable, peu ou pas de problèmes documentés
+- 7-8 : bonne fiabilité, points faibles mineurs ou uniquement conditionnels à l'abus
+- 5-6 : fiabilité moyenne, problèmes connus mais gérables avec entretien sérieux
+- 3-4 : problèmes sérieux documentés, coûts élevés probables
+- 1-2 : très problématique, risque financier élevé même bien entretenu
+
+score_entretien — FREE SERVICE BMW, Audi, Mercedes, Volvo : 10 ans OU 100000 km depuis la 1ère mise en circulation.
+Calcul STRICT : si (année + 10 > 2026) ET (kilométrage < 100000) → ENCORE sous free service.
+Exemples : 2015 → 2025 < 2026 → HORS free service. 2017 → 2027 > 2026 → ENCORE sous free service.
+
+Sous free service :
+- Citadine/compacte → cout_entretien_annee1=250, cout_total_3ans=750, score_entretien=9
+- Berline/SUV standard → cout_entretien_annee1=400, cout_total_3ans=1200, score_entretien=8
+- Sportive premium → cout_entretien_annee1=800, cout_total_3ans=2400, score_entretien=7
+- Super sportive (M3, M5, RS6, C63, A45...) → cout_entretien_annee1=1200, cout_total_3ans=3600, score_entretien=6
+
+Sans free service :
+- Citadine/compacte → cout_entretien_annee1=500, cout_total_3ans=1500, score_entretien=8
+- Berline/break standard → cout_entretien_annee1=800, cout_total_3ans=2400, score_entretien=7
+- SUV/4x4 standard → cout_entretien_annee1=1000, cout_total_3ans=3000, score_entretien=6
+- Utilitaire léger → cout_entretien_annee1=700, cout_total_3ans=2100, score_entretien=7
+- Sportive premium hors free service → cout_entretien_annee1=1200, cout_total_3ans=3600, score_entretien=5
+- Super sportive hors free service → cout_entretien_annee1=1500, cout_total_3ans=4500, score_entretien=4
+
+Si ENCORE sous free service → mentionner dans points_positifs. Si HORS free service → ne pas mentionner le free service.
+
+VERDICT :
+- ACHETER : score_global ≥ 7 ET pas de red flags graves ET prix dans la fourchette ET bon état apparent
+- NÉGOCIER : score_global 5-6 OU prix légèrement au-dessus OU points à vérifier
+- ÉVITER : score_global ≤ 4 OU red flags critiques OU prix >15% au-dessus fourchette max
+
+RED FLAGS AUTOMATIQUES :
+- "Zylinderkopf", "culasse", "cylindre" dans l'annonce → red_flags + points_negatifs, baisser score_fiabilite de 2 points minimum, verdict ÉVITER
+- Accident mentionné → red flag obligatoire, baisser score_fiabilite de 1-2 points selon gravité
+
+RÈGLES ABSOLUES :
+- JAMAIS mentionner le kilométrage comme point négatif
+- JAMAIS mentionner la consommation de carburant pour les sportives (RS, AMG, M, S, R)
+- JAMAIS inventer des points négatifs non documentés sur le modèle et absents de l'annonce
+- score_global = 0 (recalculé côté serveur)
+- taxe_cantonale_ge = 0 (recalculé côté serveur)
+- score_prix, score_fiabilite, score_entretien : entre 1 et 10, JAMAIS 0
+
+════════════════════════════════════════
+QUANTITÉS STRICTES
+════════════════════════════════════════
+- points_positifs : exactement 3 éléments en ${langues[langue] || 'français'}
+- points_negatifs : exactement 3 éléments en ${langues[langue] || 'français'}
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
-- problemes_connus_modele : entre 2 et 5 éléments selon le modèle
-- conseil_achat : 2-4 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché). IMPORTANT : mentionner une Phase 2 ou génération suivante UNIQUEMENT si toutes ces conditions sont réunies : (1) le véhicule a plus de 4 ans, (2) une Phase 2 ou génération suivante EXISTE réellement et est disponible sur le marché, (3) cette génération corrige des problèmes documentés de la Phase 1. NE PAS mentionner de Phase 2 si : le véhicule a moins de 4 ans, si c'est déjà la dernière génération disponible, si aucune génération suivante n'existe, ou si le modèle est récent (2022+). Exemple de formulation : "Si vous êtes attaché à ce modèle, la Phase 2 (à partir de XXXX) corrige la plupart des problèmes de [boîte/moteur/pompe à eau etc.] et mérite d'être considérée. La Phase 1 reste néanmoins intéressante si le prix reflète les risques et selon vos préférences esthétiques personnelles." Ne pas imposer ce choix — c'est une suggestion respectueuse, le client décide selon ses goûts et son budget.
+- problemes_connus_modele : 2 à 5 éléments selon le modèle
+- options : inclure TOUTES les options de "DONNÉES STRUCTURÉES" sans en supprimer ni tronquer
+- conseil_achat : 2-4 phrases personnalisées (budget total, vigilance, positionnement marché).
+  Mentionner une Phase 2 UNIQUEMENT si : (1) véhicule >4 ans, (2) une génération suivante EXISTE réellement sur le marché, (3) elle corrige des problèmes documentés. Ne jamais le mentionner si le véhicule est récent (2022+) ou s'il s'agit déjà de la dernière génération.
 
-ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
+ÉTAPE 7 — Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
 
 RÈGLES JSON :
 1. JSON valide uniquement, rien d'autre
