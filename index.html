@@ -115,10 +115,10 @@
 
   /* STATS */
   .stats { display: flex; justify-content: center; align-items: stretch; background: #fff; border-top: 1px solid #d0e4f7; border-bottom: 1px solid #d0e4f7; }
-  .stat { display: flex; align-items: center; gap: 14px; padding: 24px 44px; border-right: 1px solid #d0e4f7; flex: 1; }
+  .stat { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 40px; border-right: 1px solid #d0e4f7; flex: 1; text-align: center; }
   .stat:last-child { border-right: none; }
-  .stat-num { font-size: 32px; font-weight: 900; color: #0090B0; white-space: nowrap; line-height: 1; flex-shrink: 0; }
-  .stat-label { color: #3a5a7a; font-size: 13px; font-weight: 600; line-height: 1.35; }
+  .stat-label { color: #3a5a7a; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .stat-num { font-size: 36px; font-weight: 900; color: #0090B0; line-height: 1; }
   .stat-emoji { display: none; }
 
   /* HOW IT WORKS */
@@ -249,12 +249,12 @@
     .pack-buttons { flex-direction: column; }
     .pack-btn { width: 100%; text-align: center; }
     .stats { display: grid; grid-template-columns: 1fr 1fr; }
-    .stat { flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 4px; padding: 20px 10px; border-right: none; border-bottom: 1px solid #d0e4f7; max-width: 100%; }
+    .stat { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 18px 8px; border-right: none; border-bottom: 1px solid #d0e4f7; max-width: 100%; gap: 2px; }
     .stat:nth-child(odd) { border-right: 1px solid #d0e4f7; }
     .stat:nth-child(3), .stat:nth-child(4) { border-bottom: none; }
-    .stat-emoji { display: block; font-size: 28px; line-height: 1; margin-bottom: 4px; }
-    .stat-num { font-size: 24px; }
-    .stat-label { font-size: 11px; }
+    .stat-emoji { display: block; font-size: 24px; line-height: 1; margin-bottom: 4px; }
+    .stat-num { font-size: 22px; }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
     .how { padding: 24px 0 20px; }
     .how h2 { font-size: 18px; margin-bottom: 4px; padding: 0 16px; }
     .how > p { font-size: 12px; margin-bottom: 14px; padding: 0 16px; }
@@ -393,10 +393,10 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><span class="stat-emoji">⚡</span><div class="stat-num">30s</div><div class="stat-label" id="stat1">Analyse</div></div>
-  <div class="stat"><span class="stat-emoji">🌍</span><div class="stat-num">4</div><div class="stat-label" id="stat2">Langues</div></div>
-  <div class="stat"><span class="stat-emoji">💳</span><div class="stat-num">9 CHF</div><div class="stat-label" id="stat3">Dès</div></div>
-  <div class="stat"><span class="stat-emoji">🇨🇭</span><div class="stat-num">100%</div><div class="stat-label" id="stat4">Suisse</div></div>
+  <div class="stat"><span class="stat-emoji">⚡</span><div class="stat-label" id="stat1">Analyse</div><div class="stat-num">30s</div></div>
+  <div class="stat"><span class="stat-emoji">🌍</span><div class="stat-label" id="stat2">Langues</div><div class="stat-num">4</div></div>
+  <div class="stat"><span class="stat-emoji">💳</span><div class="stat-label" id="stat3">Dès</div><div class="stat-num">9 CHF</div></div>
+  <div class="stat"><span class="stat-emoji">🇨🇭</span><div class="stat-label" id="stat4">Suisse</div><div class="stat-num">100%</div></div>
 </div>
 
 <div class="how" id="how">
