@@ -163,6 +163,8 @@
   .pricing { padding: 80px 20px; text-align: center; background: #f0f6ff; }
   .pricing h2 { font-size: 36px; font-weight: 900; margin-bottom: 10px; color: #0d1b35; }
   .pricing-sub { color: #3a5a7a; margin-bottom: 50px; font-size: 16px; }
+  .pricing-carousel { display: none; }
+  .pricing-carousel-dots { display: none; }
   .pricing-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
   .pricing-card { background: #fff; border: 1px solid #d0e4f7; border-radius: 20px; padding: 32px 24px; width: 220px; position: relative; transition: transform 0.2s; box-shadow: 0 4px 16px rgba(26,58,110,0.06); }
   .pricing-card:hover { transform: translateY(-4px); }
@@ -327,7 +329,7 @@
   <div class="form-box">
     <div class="promo-banner">
       <span id="promo-text">🔥 Offre de lancement — 9 CHF au lieu de 12 CHF</span>
-      <small id="promo-sub">Pendant 7 jours seulement · Code automatiquement appliqué</small>
+      <small id="promo-sub">Offre de lancement · Code automatiquement appliqué</small>
     </div>
     <h2 id="form-title">🔍 Analysez votre annonce</h2>
     <div class="url-input-wrapper">
@@ -366,7 +368,7 @@
       </div>
       <div class="unlock-box">
         <h3 id="unlock-title">🔓 Débloquez le rapport complet</h3>
-        <p id="unlock-desc">Score détaillé, red flags, problèmes connus du modèle, checklist visite, questions vendeur, taxe cantonale GE, prix de négociation suggéré — envoyé en PDF par email.</p>
+        <p id="unlock-desc">Score détaillé, red flags, problèmes connus du modèle, checklist visite, questions vendeur, taxe cantonale selon votre canton, prix de négociation suggéré — envoyé en PDF par email.</p>
         <div class="pack-buttons">
           <button class="pack-btn primary" onclick="payerRapport('single')" id="btn-single">1 rapport — 9 CHF</button>
           <button class="pack-btn secondary" onclick="payerRapport('pack3')" id="btn-pack3">Pack 3 — 27 CHF</button>
@@ -378,10 +380,10 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">500+</div><div class="stat-label" id="stat1">Rapports générés</div></div>
-  <div class="stat"><div class="stat-num">4.9/5</div><div class="stat-label" id="stat2">Satisfaction client</div></div>
+  <div class="stat"><div class="stat-num" style="font-size:18px;line-height:1.3;">🚀 Nouveau</div><div class="stat-label" id="stat1">Lancement 2026</div></div>
   <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat3">Temps d'analyse</div></div>
   <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat4">Langues disponibles</div></div>
+  <div class="stat"><div class="stat-num">🇨🇭</div><div class="stat-label">Service basé en Suisse</div></div>
 </div>
 
 <div class="how" id="how">
@@ -430,31 +432,12 @@
 
 <div class="testimonials">
   <h2 id="test-title">Ce que disent nos clients</h2>
-  <p class="testimonials-sub" id="test-sub">Des économies réelles grâce à EasyCarCheck</p>
-  <div class="testimonials-grid">
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t1-text">"J'allais acheter une BMW M135i à 28'000 CHF. EasyCarCheck m'a alerté sur un problème de chaîne de distribution. J'ai négocié à 25'500 CHF. 2'500 CHF économisés !"</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">ML</div>
-        <div><div class="testimonial-name">Marc L.</div><div class="testimonial-location">Genève, CH</div></div>
-      </div>
-    </div>
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t2-text">"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">SF</div>
-        <div><div class="testimonial-name">Sophie F.</div><div class="testimonial-location">Lausanne, CH</div></div>
-      </div>
-    </div>
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t3-text">"J'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d'occasion."</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">AT</div>
-        <div><div class="testimonial-name">Alessandro T.</div><div class="testimonial-location">Lugano, CH</div></div>
-      </div>
+  <p class="testimonials-sub" id="test-sub">Votre avis compte pour nous</p>
+  <div class="testimonials-grid" style="text-align:center; padding: 40px 20px;">
+    <div style="background:#f0f6ff; border:2px dashed #d0e4f7; border-radius:20px; padding:40px 30px; max-width:500px; margin:0 auto;">
+      <div style="font-size:48px; margin-bottom:16px;">⭐</div>
+      <p style="font-size:18px; font-weight:700; color:#0d1b35; margin-bottom:10px;">Soyez parmi les premiers à laisser un avis</p>
+      <p style="font-size:14px; color:#3a5a7a; line-height:1.6;">EasyCarCheck vient de lancer — essayez le service et partagez votre expérience. Votre avis nous aide à améliorer le service pour tous.</p>
     </div>
   </div>
 </div>
@@ -468,7 +451,7 @@
   </div>
   <div class="faq-item" onclick="toggleFaq(this)">
     <div class="faq-question"><span id="faq2-q">Quels sites sont compatibles ?</span><span class="faq-arrow">▾</span></div>
-    <div class="faq-answer" id="faq2-a">AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de et Leboncoin.fr. Collez simplement l'URL de n'importe quelle annonce sur ces plateformes.</div>
+    <div class="faq-answer" id="faq2-a">AutoScout24.ch, Ricardo.ch, Tutti.ch et Anibis.ch. Collez simplement l'URL de n'importe quelle annonce sur ces plateformes.</div>
   </div>
   <div class="faq-item" onclick="toggleFaq(this)">
     <div class="faq-question"><span id="faq3-q">Combien de temps prend l'analyse ?</span><span class="faq-arrow">▾</span></div>
@@ -485,6 +468,14 @@
   <div class="faq-item" onclick="toggleFaq(this)">
     <div class="faq-question"><span id="faq6-q">Comment recevoir mon rapport ?</span><span class="faq-arrow">▾</span></div>
     <div class="faq-answer" id="faq6-a">Après le paiement, entrez votre adresse email et votre rapport PDF complet vous sera envoyé directement à cette adresse en quelques minutes.</div>
+  </div>
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq7-q">EasyCarCheck est-il disponible dans toute la Suisse ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq7-a">Oui, EasyCarCheck est disponible dans tous les cantons suisses. Le rapport inclut une estimation de la taxe cantonale d'immatriculation adaptée à votre canton de résidence.</div>
+  </div>
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-question"><span id="faq8-q">Est-ce que mes données sont protégées ?</span><span class="faq-arrow">▾</span></div>
+    <div class="faq-answer" id="faq8-a">Oui. Nous ne conservons que votre adresse email pour l'envoi du rapport. Aucune donnée personnelle n'est revendue à des tiers. Conformément à la LPD suisse et au RGPD européen.</div>
   </div>
 </div>
 
@@ -513,7 +504,7 @@
         <li id="p1-f2">Red flags & problèmes connus</li>
         <li id="p1-f3">Checklist visite</li>
         <li id="p1-f4">Prix négociation suggéré</li>
-        <li id="p1-f5">Taxe cantonale GE</li>
+        <li id="p1-f5">Taxe cantonale selon votre canton</li>
         <li id="p1-f6">Envoi par email</li>
       </ul>
       <button class="pricing-btn primary" onclick="payerRapport('single')" id="p1-btn">Obtenir le rapport</button>
@@ -564,7 +555,7 @@
         <li>Red flags & problèmes connus</li>
         <li>Checklist visite</li>
         <li>Prix négociation suggéré</li>
-        <li>Taxe cantonale GE</li>
+        <li>Taxe cantonale selon votre canton</li>
         <li>Envoi par email</li>
       </ul>
       <button class="pricing-btn primary" onclick="payerRapport('single')">Obtenir le rapport</button>
@@ -659,7 +650,7 @@
       'hero-badge': '⭐ Analyse IA · Marché Suisse · Résultat en 30 secondes',
       'hero-p': "Collez le lien de l'annonce AutoScout24, Ricardo, Tutti ou Anibis et obtenez une analyse complète avec score, red flags et prix de négociation.",
       'promo-text': '🔥 Offre de lancement — 9 CHF au lieu de 12 CHF',
-      'promo-sub': 'Pendant 7 jours seulement · Code automatiquement appliqué',
+      'promo-sub': 'Offre de lancement · Code automatiquement appliqué',
       'form-title': '🔍 Analysez votre annonce', 'btn-analyse': 'Analyser →',
       'form-hint': '⚡ Résultat gratuit en 30 secondes · Sans inscription',
       'stat1': 'Rapports générés', 'stat2': 'Satisfaction client', 'stat3': "Temps d'analyse", 'stat4': 'Langues disponibles',
@@ -678,23 +669,25 @@
       'faq4-q': 'Quelle est la durée de validité ?', 'faq4-a': "Chaque rapport ou pack est valable 6 mois à partir de la date d'achat.",
       'faq5-q': 'Le rapport remplace-t-il une inspection physique ?', 'faq5-a': "Non. EasyCarCheck est un outil d'aide à la décision. Nous recommandons toujours une inspection physique avant tout achat.",
       'faq6-q': 'Comment recevoir mon rapport ?', 'faq6-a': "Après le paiement, entrez votre email et votre rapport PDF vous sera envoyé directement.",
+      'faq7-q': 'EasyCarCheck est-il disponible dans toute la Suisse ?', 'faq7-a': "Oui, EasyCarCheck est disponible dans tous les cantons suisses. Le rapport inclut une estimation de la taxe cantonale d'immatriculation adaptée à votre canton de résidence.",
+      'faq8-q': 'Est-ce que mes données sont protégées ?', 'faq8-a': "Oui. Nous ne conservons que votre adresse email pour l'envoi du rapport. Aucune donnée personnelle n'est revendue à des tiers. Conformément à la LPD suisse et au RGPD européen.",
       'pricing-title': 'Tarifs simples et transparents', 'pricing-sub': 'Payez uniquement ce dont vous avez besoin · Valable 6 mois',
       'p0-title': 'Gratuit', 'p0-f1': 'Score global /10', 'p0-f2': 'Verdict Acheter/Négocier/Éviter', 'p0-f3': 'Résultat instantané', 'p0-btn': 'Commencer',
       'p1-badge': '⭐ Le plus populaire', 'p1-title': 'Rapport complet', 'p1-period': 'CHF · Offre de lancement',
-      'p1-f1': 'Rapport PDF complet', 'p1-f2': 'Red flags & problèmes connus', 'p1-f3': 'Checklist visite', 'p1-f4': 'Prix négociation suggéré', 'p1-f5': 'Taxe cantonale GE', 'p1-f6': 'Envoi par email', 'p1-btn': 'Obtenir le rapport',
+      'p1-f1': 'Rapport PDF complet', 'p1-f2': 'Red flags & problèmes connus', 'p1-f3': 'Checklist visite', 'p1-f4': 'Prix négociation suggéré', 'p1-f5': 'Taxe cantonale selon votre canton', 'p1-f6': 'Envoi par email', 'p1-btn': 'Obtenir le rapport',
       'p2-title': 'Pack 3 rapports', 'p2-period': 'CHF · 9 CHF/rapport', 'p2-f1': '3 rapports complets PDF', 'p2-f2': 'Valable 6 mois', 'p2-f3': 'Idéal pour comparer', 'p2-btn': 'Choisir ce pack',
       'p3-title': 'Pack 5 rapports', 'p3-period': 'CHF · 8 CHF/rapport', 'p3-f1': '5 rapports complets PDF', 'p3-f2': 'Valable 6 mois', 'p3-f3': 'Meilleur rapport qualité/prix', 'p3-btn': 'Choisir ce pack',
       'f-how': 'Comment ça marche', 'f-pricing': 'Tarifs', 'f-faq': 'FAQ', 'f-legal': 'Mentions légales', 'f-cgu': 'CGU', 'f-privacy': 'Confidentialité', 'f-contact': 'Contact',
       'loading-text': 'Analyse en cours... ~30 secondes', 'result-label': 'RÉSULTAT GRATUIT',
       'unlock-title': '🔓 Débloquez le rapport complet',
-      'unlock-desc': 'Score détaillé, red flags, problèmes connus, checklist visite, questions vendeur, taxe GE, prix de négociation — envoyé en PDF par email.',
+      'unlock-desc': 'Score détaillé, red flags, problèmes connus, checklist visite, questions vendeur, taxe cantonale selon votre canton, prix de négociation — envoyé en PDF par email.',
       'btn-single': '1 rapport — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
       'placeholder': 'https://www.autoscout24.ch/fr/d/...'
     },
     de: {
       'hero-badge': '⭐ KI-Analyse · Schweizer Markt · Ergebnis in 30 Sekunden',
       'hero-p': 'Fügen Sie den Link einer AutoScout24, Ricardo, Tutti oder Anibis-Anzeige ein und erhalten Sie eine vollständige Analyse.',
-      'promo-text': '🔥 Einführungsangebot — 9 CHF statt 12 CHF', 'promo-sub': 'Nur 7 Tage · Automatisch angewendet',
+      'promo-text': '🔥 Einführungsangebot — 9 CHF statt 12 CHF', 'promo-sub': 'Einführungsangebot · Automatisch angewendet',
       'form-title': '🔍 Anzeige analysieren', 'btn-analyse': 'Analysieren →',
       'form-hint': '⚡ Kostenloses Ergebnis in 30 Sekunden · Ohne Registrierung',
       'stat1': 'Berichte erstellt', 'stat2': 'Kundenzufriedenheit', 'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen',
@@ -702,34 +695,34 @@
       'step1-title': 'Link einfügen', 'step1-desc': 'Kopieren Sie die URL einer beliebigen AutoScout24, Ricardo, Tutti oder Anibis-Anzeige.',
       'step2-title': 'KI analysiert', 'step2-desc': 'Unsere KI analysiert die Anzeige, vergleicht den Preis und erkennt Red Flags in 30 Sekunden.',
       'step3-title': 'Bericht erhalten', 'step3-desc': 'Ein vollständiger PDF-Bericht mit Score, Urteil, Besichtigungscheckliste und empfohlenem Verhandlungspreis.',
-      'test-title': 'Was unsere Kunden sagen', 'test-sub': 'Echte Einsparungen dank EasyCarCheck',
-      't1-text': '"Ich wollte einen BMW M135i für 28\'000 CHF kaufen. EasyCarCheck warnte mich vor einem Steuerkettenproblem. Ich habe auf 25\'500 CHF verhandelt. 2\'500 CHF gespart!"',
-      't2-text': '"Ultradetaillierter Bericht für 12 CHF. Das PDF ist wirklich professionell."',
-      't3-text': '"Ich habe 5 Autos mit dem Pack verglichen. Analyse in 30 Sekunden, Red Flags klar angezeigt."',
+      'test-title': 'Was unsere Kunden sagen', 'test-sub': 'Ihre Meinung ist uns wichtig',
+      't1-text': '', 't2-text': '', 't3-text': '',
       'faq-title': 'Häufige Fragen', 'faq-sub': 'Alles was Sie wissen müssen',
       'faq1-q': 'Wie funktioniert die Analyse?', 'faq1-a': 'Unsere KI analysiert automatisch den Inhalt der Anzeige und vergleicht ihn mit Schweizer Marktdaten.',
-      'faq2-q': 'Welche Webseiten sind kompatibel?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de und Leboncoin.fr.',
+      'faq2-q': 'Welche Webseiten sind kompatibel?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch und Anibis.ch.',
       'faq3-q': 'Wie lange dauert die Analyse?', 'faq3-a': 'Die kostenlose Analyse wird in etwa 30 Sekunden angezeigt. Der PDF-Bericht wird per E-Mail in 1-2 Minuten gesendet.',
       'faq4-q': 'Wie lange sind Berichte gültig?', 'faq4-a': 'Jeder Bericht oder jedes Pack ist ab Kaufdatum 6 Monate gültig.',
       'faq5-q': 'Ersetzt der Bericht eine physische Inspektion?', 'faq5-a': 'Nein. EasyCarCheck ist ein Entscheidungshilfe-Tool. Wir empfehlen immer eine physische Inspektion vor dem Kauf.',
       'faq6-q': 'Wie erhalte ich meinen Bericht?', 'faq6-a': 'Nach der Zahlung geben Sie Ihre E-Mail-Adresse ein und Ihr PDF-Bericht wird direkt zugesendet.',
+      'faq7-q': 'Ist EasyCarCheck in der ganzen Schweiz verfügbar?', 'faq7-a': 'Ja, EasyCarCheck ist in allen Schweizer Kantonen verfügbar. Der Bericht enthält eine Schätzung der kantonalen Zulassungssteuer für Ihren Kanton.',
+      'faq8-q': 'Sind meine Daten geschützt?', 'faq8-a': 'Ja. Wir speichern nur Ihre E-Mail-Adresse für den Versand des Berichts. Keine persönlichen Daten werden an Dritte weitergegeben. Gemäß dem Schweizer DSG und der europäischen DSGVO.',
       'pricing-title': 'Einfache und transparente Preise', 'pricing-sub': 'Zahlen Sie nur was Sie brauchen · 6 Monate gültig',
       'p0-title': 'Kostenlos', 'p0-f1': 'Gesamtscore /10', 'p0-f2': 'Urteil Kaufen/Verhandeln/Meiden', 'p0-f3': 'Sofortiges Ergebnis', 'p0-btn': 'Starten',
       'p1-badge': '⭐ Am beliebtesten', 'p1-title': 'Vollständiger Bericht', 'p1-period': 'CHF · Einführungsangebot',
-      'p1-f1': 'Vollständiger PDF-Bericht', 'p1-f2': 'Red Flags & bekannte Probleme', 'p1-f3': 'Besichtigungscheckliste', 'p1-f4': 'Empfohlener Verhandlungspreis', 'p1-f5': 'Kanton Genf Steuer', 'p1-f6': 'E-Mail-Versand', 'p1-btn': 'Bericht erhalten',
+      'p1-f1': 'Vollständiger PDF-Bericht', 'p1-f2': 'Red Flags & bekannte Probleme', 'p1-f3': 'Besichtigungscheckliste', 'p1-f4': 'Empfohlener Verhandlungspreis', 'p1-f5': 'Kantonale Steuer (Ihr Kanton)', 'p1-f6': 'E-Mail-Versand', 'p1-btn': 'Bericht erhalten',
       'p2-title': '3 Berichte Pack', 'p2-period': 'CHF · 9 CHF/Bericht', 'p2-f1': '3 vollständige PDF-Berichte', 'p2-f2': '6 Monate gültig', 'p2-f3': 'Ideal zum Vergleichen', 'p2-btn': 'Pack wählen',
       'p3-title': '5 Berichte Pack', 'p3-period': 'CHF · 8 CHF/Bericht', 'p3-f1': '5 vollständige PDF-Berichte', 'p3-f2': '6 Monate gültig', 'p3-f3': 'Bestes Preis-Leistungs-Verhältnis', 'p3-btn': 'Pack wählen',
       'f-how': 'Wie es funktioniert', 'f-pricing': 'Preise', 'f-faq': 'FAQ', 'f-legal': 'Impressum', 'f-cgu': 'AGB', 'f-privacy': 'Datenschutz', 'f-contact': 'Kontakt',
       'loading-text': 'Analyse läuft... ~30 Sekunden', 'result-label': 'KOSTENLOSES ERGEBNIS',
       'unlock-title': '🔓 Vollständigen Bericht freischalten',
-      'unlock-desc': 'Detaillierter Score, Red Flags, bekannte Probleme, Besichtigungscheckliste, Verkäuferfragen, GE-Steuer, Verhandlungspreis — als PDF per E-Mail.',
+      'unlock-desc': 'Detaillierter Score, Red Flags, bekannte Probleme, Besichtigungscheckliste, Verkäuferfragen, kantonale Steuer, Verhandlungspreis — als PDF per E-Mail.',
       'btn-single': '1 Bericht — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
       'placeholder': 'https://www.autoscout24.ch/de/d/...'
     },
     it: {
       'hero-badge': '⭐ Analisi IA · Mercato Svizzero · Risultato in 30 secondi',
       'hero-p': "Incolla il link dell'annuncio AutoScout24, Ricardo, Tutti o Anibis e ottieni un'analisi completa.",
-      'promo-text': '🔥 Offerta di lancio — 9 CHF invece di 12 CHF', 'promo-sub': 'Solo 7 giorni · Applicato automaticamente',
+      'promo-text': '🔥 Offerta di lancio — 9 CHF invece di 12 CHF', 'promo-sub': 'Offerta di lancio · Applicato automaticamente',
       'form-title': '🔍 Analizza il tuo annuncio', 'btn-analyse': 'Analizza →',
       'form-hint': '⚡ Risultato gratuito in 30 secondi · Senza registrazione',
       'stat1': 'Rapporti generati', 'stat2': 'Soddisfazione cliente', 'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili',
@@ -737,34 +730,34 @@
       'step1-title': 'Incolla il link', 'step1-desc': "Copia l'URL di qualsiasi annuncio AutoScout24, Ricardo, Tutti o Anibis.",
       'step2-title': "L'IA analizza", 'step2-desc': "La nostra IA analizza l'annuncio, confronta il prezzo e rileva i red flag in 30 secondi.",
       'step3-title': 'Ricevi il rapporto', 'step3-desc': 'Un rapporto PDF completo con punteggio, verdetto, checklist visita e prezzo di negoziazione suggerito.',
-      'test-title': 'Cosa dicono i nostri clienti', 'test-sub': 'Risparmi reali grazie a EasyCarCheck',
-      't1-text': '"Stavo per comprare una BMW M135i a 28\'000 CHF. EasyCarCheck mi ha avvisato di un problema. Ho negoziato a 25\'500 CHF. 2\'500 CHF risparmiati!"',
-      't2-text': '"Rapporto ultra completo per 12 CHF. Il PDF è davvero professionale."',
-      't3-text': '"Ho confrontato 5 auto con il pack. Analisi in 30 secondi, red flag chiaramente indicati."',
+      'test-title': 'Cosa dicono i nostri clienti', 'test-sub': 'La tua opinione conta per noi',
+      't1-text': '', 't2-text': '', 't3-text': '',
       'faq-title': 'Domande frequenti', 'faq-sub': 'Tutto quello che devi sapere',
       'faq1-q': "Come funziona l'analisi?", 'faq1-a': "La nostra IA analizza automaticamente il contenuto dell'annuncio e lo confronta con i dati del mercato svizzero.",
-      'faq2-q': 'Quali siti sono compatibili?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de e Leboncoin.fr.',
+      'faq2-q': 'Quali siti sono compatibili?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch e Anibis.ch.',
       'faq3-q': "Quanto tempo richiede l'analisi?", 'faq3-a': "L'analisi gratuita viene visualizzata in circa 30 secondi. Il rapporto PDF viene inviato via email in 1-2 minuti.",
       'faq4-q': 'Quanto durano i rapporti?', 'faq4-a': "Ogni rapporto o pack è valido 6 mesi dalla data di acquisto.",
       'faq5-q': "Il rapporto sostituisce un'ispezione fisica?", 'faq5-a': "No. EasyCarCheck è uno strumento di supporto decisionale. Raccomandiamo sempre un'ispezione fisica prima dell'acquisto.",
       'faq6-q': 'Come ricevo il mio rapporto?', 'faq6-a': 'Dopo il pagamento, inserisci la tua email e il tuo rapporto PDF ti verrà inviato direttamente.',
+      'faq7-q': 'EasyCarCheck è disponibile in tutta la Svizzera?', 'faq7-a': "Sì, EasyCarCheck è disponibile in tutti i cantoni svizzeri. Il rapporto include una stima della tassa cantonale d'immatricolazione adattata al tuo cantone di residenza.",
+      'faq8-q': 'I miei dati sono protetti?', 'faq8-a': "Sì. Conserviamo solo il tuo indirizzo email per l'invio del rapporto. Nessun dato personale viene rivenduto a terzi. Conformemente alla LPD svizzera e al GDPR europeo.",
       'pricing-title': 'Prezzi semplici e trasparenti', 'pricing-sub': 'Paga solo ciò di cui hai bisogno · Valido 6 mesi',
       'p0-title': 'Gratuito', 'p0-f1': 'Punteggio globale /10', 'p0-f2': 'Verdetto Acquistare/Trattare/Evitare', 'p0-f3': 'Risultato istantaneo', 'p0-btn': 'Inizia',
       'p1-badge': '⭐ Il più popolare', 'p1-title': 'Rapporto completo', 'p1-period': 'CHF · Offerta di lancio',
-      'p1-f1': 'Rapporto PDF completo', 'p1-f2': 'Red flag & problemi noti', 'p1-f3': 'Checklist visita', 'p1-f4': 'Prezzo di negoziazione suggerito', 'p1-f5': 'Tassa cantonale GE', 'p1-f6': 'Invio per email', 'p1-btn': 'Ottieni il rapporto',
+      'p1-f1': 'Rapporto PDF completo', 'p1-f2': 'Red flag & problemi noti', 'p1-f3': 'Checklist visita', 'p1-f4': 'Prezzo di negoziazione suggerito', 'p1-f5': 'Tassa cantonale (tuo cantone)', 'p1-f6': 'Invio per email', 'p1-btn': 'Ottieni il rapporto',
       'p2-title': 'Pack 3 rapporti', 'p2-period': 'CHF · 9 CHF/rapporto', 'p2-f1': '3 rapporti PDF completi', 'p2-f2': 'Valido 6 mesi', 'p2-f3': 'Ideale per confrontare', 'p2-btn': 'Scegli questo pack',
       'p3-title': 'Pack 5 rapporti', 'p3-period': 'CHF · 8 CHF/rapporto', 'p3-f1': '5 rapporti PDF completi', 'p3-f2': 'Valido 6 mesi', 'p3-f3': 'Miglior rapporto qualità/prezzo', 'p3-btn': 'Scegli questo pack',
       'f-how': 'Come funziona', 'f-pricing': 'Prezzi', 'f-faq': 'FAQ', 'f-legal': 'Note legali', 'f-cgu': 'CGU', 'f-privacy': 'Privacy', 'f-contact': 'Contatto',
       'loading-text': 'Analisi in corso... ~30 secondi', 'result-label': 'RISULTATO GRATUITO',
       'unlock-title': '🔓 Sblocca il rapporto completo',
-      'unlock-desc': 'Punteggio dettagliato, red flag, problemi noti, checklist visita, domande al venditore, tassa GE, prezzo di negoziazione — inviato in PDF via email.',
+      'unlock-desc': 'Punteggio dettagliato, red flag, problemi noti, checklist visita, domande al venditore, tassa cantonale, prezzo di negoziazione — inviato in PDF via email.',
       'btn-single': '1 rapporto — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
       'placeholder': 'https://www.autoscout24.ch/it/d/...'
     },
     en: {
       'hero-badge': '⭐ AI Analysis · Swiss Market · Result in 30 seconds',
       'hero-p': 'Paste the link of any AutoScout24, Ricardo, Tutti or Anibis listing and get a complete analysis.',
-      'promo-text': '🔥 Launch offer — 9 CHF instead of 12 CHF', 'promo-sub': 'For 7 days only · Automatically applied',
+      'promo-text': '🔥 Launch offer — 9 CHF instead of 12 CHF', 'promo-sub': 'Launch offer · Automatically applied',
       'form-title': '🔍 Analyze your listing', 'btn-analyse': 'Analyze →',
       'form-hint': '⚡ Free result in 30 seconds · No registration required',
       'stat1': 'Reports generated', 'stat2': 'Customer satisfaction', 'stat3': 'Analysis time', 'stat4': 'Available languages',
@@ -772,27 +765,27 @@
       'step1-title': 'Paste the link', 'step1-desc': 'Copy the URL of any AutoScout24, Ricardo, Tutti or Anibis listing.',
       'step2-title': 'AI analyzes', 'step2-desc': 'Our AI analyzes the listing, compares the price and detects red flags in 30 seconds.',
       'step3-title': 'Receive the report', 'step3-desc': 'A complete PDF report with score, verdict, visit checklist and suggested negotiation price.',
-      'test-title': 'What our customers say', 'test-sub': 'Real savings thanks to EasyCarCheck',
-      't1-text': '"I was about to buy a BMW M135i for 28\'000 CHF. EasyCarCheck warned me about a timing chain issue. I negotiated down to 25\'500 CHF. 2\'500 CHF saved!"',
-      't2-text': '"Ultra-complete report for 12 CHF. The PDF is truly professional."',
-      't3-text': '"I compared 5 cars with the pack. Analysis in 30 seconds, red flags clearly indicated."',
+      'test-title': 'What our customers say', 'test-sub': 'Your opinion matters to us',
+      't1-text': '', 't2-text': '', 't3-text': '',
       'faq-title': 'Frequently asked questions', 'faq-sub': 'Everything you need to know',
       'faq1-q': 'How does the analysis work?', 'faq1-a': 'Our AI automatically analyzes the listing content and compares it with Swiss market data.',
-      'faq2-q': 'Which websites are compatible?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de and Leboncoin.fr.',
+      'faq2-q': 'Which websites are compatible?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch and Anibis.ch.',
       'faq3-q': 'How long does the analysis take?', 'faq3-a': 'The free analysis is displayed in about 30 seconds. The PDF report is sent by email in 1-2 minutes.',
       'faq4-q': 'How long are reports valid?', 'faq4-a': 'Each report or pack is valid for 6 months from the purchase date.',
       'faq5-q': 'Does the report replace a physical inspection?', 'faq5-a': 'No. EasyCarCheck is a decision support tool. We always recommend a physical inspection before any purchase.',
       'faq6-q': 'How do I receive my report?', 'faq6-a': 'After payment, enter your email address and your PDF report will be sent directly to you.',
+      'faq7-q': 'Is EasyCarCheck available across all of Switzerland?', 'faq7-a': 'Yes, EasyCarCheck is available in all Swiss cantons. The report includes an estimate of the cantonal registration tax adapted to your canton of residence.',
+      'faq8-q': 'Is my data protected?', 'faq8-a': 'Yes. We only store your email address to send the report. No personal data is sold to third parties. In accordance with the Swiss FADP and the European GDPR.',
       'pricing-title': 'Simple and transparent pricing', 'pricing-sub': 'Pay only for what you need · Valid 6 months',
       'p0-title': 'Free', 'p0-f1': 'Global score /10', 'p0-f2': 'Verdict Buy/Negotiate/Avoid', 'p0-f3': 'Instant result', 'p0-btn': 'Get started',
       'p1-badge': '⭐ Most popular', 'p1-title': 'Full report', 'p1-period': 'CHF · Launch offer',
-      'p1-f1': 'Complete PDF report', 'p1-f2': 'Red flags & known issues', 'p1-f3': 'Visit checklist', 'p1-f4': 'Suggested negotiation price', 'p1-f5': 'Geneva cantonal tax', 'p1-f6': 'Sent by email', 'p1-btn': 'Get the report',
+      'p1-f1': 'Complete PDF report', 'p1-f2': 'Red flags & known issues', 'p1-f3': 'Visit checklist', 'p1-f4': 'Suggested negotiation price', 'p1-f5': 'Cantonal tax (your canton)', 'p1-f6': 'Sent by email', 'p1-btn': 'Get the report',
       'p2-title': '3 reports pack', 'p2-period': 'CHF · 9 CHF/report', 'p2-f1': '3 complete PDF reports', 'p2-f2': 'Valid 6 months', 'p2-f3': 'Ideal for comparing', 'p2-btn': 'Choose this pack',
       'p3-title': '5 reports pack', 'p3-period': 'CHF · 8 CHF/report', 'p3-f1': '5 complete PDF reports', 'p3-f2': 'Valid 6 months', 'p3-f3': 'Best value for money', 'p3-btn': 'Choose this pack',
       'f-how': 'How it works', 'f-pricing': 'Pricing', 'f-faq': 'FAQ', 'f-legal': 'Legal notice', 'f-cgu': 'Terms', 'f-privacy': 'Privacy', 'f-contact': 'Contact',
       'loading-text': 'Analyzing... ~30 seconds', 'result-label': 'FREE RESULT',
       'unlock-title': '🔓 Unlock the full report',
-      'unlock-desc': 'Detailed score, red flags, known issues, visit checklist, seller questions, GE tax, negotiation price — sent as PDF by email.',
+      'unlock-desc': 'Detailed score, red flags, known issues, visit checklist, seller questions, cantonal tax, negotiation price — sent as PDF by email.',
       'btn-single': '1 report — 9 CHF', 'btn-pack3': 'Pack 3 — 27 CHF', 'btn-pack5': 'Pack 5 — 40 CHF',
       'placeholder': 'https://www.autoscout24.ch/en/d/...'
     }
