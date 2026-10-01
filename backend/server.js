@@ -499,15 +499,16 @@ Utilise ta connaissance réelle et documentée. Tu es un expert automobile — i
 ━━━ ENTRETIEN & COÛTS ━━━
 FREE SERVICE BMW, Audi, Mercedes, Volvo : valable 10 ans OU 100 000 km depuis la 1re mise en circulation.
 Calcul OBLIGATOIRE : si (année + 10 > 2026) ET (kilométrage < 100 000) → ENCORE sous free service. Sinon HORS free service.
-Exemples : 2015 → 2015+10=2025 < 2026 → HORS. 2017 → 2017+10=2027 > 2026 → ENCORE sous free service.
+Exemples : 2015 → 2015+10=2025 < 2026 → HORS. 2017 → 2017+10=2027 > 2026 → ENCORE sous free service. 2023 → 2023+10=2033 > 2026 → ENCORE sous free service.
+ATTENTION : applique scrupuleusement cette règle. Une Audi RS3 de 2023 avec 77 000 km est ENCORE sous free service → cout_entretien_annee1=700, cout_total_3ans=2100.
 
-Sous free service — les seuls coûts réels (liquides, pneus, plaquettes non couverts) :
+Sous free service — les seuls coûts réels (liquides, pneus, plaquettes non couverts). Affiche TOUJOURS le signe "~" devant les montants pour indiquer que c'est une estimation :
 - Citadine/compacte : cout_entretien_annee1=250, cout_total_3ans=750, score_entretien=9
 - Berline/break/SUV standard : cout_entretien_annee1=400, cout_total_3ans=1200, score_entretien=8
 - Sportive premium (RS3, RS4, M3, C63, A45, Golf R, etc.) : cout_entretien_annee1=700, cout_total_3ans=2100, score_entretien=7
 - Hypersportive (RS6, M5, GT3, AMG63, Ferrari, Lamborghini, etc.) : cout_entretien_annee1=1200, cout_total_3ans=3600, score_entretien=6
 
-Sans free service — entretien courant uniquement (vidange, filtres, révision, liquides, freins — PAS les réparations imprévues) :
+Sans free service — entretien courant uniquement (vidange, filtres, révision, liquides, freins — PAS les réparations imprévues). Affiche TOUJOURS le signe "~" devant les montants pour indiquer que c'est une estimation :
 - Citadine/compacte (<1.6L essence ou diesel) : cout_entretien_annee1=500, cout_total_3ans=1500, score_entretien=8
 - Berline/break standard : cout_entretien_annee1=800, cout_total_3ans=2400, score_entretien=7
 - SUV/4x4 standard : cout_entretien_annee1=1000, cout_total_3ans=3000, score_entretien=6
@@ -545,7 +546,7 @@ Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur 
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
-- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives)
+- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives). Chaque point doit être PRÉCIS et CHIFFRÉ si possible (ex: "Entretien ~1 200 CHF/an hors free service" plutôt que "Coûts d'entretien élevés"). Si le véhicule est encore sous free service, NE PAS mentionner les coûts d'entretien comme point négatif.
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : entre 2 et 5 éléments selon le modèle
@@ -1108,11 +1109,11 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
         <div class="cost-label">${L.entretien1}</div>
-        <div class="cost-value" style="color:#d4a00a;">${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#d4a00a;">~${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
         <div class="cost-label">${L.total3}</div>
-        <div class="cost-value" style="color:#d4a00a;">${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#d4a00a;">~${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">${L.co2}</div>
@@ -1152,29 +1153,31 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
   </div>
 
-  ${analyse.conseil_achat ? `
-  <div class="section section-white" style="page-break-inside:avoid;">
-    <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">${L.conseil}</div></div>
-    <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:6px 0;">${analyse.conseil_achat}</p>
-  </div>` : ''}
-
-  <div class="verdict-section">
-    <div>
-      <div class="verdict-label">${L.verdict}</div>
-      <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${traduireVerdict(analyse.verdict, langue)}</div>
-      ${analyse.resume_verdict ? `<div class="verdict-desc">${analyse.resume_verdict}</div>` : ''}
+  <div style="page-break-before:always; display:flex; flex-direction:column; min-height:297mm;">
+    <div class="verdict-section">
+      <div>
+        <div class="verdict-label">${L.verdict}</div>
+        <div class="verdict-value" style="color:${verdictColor[analyse.verdict] || '#d4a00a'};">${traduireVerdict(analyse.verdict, langue)}</div>
+        ${analyse.resume_verdict ? `<div class="verdict-desc">${analyse.resume_verdict}</div>` : ''}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
+        <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
+        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
+      </div>
     </div>
-    <div style="text-align:right;">
-      <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
-      <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
-      <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
-    </div>
-  </div>
 
-  <div class="footer">
-    Source : ${url}<br>
-    ${L.disclaimer}<br>
-    EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch ·  Suisse
+    ${analyse.conseil_achat ? `
+    <div class="section section-white" style="flex:1;">
+      <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">${L.conseil}</div></div>
+      <p style="font-size:12px; color:#0d1b35; line-height:1.8; padding:6px 0;">${analyse.conseil_achat}</p>
+    </div>` : `<div style="flex:1;"></div>`}
+
+    <div class="footer">
+      Source : ${url}<br>
+      ${L.disclaimer}<br>
+      EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · Suisse
+    </div>
   </div>
 
 </body>
