@@ -146,6 +146,17 @@
   .testimonial-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,180,216,0.15); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1a3a6e; font-size: 14px; }
   .testimonial-name { font-size: 13px; font-weight: 700; color: #0d1b35; }
   .testimonial-location { font-size: 12px; color: #3a5a7a; font-weight: 600; }
+  .avis-placeholder { max-width: 820px; margin: 0 auto; }
+  .avis-cards { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+  .avis-card-empty { flex: 1; min-width: 220px; max-width: 260px; background: #f8fbff; border: 1.5px dashed #b0cce8; border-radius: 16px; padding: 28px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .avis-card-empty .avis-stars-empty { font-size: 22px; letter-spacing: 2px; color: #d0e4f7; }
+  .avis-card-empty .avis-line { height: 10px; border-radius: 6px; background: #d0e4f7; width: 100%; }
+  .avis-card-empty .avis-line.short { width: 60%; }
+  .avis-card-empty .avis-dot { width: 36px; height: 36px; border-radius: 50%; background: #d0e4f7; margin-top: 6px; }
+  .avis-cta-box { text-align: center; }
+  .avis-cta-box p { color: #3a5a7a; font-size: 15px; margin-bottom: 16px; }
+  .avis-cta-btn { display: inline-block; background: linear-gradient(135deg, #1a3a6e, #2952a3); color: #fff; font-weight: 700; font-size: 14px; padding: 13px 28px; border-radius: 10px; text-decoration: none; transition: opacity 0.2s; }
+  .avis-cta-btn:hover { opacity: 0.85; }
 
   /* FAQ */
   .faq { padding: 80px 20px; max-width: 720px; margin: 0 auto; }
@@ -380,10 +391,10 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">500+</div><div class="stat-label" id="stat1">Rapports générés</div></div>
-  <div class="stat"><div class="stat-num">4.9/5</div><div class="stat-label" id="stat2">Satisfaction client</div></div>
-  <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat3">Temps d'analyse</div></div>
-  <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat4">Langues disponibles</div></div>
+  <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat1">Temps d'analyse</div></div>
+  <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat2">Langues disponibles</div></div>
+  <div class="stat"><div class="stat-num">9 CHF</div><div class="stat-label" id="stat3">Dès</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label" id="stat4">Marché suisse</div></div>
 </div>
 
 <div class="how" id="how">
@@ -433,7 +444,35 @@
 <div class="testimonials">
   <h2 id="test-title">Ce que disent nos clients</h2>
   <p class="testimonials-sub" id="test-sub">Soyez parmi les premiers à laisser un avis</p>
-</div>
+  <div class="avis-placeholder">
+    <div class="avis-cards">
+      <div class="avis-card-empty">
+        <div class="avis-stars-empty">★★★★★</div>
+        <div class="avis-line"></div>
+        <div class="avis-line"></div>
+        <div class="avis-line short"></div>
+        <div class="avis-dot"></div>
+      </div>
+      <div class="avis-card-empty">
+        <div class="avis-stars-empty">★★★★★</div>
+        <div class="avis-line"></div>
+        <div class="avis-line"></div>
+        <div class="avis-line short"></div>
+        <div class="avis-dot"></div>
+      </div>
+      <div class="avis-card-empty">
+        <div class="avis-stars-empty">★★★★★</div>
+        <div class="avis-line"></div>
+        <div class="avis-line"></div>
+        <div class="avis-line short"></div>
+        <div class="avis-dot"></div>
+      </div>
+    </div>
+    <div class="avis-cta-box">
+      <p id="avis-cta-text">Vous avez utilisé EasyCarCheck ? Votre retour nous aide à grandir.</p>
+      <a href="mailto:hello@easycarcheck.ch?subject=Mon avis EasyCarCheck" class="avis-cta-btn" id="avis-cta-btn">✍️ Laisser un avis</a>
+    </div>
+  </div>
 
 <div class="faq" id="faq">
   <h2 id="faq-title">Questions fréquentes</h2>
@@ -639,7 +678,7 @@
       'hero-h1': 'Analysez n\'importe quelle<br><span id="hero-span">voiture d\'occasion</span> en Suisse',
       'form-title': '🔍 Analysez votre annonce', 'btn-analyse': 'Analyser →',
       'form-hint': '⚡ Résultat gratuit en 30 secondes · Sans inscription',
-      'stat1': 'Rapports générés', 'stat2': 'Satisfaction client', 'stat3': "Temps d'analyse", 'stat4': 'Langues disponibles',
+      'stat1': "Temps d'analyse", 'stat2': 'Langues disponibles', 'stat3': 'Dès', 'stat4': 'Marché suisse',
       'how-title': 'Comment ça marche ?', 'how-sub': 'Simple, rapide, fiable — en 3 étapes',
       'step1-title': 'Collez le lien', 'step1-desc': "Copiez l'URL de n'importe quelle annonce AutoScout24, Ricardo, Tutti ou Anibis.",
       'step2-title': "L'IA analyse", 'step2-desc': "Notre IA scrape l'annonce, analyse le prix, la fiabilité et détecte les red flags en 30 secondes.",
@@ -675,7 +714,7 @@
       'hero-h1': 'Analysieren Sie jeden<br><span id="hero-span">Gebrauchtwagen</span> in der Schweiz',
       'form-title': '🔍 Anzeige analysieren', 'btn-analyse': 'Analysieren →',
       'form-hint': '⚡ Kostenloses Ergebnis in 30 Sekunden · Ohne Registrierung',
-      'stat1': 'Berichte erstellt', 'stat2': 'Kundenzufriedenheit', 'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen',
+      'stat1': 'Analysezeit', 'stat2': 'Verfügbare Sprachen', 'stat3': 'Ab', 'stat4': 'Schweizer Markt',
       'how-title': 'Wie funktioniert es?', 'how-sub': 'Einfach, schnell, zuverlässig — in 3 Schritten',
       'step1-title': 'Link einfügen', 'step1-desc': 'Kopieren Sie die URL einer beliebigen AutoScout24, Ricardo, Tutti oder Anibis-Anzeige.',
       'step2-title': 'KI analysiert', 'step2-desc': 'Unsere KI analysiert die Anzeige, vergleicht den Preis und erkennt Red Flags in 30 Sekunden.',
@@ -711,7 +750,7 @@
       'hero-h1': 'Analizza qualsiasi<br><span id="hero-span">auto usata</span> in Svizzera',
       'form-title': '🔍 Analizza il tuo annuncio', 'btn-analyse': 'Analizza →',
       'form-hint': '⚡ Risultato gratuito in 30 secondi · Senza registrazione',
-      'stat1': 'Rapporti generati', 'stat2': 'Soddisfazione cliente', 'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili',
+      'stat1': 'Tempo di analisi', 'stat2': 'Lingue disponibili', 'stat3': 'Da', 'stat4': 'Mercato svizzero',
       'how-title': 'Come funziona?', 'how-sub': 'Semplice, veloce, affidabile — in 3 passi',
       'step1-title': 'Incolla il link', 'step1-desc': "Copia l'URL di qualsiasi annuncio AutoScout24, Ricardo, Tutti o Anibis.",
       'step2-title': "L'IA analizza", 'step2-desc': "La nostra IA analizza l'annuncio, confronta il prezzo e rileva i red flag in 30 secondi.",
@@ -747,7 +786,7 @@
       'hero-h1': 'Analyze any<br><span id="hero-span">used car</span> in Switzerland',
       'form-title': '🔍 Analyze your listing', 'btn-analyse': 'Analyze →',
       'form-hint': '⚡ Free result in 30 seconds · No registration required',
-      'stat1': 'Reports generated', 'stat2': 'Customer satisfaction', 'stat3': 'Analysis time', 'stat4': 'Available languages',
+      'stat1': 'Analysis time', 'stat2': 'Available languages', 'stat3': 'Starting at', 'stat4': 'Swiss market',
       'how-title': 'How does it work?', 'how-sub': 'Simple, fast, reliable — in 3 steps',
       'step1-title': 'Paste the link', 'step1-desc': 'Copy the URL of any AutoScout24, Ricardo, Tutti or Anibis listing.',
       'step2-title': 'AI analyzes', 'step2-desc': 'Our AI analyzes the listing, compares the price and detects red flags in 30 seconds.',
