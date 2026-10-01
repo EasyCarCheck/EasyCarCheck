@@ -134,19 +134,6 @@
   .steps-carousel { display: none; }
   .carousel-dots { display: none; }
 
-  /* TESTIMONIALS */
-  .testimonials { padding: 80px 20px; background: #fff; border-top: 1px solid #d0e4f7; border-bottom: 1px solid #d0e4f7; }
-  .testimonials h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; color: #0d1b35; }
-  .testimonials-sub { color: #3a5a7a; text-align: center; margin-bottom: 50px; font-size: 16px; }
-  .testimonials-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
-  .testimonial-card { background: #f0f6ff; border: 1px solid #d0e4f7; border-radius: 16px; padding: 24px; max-width: 300px; flex: 1; min-width: 240px; }
-  .testimonial-stars { color: #c07000; font-size: 16px; margin-bottom: 12px; }
-  .testimonial-text { color: #2a4a6a; font-size: 14px; line-height: 1.6; margin-bottom: 16px; font-style: italic; }
-  .testimonial-author { display: flex; align-items: center; gap: 10px; }
-  .testimonial-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,180,216,0.15); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1a3a6e; font-size: 14px; }
-  .testimonial-name { font-size: 13px; font-weight: 700; color: #0d1b35; }
-  .testimonial-location { font-size: 12px; color: #3a5a7a; font-weight: 600; }
-
   /* FAQ */
   .faq { padding: 80px 20px; max-width: 720px; margin: 0 auto; }
   .faq h2 { font-size: 36px; font-weight: 900; text-align: center; margin-bottom: 10px; color: #0d1b35; }
@@ -253,12 +240,6 @@
     .carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
     .carousel-dot { width: 7px; height: 7px; border-radius: 50%; background: #d0e4f7; transition: background 0.2s; }
     .carousel-dot.active { background: #00B4D8; }
-    .testimonials { padding: 24px 14px; }
-    .testimonials h2 { font-size: 18px; margin-bottom: 6px; }
-    .testimonials-sub { font-size: 12px; margin-bottom: 16px; }
-    .testimonials-grid { flex-direction: column; align-items: center; gap: 12px; }
-    .testimonial-card { max-width: 100%; min-width: unset; padding: 16px; }
-    .testimonial-text { font-size: 13px; }
     .faq { padding: 24px 14px; }
     .faq h2 { font-size: 18px; margin-bottom: 6px; }
     .faq-sub { font-size: 12px; margin-bottom: 16px; }
@@ -267,13 +248,8 @@
     .pricing { padding: 24px 0 20px; }
     .pricing h2 { font-size: 18px; margin-bottom: 6px; padding: 0 16px; }
     .pricing-sub { font-size: 12px; margin-bottom: 14px; padding: 0 16px; }
-    .pricing-grid { display: none; }
-    .pricing-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding: 4px 16px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .pricing-carousel::-webkit-scrollbar { display: none; }
-    .pricing-carousel .pricing-card { min-width: 280px; max-width: 280px; scroll-snap-align: center; flex-shrink: 0; padding: 24px 18px; }
-    .pricing-carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
-    .pricing-carousel-dot { width: 7px; height: 7px; border-radius: 50%; background: #d0e4f7; transition: background 0.2s; }
-    .pricing-carousel-dot.active { background: #1a3a6e; }
+    .pricing-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+    .pricing-card { padding: 20px 16px; }
     footer { padding: 20px 14px; }
     .footer-logo { font-size: 16px; }
     .footer-desc { font-size: 12px; margin-bottom: 14px; }
@@ -380,8 +356,6 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">500+</div><div class="stat-label" id="stat1">Rapports générés</div></div>
-  <div class="stat"><div class="stat-num">4.9/5</div><div class="stat-label" id="stat2">Satisfaction client</div></div>
   <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat3">Temps d'analyse</div></div>
   <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat4">Langues disponibles</div></div>
 </div>
@@ -430,36 +404,6 @@
   </div>
 </div>
 
-<div class="testimonials">
-  <h2 id="test-title">Ce que disent nos clients</h2>
-  <p class="testimonials-sub" id="test-sub">Des économies réelles grâce à EasyCarCheck</p>
-  <div class="testimonials-grid">
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t1-text">"J'allais acheter une BMW M135i à 28'000 CHF. EasyCarCheck m'a alerté sur un problème de chaîne de distribution. J'ai négocié à 25'500 CHF. 2'500 CHF économisés !"</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">ML</div>
-        <div><div class="testimonial-name">Marc L.</div><div class="testimonial-location">Genève, CH</div></div>
-      </div>
-    </div>
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t2-text">"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">SF</div>
-        <div><div class="testimonial-name">Sophie F.</div><div class="testimonial-location">Lausanne, CH</div></div>
-      </div>
-    </div>
-    <div class="testimonial-card">
-      <div class="testimonial-stars">★★★★★</div>
-      <p class="testimonial-text" id="t3-text">"J'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d'occasion."</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">AT</div>
-        <div><div class="testimonial-name">Alessandro T.</div><div class="testimonial-location">Lugano, CH</div></div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <div class="faq" id="faq">
   <h2 id="faq-title">Questions fréquentes</h2>
@@ -544,62 +488,6 @@
     </div>
   </div>
 
-  <div class="pricing-carousel" id="pricingCarousel">
-    <div class="pricing-card">
-      <h3 id="pc0-title">Gratuit</h3>
-      <div class="pricing-price">0</div>
-      <div class="pricing-period">CHF</div>
-      <ul class="pricing-features">
-        <li>Score global /10</li>
-        <li>Verdict Acheter/Négocier/Éviter</li>
-        <li>Résultat instantané</li>
-      </ul>
-      <button class="pricing-btn secondary" onclick="document.getElementById('urlInput').focus(); window.scrollTo({top:0,behavior:'smooth'})">Commencer</button>
-    </div>
-    <div class="pricing-card popular">
-      <div class="popular-badge">⭐ Le plus populaire</div>
-      <h3>Rapport complet</h3>
-      <div class="pricing-price" style="color:#1a3a6e;">9 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">12</span></div>
-      <div class="pricing-period">CHF · Offre de lancement</div>
-      <ul class="pricing-features">
-        <li>Rapport PDF complet</li>
-        <li>Red flags & problèmes connus</li>
-        <li>Checklist visite</li>
-        <li>Prix négociation suggéré</li>
-        <li>Taxe cantonale GE</li>
-        <li>Envoi par email</li>
-      </ul>
-      <button class="pricing-btn primary" onclick="payerRapport('single')">Obtenir le rapport</button>
-    </div>
-    <div class="pricing-card">
-      <h3>Pack 3 rapports</h3>
-      <div class="pricing-price">27 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">30</span></div>
-      <div class="pricing-period">CHF · 9 CHF/rapport</div>
-      <ul class="pricing-features">
-        <li>3 rapports complets PDF</li>
-        <li>Valable 6 mois</li>
-        <li>Idéal pour comparer</li>
-      </ul>
-      <button class="pricing-btn secondary" onclick="payerRapport('pack3')">Choisir ce pack</button>
-    </div>
-    <div class="pricing-card">
-      <h3>Pack 5 rapports</h3>
-      <div class="pricing-price">40 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">45</span></div>
-      <div class="pricing-period">CHF · 8 CHF/rapport</div>
-      <ul class="pricing-features">
-        <li>5 rapports complets PDF</li>
-        <li>Valable 6 mois</li>
-        <li>Meilleur rapport qualité/prix</li>
-      </ul>
-      <button class="pricing-btn secondary" onclick="payerRapport('pack5')">Choisir ce pack</button>
-    </div>
-  </div>
-  <div class="pricing-carousel-dots" id="pricingDots">
-    <div class="pricing-carousel-dot active" id="pdot0"></div>
-    <div class="pricing-carousel-dot" id="pdot1"></div>
-    <div class="pricing-carousel-dot" id="pdot2"></div>
-    <div class="pricing-carousel-dot" id="pdot3"></div>
-  </div>
 </div>
 
 <div class="modal-overlay" id="emailModal">
@@ -664,15 +552,11 @@
       'promo-sub': 'Pendant 7 jours seulement · Code automatiquement appliqué',
       'form-title': '🔍 Analysez votre annonce', 'btn-analyse': 'Analyser →',
       'form-hint': '⚡ Résultat gratuit en 30 secondes · Sans inscription',
-      'stat1': 'Rapports générés', 'stat2': 'Satisfaction client', 'stat3': "Temps d'analyse", 'stat4': 'Langues disponibles',
+      'stat3': "Temps d'analyse", 'stat4': 'Langues disponibles',
       'how-title': 'Comment ça marche ?', 'how-sub': 'Simple, rapide, fiable — en 3 étapes',
       'step1-title': 'Collez le lien', 'step1-desc': "Copiez l'URL de n'importe quelle annonce AutoScout24, Ricardo, Tutti ou Anibis.",
       'step2-title': "L'IA analyse", 'step2-desc': "Notre IA scrape l'annonce, analyse le prix, la fiabilité et détecte les red flags en 30 secondes.",
       'step3-title': 'Recevez le rapport', 'step3-desc': 'Un rapport PDF complet avec score, verdict, checklist visite et prix de négociation suggéré.',
-      'test-title': 'Ce que disent nos clients', 'test-sub': 'Des économies réelles grâce à EasyCarCheck',
-      't1-text': '"J\'allais acheter une BMW M135i à 28\'000 CHF. EasyCarCheck m\'a alerté sur un problème de chaîne de distribution. J\'ai négocié à 25\'500 CHF. 2\'500 CHF économisés !"',
-      't2-text': '"Rapport ultra complet pour 12 CHF. Le PDF est vraiment professionnel. Le vendeur a accepté de baisser le prix après que je lui ai montré le rapport."',
-      't3-text': '"J\'ai comparé 5 voitures avec le pack. Analyse en 30 secondes par voiture, red flags clairement indiqués. Je recommande à tous ceux qui achètent une voiture d\'occasion."',
       'faq-title': 'Questions fréquentes', 'faq-sub': 'Tout ce que vous devez savoir',
       'faq1-q': "Comment fonctionne l'analyse ?", 'faq1-a': "Notre IA analyse automatiquement le contenu de l'annonce et le compare avec les données du marché suisse.",
       'faq2-q': 'Quels sites sont compatibles ?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de et Leboncoin.fr.',
@@ -699,15 +583,11 @@
       'promo-text': '🔥 Einführungsangebot — 9 CHF statt 12 CHF', 'promo-sub': 'Nur 7 Tage · Automatisch angewendet',
       'form-title': '🔍 Anzeige analysieren', 'btn-analyse': 'Analysieren →',
       'form-hint': '⚡ Kostenloses Ergebnis in 30 Sekunden · Ohne Registrierung',
-      'stat1': 'Berichte erstellt', 'stat2': 'Kundenzufriedenheit', 'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen',
+      'stat3': 'Analysezeit', 'stat4': 'Verfügbare Sprachen',
       'how-title': 'Wie funktioniert es?', 'how-sub': 'Einfach, schnell, zuverlässig — in 3 Schritten',
       'step1-title': 'Link einfügen', 'step1-desc': 'Kopieren Sie die URL einer beliebigen AutoScout24, Ricardo, Tutti oder Anibis-Anzeige.',
       'step2-title': 'KI analysiert', 'step2-desc': 'Unsere KI analysiert die Anzeige, vergleicht den Preis und erkennt Red Flags in 30 Sekunden.',
       'step3-title': 'Bericht erhalten', 'step3-desc': 'Ein vollständiger PDF-Bericht mit Score, Urteil, Besichtigungscheckliste und empfohlenem Verhandlungspreis.',
-      'test-title': 'Was unsere Kunden sagen', 'test-sub': 'Echte Einsparungen dank EasyCarCheck',
-      't1-text': '"Ich wollte einen BMW M135i für 28\'000 CHF kaufen. EasyCarCheck warnte mich vor einem Steuerkettenproblem. Ich habe auf 25\'500 CHF verhandelt. 2\'500 CHF gespart!"',
-      't2-text': '"Ultradetaillierter Bericht für 12 CHF. Das PDF ist wirklich professionell."',
-      't3-text': '"Ich habe 5 Autos mit dem Pack verglichen. Analyse in 30 Sekunden, Red Flags klar angezeigt."',
       'faq-title': 'Häufige Fragen', 'faq-sub': 'Alles was Sie wissen müssen',
       'faq1-q': 'Wie funktioniert die Analyse?', 'faq1-a': 'Unsere KI analysiert automatisch den Inhalt der Anzeige und vergleicht ihn mit Schweizer Marktdaten.',
       'faq2-q': 'Welche Webseiten sind kompatibel?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de und Leboncoin.fr.',
@@ -734,15 +614,11 @@
       'promo-text': '🔥 Offerta di lancio — 9 CHF invece di 12 CHF', 'promo-sub': 'Solo 7 giorni · Applicato automaticamente',
       'form-title': '🔍 Analizza il tuo annuncio', 'btn-analyse': 'Analizza →',
       'form-hint': '⚡ Risultato gratuito in 30 secondi · Senza registrazione',
-      'stat1': 'Rapporti generati', 'stat2': 'Soddisfazione cliente', 'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili',
+      'stat3': 'Tempo di analisi', 'stat4': 'Lingue disponibili',
       'how-title': 'Come funziona?', 'how-sub': 'Semplice, veloce, affidabile — in 3 passi',
       'step1-title': 'Incolla il link', 'step1-desc': "Copia l'URL di qualsiasi annuncio AutoScout24, Ricardo, Tutti o Anibis.",
       'step2-title': "L'IA analizza", 'step2-desc': "La nostra IA analizza l'annuncio, confronta il prezzo e rileva i red flag in 30 secondi.",
       'step3-title': 'Ricevi il rapporto', 'step3-desc': 'Un rapporto PDF completo con punteggio, verdetto, checklist visita e prezzo di negoziazione suggerito.',
-      'test-title': 'Cosa dicono i nostri clienti', 'test-sub': 'Risparmi reali grazie a EasyCarCheck',
-      't1-text': '"Stavo per comprare una BMW M135i a 28\'000 CHF. EasyCarCheck mi ha avvisato di un problema. Ho negoziato a 25\'500 CHF. 2\'500 CHF risparmiati!"',
-      't2-text': '"Rapporto ultra completo per 12 CHF. Il PDF è davvero professionale."',
-      't3-text': '"Ho confrontato 5 auto con il pack. Analisi in 30 secondi, red flag chiaramente indicati."',
       'faq-title': 'Domande frequenti', 'faq-sub': 'Tutto quello che devi sapere',
       'faq1-q': "Come funziona l'analisi?", 'faq1-a': "La nostra IA analizza automaticamente il contenuto dell'annuncio e lo confronta con i dati del mercato svizzero.",
       'faq2-q': 'Quali siti sono compatibili?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de e Leboncoin.fr.',
@@ -769,15 +645,11 @@
       'promo-text': '🔥 Launch offer — 9 CHF instead of 12 CHF', 'promo-sub': 'For 7 days only · Automatically applied',
       'form-title': '🔍 Analyze your listing', 'btn-analyse': 'Analyze →',
       'form-hint': '⚡ Free result in 30 seconds · No registration required',
-      'stat1': 'Reports generated', 'stat2': 'Customer satisfaction', 'stat3': 'Analysis time', 'stat4': 'Available languages',
+      'stat3': 'Analysis time', 'stat4': 'Available languages',
       'how-title': 'How does it work?', 'how-sub': 'Simple, fast, reliable — in 3 steps',
       'step1-title': 'Paste the link', 'step1-desc': 'Copy the URL of any AutoScout24, Ricardo, Tutti or Anibis listing.',
       'step2-title': 'AI analyzes', 'step2-desc': 'Our AI analyzes the listing, compares the price and detects red flags in 30 seconds.',
       'step3-title': 'Receive the report', 'step3-desc': 'A complete PDF report with score, verdict, visit checklist and suggested negotiation price.',
-      'test-title': 'What our customers say', 'test-sub': 'Real savings thanks to EasyCarCheck',
-      't1-text': '"I was about to buy a BMW M135i for 28\'000 CHF. EasyCarCheck warned me about a timing chain issue. I negotiated down to 25\'500 CHF. 2\'500 CHF saved!"',
-      't2-text': '"Ultra-complete report for 12 CHF. The PDF is truly professional."',
-      't3-text': '"I compared 5 cars with the pack. Analysis in 30 seconds, red flags clearly indicated."',
       'faq-title': 'Frequently asked questions', 'faq-sub': 'Everything you need to know',
       'faq1-q': 'How does the analysis work?', 'faq1-a': 'Our AI automatically analyzes the listing content and compares it with Swiss market data.',
       'faq2-q': 'Which websites are compatible?', 'faq2-a': 'AutoScout24.ch, Ricardo.ch, Tutti.ch, Anibis.ch, Mobile.de and Leboncoin.fr.',
