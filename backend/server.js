@@ -397,19 +397,19 @@ async function rechercherInfosVehicule(marque, modele, annee) {
     const motsCles = ['défaut', 'problème', 'rappel', 'panne', 'casse', 'usure prématurée', 'fissure', 'fuite', 'surchauffe', 'boîte', 'moteur', 'pompe', 'turbo', 'transmission', 'embrayage', 'distribution', 'culasse'];
     let problemesListe = [];
 
-    // Mots anglais fréquents pour détecter les phrases en anglais (à exclure)
-    const motsAnglais = ['the ', ' and ', ' of ', ' in ', ' is ', ' are ', ' have ', ' has ', ' with ', ' can ', 'brake', 'gearbox', 'clutch', 'engine', 'failure', 'issue', 'problem', 'recall', 'warning', 'check', 'fault', 'sensor'];
+    // Détection phrase anglaise : mots qui n'existent PAS en français
+    const motsAnglaisStricts = ['the ', ' gearbox', ' clutch', ' engine ', ' failure', ' issue', ' recall ', ' warning', ' fault', ' neglect', ' discs ', ' wear '];
 
     function estEnFrancais(phrase) {
-      const p = phrase.toLowerCase();
-      // Si contient plus de 2 mots anglais typiques → probablement anglais
-      const scoreAnglais = motsAnglais.filter(m => p.includes(m)).length;
-      return scoreAnglais < 2;
+      const p = ' ' + phrase.toLowerCase() + ' ';
+      // Phrase anglaise si elle contient au moins 1 mot strictement anglais
+      const scoreAnglais = motsAnglaisStricts.filter(m => p.includes(m)).length;
+      return scoreAnglais === 0;
     }
 
     function estDonneeValide(phrase) {
       // Filtrer les lignes de données brutes de base de données
-      if (phrase.startsWith(']')) return false;
+      if (phrase.trim().startsWith(']')) return false;
       if ((phrase.match(/\|/g) || []).length >= 2) return false;  // lignes de tableau avec pipes
       if (phrase.includes('~') && phrase.includes('€') && phrase.includes('km')) return false;  // données de coûts
       if (phrase.match(/^\s*[\[\]{}]/)) return false;  // fragments JSON
@@ -1249,7 +1249,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
   </div>
 
-  <div style="page-break-before:always; display:flex; flex-direction:column; height:277mm; overflow:hidden;">
+  <div style="page-break-before:always; display:flex; flex-direction:column; min-height:260mm;">
     <div class="verdict-section">
       <div>
         <div class="verdict-label">${L.verdict}</div>
