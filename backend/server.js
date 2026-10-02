@@ -941,9 +941,9 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       // Prix demandé en dessous de la médiane → BON PRIX → ACHETER
       parsed.verdict = 'ACHETER';
       parsed.resume_verdict = `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString()} CHF) — bonne affaire pour ce millésime.`;
-      // Économie symbolique nulle (pas de négociation nécessaire)
-      parsed.economie_potentielle_min = 0;
-      parsed.economie_potentielle_max = 0;
+      // Petite économie symbolique même sur une bonne affaire (~0.5-1% du prix)
+      parsed.economie_potentielle_min = Math.round(prixDemande * 0.005 / 500) * 500 || 200;
+      parsed.economie_potentielle_max = Math.round(prixDemande * 0.01 / 500) * 500 || 500;
       console.log(`VERDICT ACHETER — prix ${prixDemande} en dessous de la médiane ${mediane}`);
     } else if (mediane > 0 && ratio <= 1.05) {
       // Prix dans la médiane ±5% → NÉGOCIER légèrement
@@ -1467,7 +1467,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <div style="text-align:right;">
         <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
         <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
-        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
+        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${analyse.verdict === 'ACHETER' ? (langue === "de" ? "✓ Preis im Markt" : langue === "it" ? "✓ Prezzo nel mercato" : langue === "en" ? "✓ Price within market" : "✓ Prix dans le marché") : `${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF`}</div>
       </div>
     </div>
 
