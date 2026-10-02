@@ -1020,12 +1020,25 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.points_negatifs = parsed.points_negatifs.filter(p =>
       !mots_interdits.some(mot => p.toLowerCase().includes(mot))
     );
-    // RÈGLE COHÉRENCE PRIX : si score_prix >= 7, supprimer les points négatifs qui mentionnent le prix comme problème
-    const motsPrix = ['prix au-dessus', 'prix élevé', 'au-dessus du marché', 'au-dessus de la fourchette', 'prix légèrement élevé', 'légèrement au-dessus'];
-    if ((parsed.score_prix || 0) >= 7) {
+    // RÈGLE COHÉRENCE PRIX : si verdict ACHETER ou score_prix >= 7, supprimer les points négatifs prix
+    const motsPrix = ['prix au-dessus', 'prix élevé', 'au-dessus du marché', 'au-dessus de la fourchette', 'prix légèrement élevé', 'légèrement au-dessus', 'au-dessus de la moyenne', 'supérieur au marché', 'prix supérieur'];
+    if ((parsed.score_prix || 0) >= 7 || parsed.verdict === 'ACHETER') {
       parsed.points_negatifs = parsed.points_negatifs.filter(p =>
         !motsPrix.some(mot => p.toLowerCase().includes(mot))
       );
+    }
+    // RÈGLE COHÉRENCE PRIX : si verdict ACHETER, ajouter point positif prix si pas déjà présent
+    if (parsed.verdict === 'ACHETER') {
+      const dejaPositifPrix = (parsed.points_positifs || []).some(p =>
+        p.toLowerCase().includes('prix') || p.toLowerCase().includes('marché') || p.toLowerCase().includes('affaire')
+      );
+      if (!dejaPositifPrix) {
+        const mediane = prixMarche?.mediane || 0;
+        const pointPrix = mediane > 0
+          ? `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString()} CHF)`
+          : `Prix bien positionné par rapport au marché`;
+        parsed.points_positifs = [pointPrix, ...(parsed.points_positifs || [])].slice(0, 3);
+      }
     }
     // Fallback si points supprimés — adapter selon le score prix
     const scorePrix = parsed.score_prix || 0;
