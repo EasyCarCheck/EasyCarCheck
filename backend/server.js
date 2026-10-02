@@ -470,7 +470,7 @@ Règles strictes :
 }
 
 // ─── PRIX MARCHÉ RÉEL (AutoScout24 CH scraping) ──────────
-async function scrapesPrixSimilaires(marque, modele, annee, km) {
+async function scrapesPrixSimilaires(marque, modele, annee, km, prixRef = 0) {
   try {
     // Construire URL de recherche AutoScout24 CH avec filtres similaires
     const marqueSlug = marque.toLowerCase().replace(/\s+/g, '-');
@@ -528,8 +528,13 @@ async function scrapesPrixSimilaires(marque, modele, annee, km) {
       if (val >= 3000 && val <= 200000) prixTrouves.push(val);
     }
 
-    // Dédoublonner et trier
-    const unique = [...new Set(prixTrouves)].sort((a, b) => a - b);
+    // Dédoublonner et filtrer autour du prix de référence si connu (±40%)
+    let unique = [...new Set(prixTrouves)].sort((a, b) => a - b);
+    if (prixRef > 0) {
+      const filtré = unique.filter(p => p >= prixRef * 0.60 && p <= prixRef * 1.40);
+      console.log(`Filtrage prix: ${unique.length} → ${filtré.length} dans ±40% de ${prixRef} CHF`);
+      if (filtré.length >= 3) unique = filtré;
+    }
     console.log(`Prix similaires trouvés (${unique.length}):`, unique.slice(0, 10));
 
     if (unique.length < 3) {
@@ -594,12 +599,15 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     // Extraire kilométrage depuis le HTML
     const kmMatch = html.match(/(\d[\d\s']{2,7})\s*km/i);
     const km = kmMatch ? parseInt(kmMatch[1].replace(/[\s']/g, '')) : 0;
-    console.log('Tavily extraction :', marque, modele, annee, km ? km+'km' : '');
+    // Extraire le prix demandé depuis le HTML (ex: CHF&nbsp;48'890.–)
+    const prixMatch = html.match(/CHF[&nbsp;\s]*(\d{2,3}['.]\d{3})/);
+    const prixRef = prixMatch ? parseInt(prixMatch[1].replace(/['.]/g, '')) : 0;
+    console.log('Tavily extraction :', marque, modele, annee, km ? km+'km' : '', prixRef ? prixRef+'CHF' : '');
     if (marque && modele) {
       // Lancer Tavily ET scraping prix en parallèle
       const [tavilyResult, prixMarche] = await Promise.all([
         rechercherInfosVehicule(marque, modele, parseInt(annee)||0, km),
-        scrapesPrixSimilaires(marque, modele, parseInt(annee)||0, km)
+        scrapesPrixSimilaires(marque, modele, parseInt(annee)||0, km, prixRef)
       ]);
       tavilyContext = tavilyResult;
       tavilyContext.prixMarche = prixMarche; // médiane, min, max, count
