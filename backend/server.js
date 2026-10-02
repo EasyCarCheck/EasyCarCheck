@@ -469,6 +469,91 @@ Règles strictes :
   }
 }
 
+// ─── PRIX MARCHÉ RÉEL (AutoScout24 CH scraping) ──────────
+async function scrapesPrixSimilaires(marque, modele, annee, km) {
+  try {
+    // Construire URL de recherche AutoScout24 CH avec filtres similaires
+    const marqueSlug = marque.toLowerCase().replace(/\s+/g, '-');
+    const modeleSlug = modele.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const kmMin = Math.max(0, km - 30000);
+    const kmMax = km + 30000;
+    const anneeMin = annee - 1;
+    const anneeMax = annee + 1;
+
+    const searchUrl = `https://www.autoscout24.ch/fr/s/${marqueSlug}/${modeleSlug}?atype=C&cy=CH&damaged=0&desc=0&fromhp=1&kmfrom=${kmMin}&kmto=${kmMax}&offertype=U&pricefrom=1000&sort=standard&source=listpage_pagination&ustate=N,U&yearfrom=${anneeMin}&yearto=${anneeMax}`;
+
+    console.log('Scrape prix similaires:', searchUrl);
+
+    const response = await axios.get('https://api.zenrows.com/v1/', {
+      params: {
+        apikey: process.env.ZENROWS_API_KEY,
+        url: searchUrl,
+        js_render: 'true',
+        premium_proxy: 'true',
+        wait: '5000',
+        css_extractor: JSON.stringify({
+          prices: '[data-testid="listing-price"], .Price_price__APlgs, .cldt-price, [class*="price"]'
+        })
+      },
+      timeout: 60000
+    });
+
+    // Extraire les prix depuis le HTML
+    const html = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+    const prixTrouves = [];
+
+    // Méthode 1: CSS extractor
+    if (response.data && response.data.prices && Array.isArray(response.data.prices)) {
+      response.data.prices.forEach(p => {
+        const match = p.replace(/['\s]/g, '').match(/(\d{4,6})/g);
+        if (match) match.forEach(m => {
+          const val = parseInt(m);
+          if (val >= 3000 && val <= 200000) prixTrouves.push(val);
+        });
+      });
+    }
+
+    // Méthode 2: regex sur le HTML brut — chercher patterns "XX'XXX CHF" ou "XX.XXX CHF"
+    const prixRegex = /(\d{2,3}['.]\d{3})\s*CHF/g;
+    let match;
+    while ((match = prixRegex.exec(html)) !== null) {
+      const val = parseInt(match[1].replace(/['.]/g, ''));
+      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
+    }
+    // Méthode 3: "price":XXXXX dans JSON
+    const jsonPriceRegex = /"price"\s*:\s*(\d{4,6})/g;
+    while ((match = jsonPriceRegex.exec(html)) !== null) {
+      const val = parseInt(match[1]);
+      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
+    }
+
+    // Dédoublonner et trier
+    const unique = [...new Set(prixTrouves)].sort((a, b) => a - b);
+    console.log(`Prix similaires trouvés (${unique.length}):`, unique.slice(0, 10));
+
+    if (unique.length < 3) {
+      console.log('Pas assez de prix similaires — fallback score_prix');
+      return null;
+    }
+
+    // Calculer médiane
+    const mid = Math.floor(unique.length / 2);
+    const mediane = unique.length % 2 === 0
+      ? Math.round((unique[mid - 1] + unique[mid]) / 2)
+      : unique[mid];
+
+    const min = unique[Math.floor(unique.length * 0.1)] || unique[0];
+    const max = unique[Math.floor(unique.length * 0.9)] || unique[unique.length - 1];
+
+    console.log(`Médiane marché: ${mediane} CHF (fourchette ${min}–${max}, ${unique.length} annonces)`);
+    return { mediane, min, max, count: unique.length };
+
+  } catch (e) {
+    console.log('scrapesPrixSimilaires erreur (non bloquant):', e.message);
+    return null;
+  }
+}
+
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
@@ -505,17 +590,23 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     const km = kmMatch ? parseInt(kmMatch[1].replace(/[\s']/g, '')) : 0;
     console.log('Tavily extraction :', marque, modele, annee, km ? km+'km' : '');
     if (marque && modele) {
-      const tavilyResult = await rechercherInfosVehicule(marque, modele, annee, km);
+      // Lancer Tavily ET scraping prix en parallèle
+      const [tavilyResult, prixMarche] = await Promise.all([
+        rechercherInfosVehicule(marque, modele, parseInt(annee)||0, km),
+        scrapesPrixSimilaires(marque, modele, parseInt(annee)||0, km)
+      ]);
       tavilyContext = tavilyResult;
+      tavilyContext.prixMarche = prixMarche; // médiane, min, max, count
       if (tavilyResult.prix || tavilyResult.problemesDocumentes) console.log('Tavily OK :', marque, modele, annee);
       else console.log('Tavily vide (non bloquant)');
+      if (prixMarche) console.log('Prix marché réel:', prixMarche);
     } else {
       console.log('Tavily skip — marque/modele non trouvés');
-      tavilyContext = { prix: '', problemesDocumentes: '' };
+      tavilyContext = { prix: '', problemesDocumentes: '', prixMarche: null };
     }
   } catch(e) {
     console.log('Tavily extraction erreur:', e.message);
-    tavilyContext = { prix: '', problemesDocumentes: '' };
+    tavilyContext = { prix: '', problemesDocumentes: '', prixMarche: null };
   }
 
   const tavilyPrix = tavilyContext?.prix || '';
@@ -685,6 +776,7 @@ RÈGLES JSON :
   "economie_potentielle_min": 0,
   "economie_potentielle_max": 0,
   "prix_negocie_suggere": 0,
+  // NE PAS REMPLIR — calculé automatiquement par le serveur
   "fourchette_marche_min": 0,
   "fourchette_marche_max": 0,
   "points_positifs": [],
@@ -738,31 +830,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     console.log('CO2 injecté depuis scraping:', parsed.co2);
   }
 
-  // Fix prix_negocie_suggere si 0 ou manquant — arrondi à la centaine
   const arrondir = (val, multiple = 500) => Math.round(val / multiple) * multiple;
-  if (!parsed.prix_negocie_suggere || parsed.prix_negocie_suggere === 0) {
-    const prixBrut = parseInt(parsed.prix) || 0;
-    parsed.prix_negocie_suggere = arrondir(prixBrut * 0.93);
-    console.log('PRIX FALLBACK appliqué:', parsed.prix_negocie_suggere);
-  } else {
-    parsed.prix_negocie_suggere = arrondir(parsed.prix_negocie_suggere);
-  }
-  if (!parsed.economie_potentielle_min || parsed.economie_potentielle_min === 0) {
-    const prixBrut = parseInt(parsed.prix) || 0;
-    parsed.economie_potentielle_min = arrondir(prixBrut * 0.03);
-    parsed.economie_potentielle_max = arrondir(prixBrut * 0.08);
-  } else {
-    parsed.economie_potentielle_min = arrondir(parsed.economie_potentielle_min);
-    parsed.economie_potentielle_max = arrondir(parsed.economie_potentielle_max);
-  }
-  if (!parsed.fourchette_marche_min || parsed.fourchette_marche_min === 0) {
-    const prixBrut = parseInt(parsed.prix) || 0;
-    parsed.fourchette_marche_min = arrondir(prixBrut * 0.88);
-    parsed.fourchette_marche_max = arrondir(prixBrut * 1.05);
-  } else {
-    parsed.fourchette_marche_min = arrondir(parsed.fourchette_marche_min);
-    parsed.fourchette_marche_max = arrondir(parsed.fourchette_marche_max);
-  }
 
   // FIX: Force scores entiers — si GPT retourne 0 c'est anormal, on met un minimum de 1
   parsed.score_prix = Math.max(1, Math.round(parsed.score_prix || 5));
@@ -782,18 +850,45 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
 
   // ─── CORRECTIONS PRIX AUTOMATIQUES ───────────────────
   const prixDemande = parseInt(parsed.prix) || 0;
+  const prixMarche = tavilyContext?.prixMarche || null; // résultat du scraping AutoScout24
+
+  // Fourchette marché : priorité au scraping réel, fallback GPT, fallback formule
+  if (prixMarche && prixMarche.count >= 3) {
+    // Données réelles AutoScout24 CH — on écrase GPT
+    parsed.fourchette_marche_min = arrondir(prixMarche.min);
+    parsed.fourchette_marche_max = arrondir(prixMarche.max);
+    console.log(`Fourchette marché RÉELLE: ${parsed.fourchette_marche_min}–${parsed.fourchette_marche_max} (${prixMarche.count} annonces)`);
+  } else if (!parsed.fourchette_marche_min || parsed.fourchette_marche_min === 0) {
+    parsed.fourchette_marche_min = arrondir(prixDemande * 0.88);
+    parsed.fourchette_marche_max = arrondir(prixDemande * 1.05);
+    console.log('Fourchette marché FALLBACK (formule)');
+  } else {
+    parsed.fourchette_marche_min = arrondir(parsed.fourchette_marche_min);
+    parsed.fourchette_marche_max = arrondir(parsed.fourchette_marche_max);
+    console.log('Fourchette marché GPT utilisée');
+  }
   const fourchMin = parseInt(parsed.fourchette_marche_min) || 0;
   const fourchMax = parseInt(parsed.fourchette_marche_max) || 0;
 
-  // 1. Prix suggéré doit être dans la fourchette marché
-  if (fourchMin > 0 && fourchMax > 0 && parsed.prix_negocie_suggere) {
-    if (parsed.prix_negocie_suggere > fourchMax) {
-      parsed.prix_negocie_suggere = fourchMax;
-      console.log('PRIX SUGGERE corrige fourchette max:', fourchMax);
-    }
-    if (parsed.prix_negocie_suggere < fourchMin) {
-      parsed.prix_negocie_suggere = fourchMin;
-      console.log('PRIX SUGGERE corrige fourchette min:', fourchMin);
+  // 1. Prix négocié — calcul DÉTERMINISTE basé sur médiane marché réelle si disponible
+  {
+    const medianeMarche = prixMarche?.mediane || 0;
+    const sp = parsed.score_prix;
+    let reduction;
+    if (sp <= 3)       reduction = 0.10;
+    else if (sp <= 5)  reduction = 0.07;
+    else if (sp === 6) reduction = 0.05;
+    else if (sp <= 8)  reduction = 0.03;
+    else               reduction = 0.01;
+
+    if (medianeMarche > 0) {
+      // Basé sur la vraie médiane du marché
+      parsed.prix_negocie_suggere = arrondir(medianeMarche * (1 - reduction));
+      console.log(`PRIX NEGOCIE (médiane réelle): ${medianeMarche} × ${(1-reduction)} = ${parsed.prix_negocie_suggere}`);
+    } else {
+      // Fallback : basé sur le prix demandé
+      parsed.prix_negocie_suggere = arrondir(prixDemande * (1 - reduction));
+      console.log(`PRIX NEGOCIE (fallback prix demandé): ${prixDemande} × ${(1-reduction)} = ${parsed.prix_negocie_suggere}`);
     }
   }
 
