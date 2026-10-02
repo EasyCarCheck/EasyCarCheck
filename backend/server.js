@@ -642,14 +642,20 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS SUR LE WEB (à utiliser pour enrichir ton analyse) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
     : '';
 
+  // Contexte marché réel pour GPT — permet un score_prix naturellement juste
+  const prixMarcheCtx = tavilyContext?.prixMarche;
+  const contexteMarche = prixMarcheCtx?.mediane > 0
+    ? `\nDONNÉE MARCHÉ RÉELLE VÉRIFIÉE : La médiane du marché suisse pour cette ${tavilyContext?.marque || ''} ${tavilyContext?.modele || ''} ${tavilyContext?.annee || ''} est de ${prixMarcheCtx.mediane.toLocaleString()} CHF (fourchette : ${prixMarcheCtx.min.toLocaleString()} – ${prixMarcheCtx.max.toLocaleString()} CHF). Le prix demandé est de ${(scrapedData.prix || 0).toLocaleString()} CHF. Utilise ces chiffres réels pour calculer le score_prix avec précision.`
+    : '';
+
   const tavilySection = tavilyPrix
     ? `\n\nDONNÉES WEB RÉELLES SUR CE VÉHICULE (cote argus / prix marché suisse actuel) :
 ${tavilyPrix}
-${tavilyProblemesSynth}
+${tavilyProblemesSynth}${contexteMarche}
 RÈGLE STRICTE :
 1. Pour la fourchette de prix marché : utilise ces données web comme base principale. Affine avec ta connaissance du marché suisse pour donner une fourchette précise (écart max 8000-10000 CHF). La fourchette doit refléter le kilométrage ET l'année ET les options réelles du véhicule — pas une fourchette générique du modèle.
 2. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — les problèmes connus sont gérés par un autre système. NE JAMAIS remplir ce champ.\n`
-    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE — utilise ta connaissance du marché suisse pour estimer la fourchette précise (écart max 8000-10000 CHF selon kilométrage et année réels). Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
+    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE — utilise ta connaissance du marché suisse pour estimer la fourchette précise (écart max 8000-10000 CHF selon kilométrage et année réels).${contexteMarche}\nPour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
 
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
@@ -1042,16 +1048,16 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     }
     // Fallback si points supprimés — adapter selon le score prix
     const scorePrix = parsed.score_prix || 0;
-    const pointsNegatifsFallback = scorePrix >= 7
+    const pointsNegatifsFallback = (scorePrix >= 7 || parsed.verdict === 'ACHETER')
       ? [
           `Contrôle technique approfondi recommandé avant achat`,
           `Vérifier l'historique d'entretien complet auprès du vendeur`,
-          `Valeur de revente à surveiller selon l'évolution du marché`
+          `Surveiller l'état de la boîte et des éléments mécaniques spécifiques au modèle`
         ]
       : [
           `Prix légèrement au-dessus de la fourchette du marché suisse`,
           `Contrôle technique approfondi recommandé avant achat`,
-          `Valeur de revente à surveiller selon l'évolution du marché`
+          `Vérifier l'historique d'entretien complet auprès du vendeur`
         ];
     while (parsed.points_negatifs.length < 3) {
       const fallback = pointsNegatifsFallback[parsed.points_negatifs.length];
