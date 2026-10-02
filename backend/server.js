@@ -657,6 +657,14 @@ RÈGLE STRICTE :
 2. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — les problèmes connus sont gérés par un autre système. NE JAMAIS remplir ce champ.\n`
     : `\n\nAUCUNE DONNÉE WEB DISPONIBLE — utilise ta connaissance du marché suisse pour estimer la fourchette précise (écart max 8000-10000 CHF selon kilométrage et année réels).${contexteMarche}\nPour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
 
+  // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
+  const htmlNettoye = (scrapedData.html || '')
+    .replace(/\*[^*]*abgass[^*]*\*/gi, '')
+    .replace(/\*[^*]*exhaust[^*]*\*/gi, '')
+    .replace(/\*[^*]*auspuff[^*]*\*/gi, '')
+    .replace(/abgassanlage/gi, 'système d\'échappement')
+    .replace(/auspuffanlage/gi, 'système d\'échappement');
+
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
 
@@ -664,7 +672,7 @@ Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
 Voici le contenu de l'annonce automobile :
 URL: ${url}
-Contenu: ${scrapedData.html}${equipmentSection}${tavilySection}
+Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 
 ÉTAPE 1 - Extrais ces données EXACTES depuis le contenu :
 - Prix exact en CHF (nombre entier)
@@ -827,7 +835,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.1,
-    max_tokens: 4500
+    max_tokens: 8000
   }, {
     headers: {
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -836,8 +844,9 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   });
 
   const content = response.data.choices[0].message.content;
+  const finishReason = response.data.choices[0].finish_reason;
   let clean = content.replace(/```json|```/g, '').trim();
-  console.log('GPT RESPONSE:', clean.substring(0, 500));
+  console.log('GPT RESPONSE (finish_reason:', finishReason + '):', clean.substring(0, 500));
 
   let parsed;
   try {
