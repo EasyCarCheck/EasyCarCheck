@@ -186,6 +186,62 @@ async function scrapeAnnonce(url, langue = 'fr') {
       if (weightMatch) equipmentData += "\nPOIDS TOTAL: " + weightMatch[1] + " kg";
       if (listPriceMatch) equipmentData += "\nPRIX CATALOGUE: " + listPriceMatch[1] + " CHF";
 
+      // ── KILOMÉTRAGE depuis JSON structuré (avant truncation HTML) ──
+      const kmJsonMatch = html.match(/\\"mileage\\":(\d+)/) || html.match(/"mileage":(\d+)/) ||
+                          html.match(/\\"km\\":(\d+)/) || html.match(/"km":(\d+)/);
+      if (kmJsonMatch) {
+        const kmVal = parseInt(kmJsonMatch[1]);
+        if (kmVal > 100 && kmVal < 2000000) {
+          equipmentData += "\nKILOMÉTRAGE: " + kmVal.toLocaleString('fr-CH') + " km";
+          console.log("KM EXTRAIT (JSON):", kmVal);
+        }
+      } else {
+        // Fallback: regex sur le HTML brut avant truncation
+        const kmRawMatch = html.match(/(\d[\d\s']{2,7})\s*km/i);
+        if (kmRawMatch) {
+          const kmVal = parseInt(kmRawMatch[1].replace(/[\s']/g, ''));
+          if (kmVal > 100 && kmVal < 2000000) {
+            equipmentData += "\nKILOMÉTRAGE: " + kmVal.toLocaleString('fr-CH') + " km";
+            console.log("KM EXTRAIT (regex):", kmVal);
+          }
+        }
+      }
+
+      // ── ANNÉE depuis JSON structuré ──
+      const anneeJsonMatch = html.match(/\\"firstRegistration\\":\\"?(\d{4})/) ||
+                             html.match(/"firstRegistration":"?(\d{4})/) ||
+                             html.match(/\\"year\\":(\d{4})/) || html.match(/"year":(\d{4})/);
+      if (anneeJsonMatch) {
+        equipmentData += "\nANNÉE: " + anneeJsonMatch[1];
+        console.log("ANNÉE EXTRAITE:", anneeJsonMatch[1]);
+      }
+
+      // ── PRIX DEMANDÉ depuis JSON structuré ──
+      const prixJsonMatch = html.match(/\\"price\\":(\d{4,7})/) || html.match(/"price":(\d{4,7})/);
+      if (prixJsonMatch) {
+        const prixVal = parseInt(prixJsonMatch[1]);
+        if (prixVal > 1000) {
+          equipmentData += "\nPRIX DEMANDÉ: " + prixVal.toLocaleString('fr-CH') + " CHF";
+          console.log("PRIX EXTRAIT (JSON):", prixVal);
+        }
+      }
+
+      // ── DESCRIPTION VENDEUR depuis JSON structuré (avant truncation) ──
+      // AutoScout24 stocke la description dans "description":"..." dans le JSON Next.js
+      const descMatch = html.match(/\\"description\\":\\"((?:[^\\"\\\\]|\\\\.|(?:\\\\u[0-9a-fA-F]{4}))+)\\"/) ||
+                        html.match(/"description":"((?:[^"\\]|\\.)+)"(?:\s*,|\s*})/);
+      if (descMatch) {
+        let descText = descMatch[1]
+          .replace(/\\n/g, ' ').replace(/\\r/g, '').replace(/\\t/g, ' ')
+          .replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+          .replace(/\s{2,}/g, ' ').trim();
+        // Filtrer les descriptions qui sont en fait du JSON ou du code (trop courtes ou trop techniques)
+        if (descText.length > 30 && descText.length < 5000 && !descText.startsWith('{') && !descText.startsWith('[')) {
+          equipmentData += "\nDESCRIPTION_VENDEUR: " + descText;
+          console.log("DESCRIPTION VENDEUR EXTRAITE:", descText.substring(0, 100));
+        }
+      }
+
       console.log("CO2 EXTRAIT:", co2Value);
     } catch(e) {
       console.log("Extraction JSON echouee:", e.message);
@@ -420,10 +476,18 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '') {
 
     console.log(`Tavily contenu brut collecté: ${toutLeContenu.length} chars`);
 
+    // Extraire les numéros de rappel constructeur AVANT la synthèse GPT (pour ne pas les perdre)
+    const recallMatches = [...toutLeContenu.matchAll(/\b([0-9]{2}[A-Z][0-9]{6,}|NHTSA[:\s#]*[A-Z0-9\-]+|campagne\s+(?:de\s+)?rappel\s+n[o°.]?\s*([A-Z0-9\-]+))/gi)];
+    const recallNums = [...new Set(recallMatches.map(m => (m[2] || m[1]).trim().toUpperCase()))].filter(n => n.length >= 5).slice(0, 3);
+    console.log('Numéros de rappel détectés:', recallNums);
+
     // GPT-4o synthétise les vrais problèmes depuis le contenu brut
     let problemesListe = [];
     if (toutLeContenu.length > 100) {
       try {
+        const recallContext = recallNums.length > 0
+          ? `\nIMPORTANT: les numéros de rappel suivants ont été détectés dans le texte et DOIVENT apparaître tels quels dans ta réponse : ${recallNums.join(', ')}`
+          : '';
         const gptResp = await axios.post('https://api.openai.com/v1/chat/completions', {
           model: 'gpt-4o',
           temperature: 0,
@@ -436,9 +500,9 @@ Règles strictes :
 - Basé uniquement sur ce qui est mentionné dans le texte
 - Formulation objective et factuelle (pas "je", pas "nous")
 - En français uniquement
-- Si rappel constructeur trouvé, inclure
-- Format de réponse : JSON array de strings, exemple: ["Problème 1.", "Problème 2.", "Problème 3."]
-- Si aucun problème réel documenté dans le texte, retourne []`
+- Si rappel constructeur trouvé avec numéro officiel (ex: 22V901000, NHTSA...), OBLIGATOIREMENT inclure ce numéro exact dans la phrase
+- Format de réponse : JSON array de strings, exemple: ["Problème 1.", "Rappel de sécurité no. 22V901000 — description.", "Problème 3."]
+- Si aucun problème réel documenté dans le texte, retourne []${recallContext}`
           }, {
             role: 'user',
             content: `Texte sur la ${marque} ${modele} ${annee}:\n\n${toutLeContenu.slice(0, 3000)}`
@@ -453,6 +517,20 @@ Règles strictes :
         if (match) {
           problemesListe = JSON.parse(match[0]).filter(p => typeof p === 'string' && p.length > 20).slice(0, 4);
           console.log(`GPT synthèse problèmes: ${problemesListe.length} problèmes extraits`);
+          // Vérifier que les numéros de rappel sont bien présents dans la liste finale
+          for (const recallNum of recallNums) {
+            const alreadyPresent = problemesListe.some(p => p.includes(recallNum));
+            if (!alreadyPresent) {
+              // Chercher la phrase contextuelle autour du numéro dans le contenu brut
+              const recallIdx = toutLeContenu.indexOf(recallNum);
+              if (recallIdx !== -1) {
+                const ctx = toutLeContenu.substring(Math.max(0, recallIdx - 80), recallIdx + 120).replace(/\s+/g, ' ').trim();
+                problemesListe.push(`Rappel de sécurité no. ${recallNum} — ${ctx.substring(0, 100)}.`);
+                console.log(`Numéro de rappel ${recallNum} forcé dans la liste`);
+              }
+            }
+          }
+          problemesListe = problemesListe.slice(0, 4);
         }
       } catch (e) {
         console.log('GPT synthèse problèmes erreur:', e.message);
@@ -677,9 +755,9 @@ URL: ${url}
 Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 
 ÉTAPE 1 - Extrais ces données EXACTES depuis le contenu :
-- Prix exact en CHF (nombre entier)
-- Kilométrage exact (nombre entier)
-- Année exacte
+- Prix exact en CHF (nombre entier) : utilise "PRIX DEMANDÉ" des données structurées si disponible
+- Kilométrage exact (nombre entier) : utilise "KILOMÉTRAGE" des données structurées si disponible — c'est la source la plus fiable
+- Année exacte : utilise "ANNÉE" des données structurées si disponible
 - Marque et modèle exacts
 - Carburant (Essence / Diesel / Électrique / Hybride)
 - Boîte de vitesses
@@ -687,7 +765,7 @@ Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 - CO2 en g/km : utilise la valeur de la section "DONNÉES STRUCTURÉES" si disponible (nombre entier, sinon null)
 - Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
-- Description complète du vendeur : le texte descriptif du véhicule rédigé par le vendeur (état, historique, options, rappels, numéros de série, raison de vente). Exclure uniquement : menus de navigation du site, avis Google des clients, horaires d'ouverture du garage. Si aucune description vendeur n'est trouvée, mets "Non communiquée".
+- Description complète du vendeur : utilise en priorité le champ "DESCRIPTION_VENDEUR" de la section "DONNÉES STRUCTURÉES" ci-dessus s'il est présent. Sinon, extraire le texte descriptif du véhicule rédigé par le vendeur depuis le contenu HTML (état, historique, options, rappels, numéros de série, raison de vente). Exclure uniquement : menus de navigation du site, avis Google des clients, horaires d'ouverture du garage. Si vraiment aucune description vendeur n'est trouvée ni dans les données structurées ni dans le contenu, mets "Non communiquée".
 - TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète). Si la section "DONNÉES STRUCTURÉES" indique "aucune donnée structurée disponible", extraire les options depuis le texte brut de l'annonce (description, caractéristiques, titre). Supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste". Ne jamais retourner un tableau vide — extraire au minimum les équipements standards du modèle si aucune info disponible.
 
 ÉTAPE 2 - Analyse approfondie :
