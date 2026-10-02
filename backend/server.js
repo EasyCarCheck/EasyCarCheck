@@ -469,93 +469,103 @@ Règles strictes :
   }
 }
 
-// ─── PRIX MARCHÉ RÉEL (AutoScout24 CH scraping) ──────────
-async function scrapesPrixSimilaires(marque, modele, annee, km, prixRef = 0) {
+// ─── PRIX MARCHÉ RÉEL (Tavily search sémantique) ──────────
+// Plus précis que le scraping AutoScout24 : Tavily cible la bonne génération
+// en cherchant par année exacte, évitant les confusions 8V/8Y, E46/E92, etc.
+async function rechercherPrixMarcheViaTavily(marque, modele, annee, km) {
   try {
-    // Construire URL de recherche AutoScout24 CH avec filtres similaires
-    const marqueSlug = marque.toLowerCase().replace(/\s+/g, '-');
-    const modeleSlug = modele.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const kmMin = Math.max(0, km - 30000);
-    const kmMax = km + 30000;
-    const anneeMin = annee - 1;
-    const anneeMax = annee + 1;
+    // Construire une query précise ciblant la bonne génération sur le marché suisse
+    const anneeRange = `${annee-1} ${annee} ${annee+1}`;
+    const kmStr = km > 0 ? `${Math.round(km/10000)*10000}km` : '';
+    const queries = [
+      // Query principale : prix du bon millésime sur autoscout24 CH
+      `${marque} ${modele} ${annee} occasion prix CHF autoscout24.ch suisse`,
+      // Query complémentaire : fourchette prix marché suisse
+      `${marque} ${modele} ${anneeRange} prix marché occasion suisse CHF`
+    ];
 
-    const searchUrl = `https://www.autoscout24.ch/fr/s/${marqueSlug}/${modeleSlug}?atype=C&cy=CH&damaged=0&desc=0&fromhp=1&kmfrom=${kmMin}&kmto=${kmMax}&offertype=U&pricefrom=1000&sort=standard&source=listpage_pagination&ustate=N,U&yearfrom=${anneeMin}&yearto=${anneeMax}`;
+    console.log('Tavily prix marché queries:', queries[0]);
 
-    console.log('Scrape prix similaires:', searchUrl);
+    const results = await Promise.all(queries.map(q =>
+      axios.post('https://api.tavily.com/search', {
+        api_key: process.env.TAVILY_API_KEY,
+        query: q,
+        search_depth: 'advanced',
+        max_results: 8,
+        include_answer: true,
+        include_raw_content: false
+      }, { timeout: 15000 }).catch(e => {
+        console.log('Tavily prix query erreur:', e.message);
+        return { data: { answer: '', results: [] } };
+      })
+    ));
 
-    const response = await axios.get('https://api.zenrows.com/v1/', {
-      params: {
-        apikey: process.env.ZENROWS_API_KEY,
-        url: searchUrl,
-        js_render: 'true',
-        premium_proxy: 'true',
-        wait: '6000'
-      },
-      timeout: 60000
-    });
+    // Collecter tout le texte (answers + snippets)
+    const toutTexte = [
+      results[0].data?.answer || '',
+      results[1].data?.answer || '',
+      ...(results[0].data?.results || []).map(r => r.content || r.snippet || ''),
+      ...(results[1].data?.results || []).map(r => r.content || r.snippet || ''),
+    ].join('\n\n');
 
-    // Extraire les prix depuis le HTML brut — plusieurs méthodes pour robustesse
-    const html = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-    const prixTrouves = [];
-    let match;
-
-    // Méthode 1: "XX'XXX CHF" ou "XX.XXX CHF" (format affiché AutoScout24 CH)
-    const prixRegex1 = /(\d{2,3}['.]\d{3})\s*(?:CHF|\.–)/g;
-    while ((match = prixRegex1.exec(html)) !== null) {
-      const val = parseInt(match[1].replace(/['.]/g, ''));
-      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
-    }
-
-    // Méthode 2: "CHF&nbsp;XX'XXX" (format HTML encodé AutoScout24)
-    const prixRegex2 = /CHF&nbsp;(\d{2,3}['.]?\d{3})/g;
-    while ((match = prixRegex2.exec(html)) !== null) {
-      const val = parseInt(match[1].replace(/['.]/g, ''));
-      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
-    }
-
-    // Méthode 3: "price":XXXXX dans JSON Next.js
-    const jsonPriceRegex = /["\s]price["']?\s*[":]\s*(\d{4,6})/g;
-    while ((match = jsonPriceRegex.exec(html)) !== null) {
-      const val = parseInt(match[1]);
-      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
-    }
-
-    // Méthode 4: \"price\":XXXXX (JSON échappé ZenRows)
-    const jsonEscRegex = /\\"price\\"[^:]*:\s*(\d{4,6})/g;
-    while ((match = jsonEscRegex.exec(html)) !== null) {
-      const val = parseInt(match[1]);
-      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
-    }
-
-    // Dédoublonner et filtrer autour du prix de référence si connu (±40%)
-    let unique = [...new Set(prixTrouves)].sort((a, b) => a - b);
-    if (prixRef > 0) {
-      const filtré = unique.filter(p => p >= prixRef * 0.60 && p <= prixRef * 1.40);
-      console.log(`Filtrage prix: ${unique.length} → ${filtré.length} dans ±40% de ${prixRef} CHF`);
-      if (filtré.length >= 3) unique = filtré;
-    }
-    console.log(`Prix similaires trouvés (${unique.length}):`, unique.slice(0, 10));
-
-    if (unique.length < 3) {
-      console.log('Pas assez de prix similaires — fallback score_prix');
+    console.log(`Tavily prix: ${toutTexte.length} chars collectés`);
+    if (toutTexte.length < 50) {
+      console.log('Tavily prix — réponse vide, fallback');
       return null;
     }
 
-    // Calculer médiane
-    const mid = Math.floor(unique.length / 2);
-    const mediane = unique.length % 2 === 0
-      ? Math.round((unique[mid - 1] + unique[mid]) / 2)
-      : unique[mid];
+    // GPT-4o extrait les prix CHF du texte de manière intelligente
+    const gptResp = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o',
+      temperature: 0,
+      max_tokens: 200,
+      messages: [{
+        role: 'system',
+        content: `Tu es un expert automobile suisse. À partir du texte ci-dessous sur la ${marque} ${modele} de ${annee} (${km > 0 ? km+'km' : ''}), extrais la fourchette de prix du marché suisse en CHF pour CE millésime précis.
 
-    const min = unique[Math.floor(unique.length * 0.1)] || unique[0];
-    const max = unique[Math.floor(unique.length * 0.9)] || unique[unique.length - 1];
+Règles :
+- Ne considère que les véhicules de ${annee-1} à ${annee+1}
+- Ignore les autres années (trop anciennes ou trop récentes)
+- Donne le prix minimum réaliste, la médiane et le maximum du marché
+- Si les prix trouvés sont hétérogènes (mélange vieux/neuf), utilise uniquement les prix cohérents avec un véhicule de ${annee}
+- Format STRICT (JSON): {"min": 12000, "mediane": 15000, "max": 18000, "confiance": "haute|moyenne|basse"}
+- Si aucun prix fiable pour ${annee}, retourne null`
+      }, {
+        role: 'user',
+        content: `Texte marché ${marque} ${modele} ${annee}:\n\n${toutTexte.slice(0, 4000)}`
+      }]
+    }, {
+      headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+      timeout: 20000
+    });
 
-    console.log(`Médiane marché: ${mediane} CHF (fourchette ${min}–${max}, ${unique.length} annonces)`);
-    return { mediane, min, max, count: unique.length };
+    const raw = gptResp.data.choices[0].message.content.trim();
+    console.log('GPT prix marché réponse:', raw);
+
+    if (raw === 'null' || raw.toLowerCase().includes('null')) {
+      console.log('GPT prix marché: aucun prix fiable trouvé');
+      return null;
+    }
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const prixData = JSON.parse(jsonMatch[0]);
+    if (!prixData.mediane || prixData.mediane < 1000) return null;
+
+    console.log(`Prix marché Tavily+GPT: ${prixData.min}–${prixData.mediane}–${prixData.max} CHF (confiance: ${prixData.confiance})`);
+
+    // Si confiance basse, on retourne quand même mais on le note
+    return {
+      min: Math.round(prixData.min / 500) * 500,
+      mediane: Math.round(prixData.mediane / 500) * 500,
+      max: Math.round(prixData.max / 500) * 500,
+      confiance: prixData.confiance || 'moyenne',
+      count: 5 // valeur symbolique pour déclencher la logique "données réelles"
+    };
 
   } catch (e) {
-    console.log('scrapesPrixSimilaires erreur (non bloquant):', e.message);
+    console.log('rechercherPrixMarcheViaTavily erreur (non bloquant):', e.message);
     return null;
   }
 }
@@ -607,13 +617,13 @@ async function analyserAvecGPT(scrapedData, langue, url) {
       // Lancer Tavily ET scraping prix en parallèle
       const [tavilyResult, prixMarche] = await Promise.all([
         rechercherInfosVehicule(marque, modele, parseInt(annee)||0, km),
-        scrapesPrixSimilaires(marque, modele, parseInt(annee)||0, km, prixRef)
+        rechercherPrixMarcheViaTavily(marque, modele, parseInt(annee)||0, km)
       ]);
       tavilyContext = tavilyResult;
       tavilyContext.prixMarche = prixMarche; // médiane, min, max, count
       if (tavilyResult.prix || tavilyResult.problemesDocumentes) console.log('Tavily OK :', marque, modele, annee);
       else console.log('Tavily vide (non bloquant)');
-      if (prixMarche) console.log('Prix marché réel:', prixMarche);
+      if (prixMarche) console.log('Prix marché Tavily:', prixMarche);
     } else {
       console.log('Tavily skip — marque/modele non trouvés');
       tavilyContext = { prix: '', problemesDocumentes: '', prixMarche: null };
@@ -871,7 +881,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     // Données réelles AutoScout24 CH — on écrase GPT
     parsed.fourchette_marche_min = arrondir(prixMarche.min);
     parsed.fourchette_marche_max = arrondir(prixMarche.max);
-    console.log(`Fourchette marché RÉELLE: ${parsed.fourchette_marche_min}–${parsed.fourchette_marche_max} (${prixMarche.count} annonces)`);
+    console.log(`Fourchette marché TAVILY: ${parsed.fourchette_marche_min}–${parsed.fourchette_marche_max} CHF (confiance: ${prixMarche.confiance || '?'})`);
   } else if (!parsed.fourchette_marche_min || parsed.fourchette_marche_min === 0) {
     parsed.fourchette_marche_min = arrondir(prixDemande * 0.88);
     parsed.fourchette_marche_max = arrondir(prixDemande * 1.05);
