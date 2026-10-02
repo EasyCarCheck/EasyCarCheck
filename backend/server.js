@@ -906,9 +906,10 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     else               reduction = 0.01;
 
     if (medianeMarche > 0) {
-      // Basé sur la vraie médiane du marché
-      parsed.prix_negocie_suggere = arrondir(medianeMarche * (1 - reduction));
-      console.log(`PRIX NEGOCIE (médiane réelle): ${medianeMarche} × ${(1-reduction)} = ${parsed.prix_negocie_suggere}`);
+      const prixBrut = arrondir(medianeMarche * (1 - reduction));
+      // Le prix négocié ne peut jamais dépasser le prix demandé
+      parsed.prix_negocie_suggere = Math.min(prixBrut, arrondir(prixDemande * 0.99));
+      console.log(`PRIX NEGOCIE (médiane réelle): ${medianeMarche} × ${(1-reduction)} = ${prixBrut} → final ${parsed.prix_negocie_suggere}`);
     } else {
       // Fallback : basé sur le prix demandé
       parsed.prix_negocie_suggere = arrondir(prixDemande * (1 - reduction));
