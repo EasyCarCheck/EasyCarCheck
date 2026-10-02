@@ -1240,6 +1240,36 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     </div>
   </div>
 
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#5a7a9a;"></div><div class="section-label" style="color:#5a7a9a;">${langue === 'de' ? 'MARKTANALYSE' : langue === 'it' ? 'ANALISI DI MERCATO' : langue === 'en' ? 'MARKET ANALYSIS' : 'ANALYSE DU MARCHÉ'}</div></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
+      <div style="background:#f0f6ff; border-radius:8px; padding:12px; border-top:3px solid #1a3a6e;">
+        <div style="font-size:9px; font-weight:700; color:#5a7a9a; letter-spacing:0.5px; margin-bottom:5px;">${langue === 'de' ? 'VERLANGTER PREIS' : langue === 'it' ? 'PREZZO RICHIESTO' : langue === 'en' ? 'ASKING PRICE' : 'PRIX DEMANDÉ'}</div>
+        <div style="font-size:20px; font-weight:800; color:#1a3a6e;">${analyse.prix?.toLocaleString()} CHF</div>
+      </div>
+      <div style="background:#f0f6ff; border-radius:8px; padding:12px; border-top:3px solid #5a7a9a;">
+        <div style="font-size:9px; font-weight:700; color:#5a7a9a; letter-spacing:0.5px; margin-bottom:5px;">${langue === 'de' ? 'MARKTPREISSPANNE' : langue === 'it' ? 'FASCIA DI MERCATO' : langue === 'en' ? 'MARKET RANGE' : 'FOURCHETTE MARCHÉ'}</div>
+        <div style="font-size:14px; font-weight:700; color:#5a7a9a;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
+      </div>
+      <div style="background:#f0f6ff; border-radius:8px; padding:12px; border-top:3px solid ${(analyse.prix - (analyse.fourchette_marche_min + analyse.fourchette_marche_max) / 2) > 0 ? '#d4a00a' : '#28a745'};">
+        <div style="font-size:9px; font-weight:700; color:#5a7a9a; letter-spacing:0.5px; margin-bottom:5px;">${langue === 'de' ? 'MARKTPOSITION' : langue === 'it' ? 'POSIZIONE MERCATO' : langue === 'en' ? 'MARKET POSITION' : 'POSITION MARCHÉ'}</div>
+        <div style="font-size:14px; font-weight:700; color:${(analyse.prix - (analyse.fourchette_marche_min + analyse.fourchette_marche_max) / 2) > 0 ? '#d4a00a' : '#28a745'};">${(() => { const diff = analyse.prix - (analyse.fourchette_marche_min + analyse.fourchette_marche_max) / 2; const pct = Math.round(Math.abs(diff) / ((analyse.fourchette_marche_min + analyse.fourchette_marche_max) / 2) * 100); if (diff > 500) return (langue === 'de' ? '+' + pct + '% über Markt' : langue === 'it' ? '+' + pct + '% sopra mercato' : langue === 'en' ? '+' + pct + '% above market' : '+' + pct + '% au-dessus'); else if (diff < -500) return (langue === 'de' ? pct + '% unter Markt' : langue === 'it' ? pct + '% sotto mercato' : langue === 'en' ? pct + '% below market' : pct + '% en dessous'); else return (langue === 'de' ? 'Im Marktbereich' : langue === 'it' ? 'Nel range mercato' : langue === 'en' ? 'Fair market price' : 'Prix dans la norme'); })()} </div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div style="background:#fff8e1; border-radius:8px; padding:12px; border-left:3px solid #d4a00a;">
+        <div style="font-size:9px; font-weight:700; color:#d4a00a; letter-spacing:0.5px; margin-bottom:5px;">${langue === 'de' ? 'EMPFOHLENER VERHANDLUNGSPREIS' : langue === 'it' ? 'PREZZO NEGOZIAZIONE SUGGERITO' : langue === 'en' ? 'SUGGESTED NEGOTIATION PRICE' : 'PRIX DE NÉGOCIATION SUGGÉRÉ'}</div>
+        <div style="font-size:22px; font-weight:900; color:#1a3a6e;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
+        <div style="font-size:10px; color:#5a7a9a; margin-top:3px;">${langue === 'de' ? '↓ Ersparnis:' : langue === 'it' ? '↓ Risparmio:' : langue === 'en' ? '↓ Savings:' : '↓ Économie:'} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF</div>
+      </div>
+      <div style="background:#e8f5e9; border-radius:8px; padding:12px; border-left:3px solid #28a745;">
+        <div style="font-size:9px; font-weight:700; color:#28a745; letter-spacing:0.5px; margin-bottom:5px;">${langue === 'de' ? 'BEWERTUNG PREIS/SCORE' : langue === 'it' ? 'VALUTAZIONE PREZZO' : langue === 'en' ? 'PRICE RATING' : 'ÉVALUATION PRIX'}</div>
+        <div style="font-size:26px; font-weight:900; color:${analyse.score_prix >= 7 ? '#28a745' : analyse.score_prix >= 5 ? '#d4a00a' : '#dc3545'};">${analyse.score_prix}/10</div>
+        <div style="font-size:10px; color:#5a7a9a; margin-top:3px;">${analyse.score_prix >= 7 ? (langue === 'de' ? 'Gutes Preis-Leistungs-Verhältnis' : langue === 'it' ? 'Buon rapporto qualità-prezzo' : langue === 'en' ? 'Good value for money' : 'Bon rapport qualité/prix') : analyse.score_prix >= 5 ? (langue === 'de' ? 'Marktüblicher Preis' : langue === 'it' ? 'Prezzo nella media' : langue === 'en' ? 'Average market price' : 'Prix dans la moyenne') : (langue === 'de' ? 'Preis zu hoch' : langue === 'it' ? 'Prezzo troppo alto' : langue === 'en' ? 'Price too high' : 'Prix trop élevé')}</div>
+      </div>
+    </div>
+  </div>
+
   ${analyse.options?.length > 0 ? `
   <div class="section section-white" style="page-break-before:always;">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.options}</div></div>
@@ -1306,6 +1336,34 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">${L.checklist}</div></div>
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item" style="border-left:3px solid #28a745;"><span style="color:#28a745; font-weight:700; margin-right:6px;">></span>${c}</div>`).join('')}
+  </div>
+
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#2952a3;"></div><div class="section-label" style="color:#2952a3;">${langue === 'de' ? 'GARANTIE & ABSICHERUNG' : langue === 'it' ? 'GARANZIA & ASSICURAZIONE' : langue === 'en' ? 'WARRANTY & INSURANCE' : 'GARANTIE & ASSURANCE'}</div></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+      <div style="background:#f0f6ff; border-radius:8px; padding:12px;">
+        <div style="font-size:10px; font-weight:700; color:#1a3a6e; margin-bottom:6px;">${langue === 'de' ? '🔧 GARANTIEPRÜFUNG' : langue === 'it' ? '🔧 VERIFICA GARANZIA' : langue === 'en' ? '🔧 WARRANTY CHECK' : '🔧 VÉRIFICATION GARANTIE'}</div>
+        <div style="font-size:10px; color:#0d1b35; line-height:1.6;">${langue === 'de' ? '• Herstellergarantie noch aktiv?\n• Laufleistungsgarantie prüfen\n• Garantiebedingungen beim Händler klären' : langue === 'it' ? '• Garanzia costruttore ancora attiva?\n• Verificare garanzia chilometrica\n• Chiarire condizioni garanzia' : langue === 'en' ? '• Manufacturer warranty still active?\n• Check mileage warranty limits\n• Clarify warranty terms with dealer' : '• Garantie constructeur encore active ?\n• Vérifier les limites de kilométrage\n• Clarifier les conditions chez le vendeur'}</div>
+      </div>
+      <div style="background:#f0f6ff; border-radius:8px; padding:12px;">
+        <div style="font-size:10px; font-weight:700; color:#1a3a6e; margin-bottom:6px;">${langue === 'de' ? '🛡️ VERSICHERUNG SCHWEIZ' : langue === 'it' ? '🛡️ ASSICURAZIONE SVIZZERA' : langue === 'en' ? '🛡️ SWISS INSURANCE' : '🛡️ ASSURANCE SUISSE'}</div>
+        <div style="font-size:10px; color:#0d1b35; line-height:1.6;">${langue === 'de' ? '• RC-Versicherung: Pflichtversicherung\n• Kaskoversicherung empfohlen\n• Vergleich: comparis.ch' : langue === 'it' ? '• RC auto: assicurazione obbligatoria\n• Casco consigliata per auto usata\n• Confronto: comparis.ch' : langue === 'en' ? '• Third-party liability: mandatory\n• Comprehensive recommended\n• Compare at: comparis.ch' : '• RC auto : assurance obligatoire\n• Casco recommandée pour occasion\n• Comparaison : comparis.ch'}</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+      <div style="background:#fff8e1; border-radius:8px; padding:10px; text-align:center; border-top:2px solid #d4a00a;">
+        <div style="font-size:9px; color:#5a7a9a; margin-bottom:3px;">${langue === 'de' ? 'WARTUNG JAHR 1' : langue === 'it' ? 'MANUTENZIONE ANNO 1' : langue === 'en' ? 'MAINTENANCE YEAR 1' : 'ENTRETIEN AN 1'}</div>
+        <div style="font-size:16px; font-weight:800; color:#d4a00a;">~${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
+      </div>
+      <div style="background:#fff8e1; border-radius:8px; padding:10px; text-align:center; border-top:2px solid #d4a00a;">
+        <div style="font-size:9px; color:#5a7a9a; margin-bottom:3px;">${langue === 'de' ? 'TOTAL 3 JAHRE' : langue === 'it' ? 'TOTALE 3 ANNI' : langue === 'en' ? 'TOTAL 3 YEARS' : 'TOTAL 3 ANS'}</div>
+        <div style="font-size:16px; font-weight:800; color:#d4a00a;">~${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
+      </div>
+      <div style="background:#e8f5e9; border-radius:8px; padding:10px; text-align:center; border-top:2px solid #28a745;">
+        <div style="font-size:9px; color:#5a7a9a; margin-bottom:3px;">${langue === 'de' ? 'ERSPARNIS MÖGLICH' : langue === 'it' ? 'RISPARMIO POSSIBILE' : langue === 'en' ? 'POTENTIAL SAVINGS' : 'ÉCONOMIE POSSIBLE'}</div>
+        <div style="font-size:16px; font-weight:800; color:#28a745;">${analyse.economie_potentielle_min?.toLocaleString()} CHF</div>
+      </div>
+    </div>
   </div>
 
   <div style="page-break-before:always;">
