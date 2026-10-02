@@ -1100,6 +1100,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Emoji&display=swap" rel="stylesheet">
 <style>
+  @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; height: auto !important; }
   .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 14px 22px; border-bottom: 2px solid #00B4D8; }
@@ -1331,7 +1332,29 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:4px 0;">${analyse.conseil_achat}</p>
     </div>` : ''}
 
-    <div class="footer">
+    <div style="margin:12px 22px 0 22px; padding:18px 20px; background:linear-gradient(135deg,#1a3a6e,#2952a3); border-radius:10px; color:#fff;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:1px; color:#00B4D8; margin-bottom:10px; text-transform:uppercase;">${langue === 'de' ? 'Über EasyCarCheck' : langue === 'it' ? 'Su EasyCarCheck' : langue === 'en' ? 'About EasyCarCheck' : 'À propos d\'EasyCarCheck'}</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
+          <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">🔍 ${langue === 'de' ? 'KI-Analyse' : langue === 'it' ? 'Analisi IA' : langue === 'en' ? 'AI Analysis' : 'Analyse IA'}</div>
+          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'GPT-4o analysiert Preis, Zuverlässigkeit und Wartungskosten anhand realer Marktdaten.' : langue === 'it' ? 'GPT-4o analizza prezzo, affidabilità e costi di manutenzione con dati reali di mercato.' : langue === 'en' ? 'GPT-4o analyzes price, reliability and maintenance costs based on real market data.' : 'GPT-4o analyse le prix, la fiabilité et les coûts d\'entretien à partir de données réelles du marché.'}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
+          <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">📊 ${langue === 'de' ? 'Schweizer Markt' : langue === 'it' ? 'Mercato Svizzero' : langue === 'en' ? 'Swiss Market' : 'Marché Suisse'}</div>
+          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'Preise und Kosten sind auf den Schweizer Markt 2026 kalibriert (CHF, Steuern, Versicherung).' : langue === 'it' ? 'Prezzi e costi calibrati sul mercato svizzero 2026 (CHF, tasse, assicurazione).' : langue === 'en' ? 'Prices and costs calibrated for the 2026 Swiss market (CHF, taxes, insurance).' : 'Prix et coûts calibrés pour le marché suisse 2026 (CHF, taxes, assurance).'}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
+          <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">⚡ ${langue === 'de' ? 'Sofortbericht' : langue === 'it' ? 'Rapporto Immediato' : langue === 'en' ? 'Instant Report' : 'Rapport Immédiat'}</div>
+          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'Analyse in unter 60 Sekunden. Kein Warten, keine Terminvereinbarung.' : langue === 'it' ? 'Analisi in meno di 60 secondi. Nessuna attesa, nessun appuntamento.' : langue === 'en' ? 'Analysis in under 60 seconds. No waiting, no appointment.' : 'Analyse en moins de 60 secondes. Pas d\'attente, pas de rendez-vous.'}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
+          <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">🛡️ ${langue === 'de' ? 'Unabhängig' : langue === 'it' ? 'Indipendente' : langue === 'en' ? 'Independent' : 'Indépendant'}</div>
+          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'Keine Verbindung zu Händlern. Nur Ihr Interesse zählt.' : langue === 'it' ? 'Nessun legame con concessionari. Solo il tuo interesse conta.' : langue === 'en' ? 'No ties to dealers. Only your interest matters.' : 'Aucun lien avec les vendeurs. Seul votre intérêt compte.'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer" style="margin-top:12px;">
       Source : ${url}<br>
       ${L.disclaimer}<br>
       EasyCarCheck · easycarcheck.ch · contact@easycarcheck.ch · Suisse
@@ -1351,7 +1374,8 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' }
+      margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' },
+      preferCSSPageSize: true
     });
     return pdfBuffer;
   } finally {
