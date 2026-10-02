@@ -422,24 +422,35 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '') {
     }
 
     function estDonneeValide(phrase) {
+      const p = phrase.trim();
+      const pl = p.toLowerCase();
+      // Filtrer fragments vides ou trop courts
+      if (p.length < 25) return false;
       // Filtrer les lignes de données brutes de base de données
-      if (phrase.trim().startsWith(']')) return false;
-      if ((phrase.match(/\|/g) || []).length >= 2) return false;  // lignes de tableau avec pipes
-      if (phrase.includes('~') && phrase.includes('€') && phrase.includes('km')) return false;  // données de coûts
+      if (p.startsWith(']') || p.startsWith('[') || p.startsWith('{')) return false;
+      if ((phrase.match(/\|/g) || []).length >= 2) return false;
+      if (phrase.includes('~') && phrase.includes('€') && phrase.includes('km')) return false;
       // Filtrer les phrases marketing / appels à l'action
-      const phrasesBannies = ['découvrez', 'visitez', 'cliquez', 'inscrivez', 'abonnez', 'notre site', 'notre application', 'téléchargez', 'rejoignez', 'consultez notre', 'en savoir plus', 'voir les avis', 'lire la suite'];
-      const pl = phrase.toLowerCase();
+      const phrasesBannies = ['découvrez', 'visitez', 'cliquez', 'inscrivez', 'abonnez', 'notre site', 'notre application', 'téléchargez', 'rejoignez', 'consultez notre', 'en savoir plus', 'voir les avis', 'lire la suite', 'contactez', 'appelez'];
       if (phrasesBannies.some(b => pl.includes(b))) return false;
-      if (phrase.match(/^\s*[\[\]{}]/)) return false;  // fragments JSON
       // Filtrer les phrases introductives ou de transition (fragments incomplets)
-      const prefixesIntro = ['elle présente néanmoins', 'elle présente cependant', 'néanmoins les défauts', 'cependant les défauts', 'les défauts suivants', 'parmi les défauts', 'on peut noter', 'il faut noter', 'à noter que', 'cependant, ', 'néanmoins, ', 'toutefois, ', 'en revanche,'];
-      if (prefixesIntro.some(p => pl.startsWith(p) || pl.includes(p))) return false;
+      const prefixesIntro = ['elle présente néanmoins', 'elle présente cependant', 'néanmoins les défauts', 'cependant les défauts', 'les défauts suivants', 'parmi les défauts', 'on peut noter', 'il faut noter', 'à noter que', 'cependant, ', 'néanmoins, ', 'toutefois, ', 'en revanche,', 'bref ', 'ainsi ', 'donc ', 'or '];
+      if (prefixesIntro.some(pre => pl.startsWith(pre))) return false;
       // Filtrer les phrases avec tiret narratif en début (continuation de liste)
-      if (phrase.trim().startsWith('- ') || phrase.trim().startsWith('– ') || phrase.trim().startsWith('• ')) return false;
-      // Filtrer phrases trop longues (> 180 chars) — fragments de paragraphe non structurés
-      if (phrase.length > 180) return false;
-      // Filtrer si la phrase contient " - " (liste inline = fragment de texte brut)
+      if (p.startsWith('- ') || p.startsWith('– ') || p.startsWith('• ')) return false;
+      // Filtrer les phrases trop longues (> 160 chars) — fragments de paragraphe non structurés
+      if (phrase.length > 160) return false;
+      // Filtrer les phrases qui se terminent sans ponctuation ET contiennent un crochet (fragment coupé)
+      if (/\[$/.test(p) || /\]$/.test(p)) return false;
+      if (/\[\s*$/.test(p) || p.includes('qui n\'est [') || p.includes("n'est [")) return false;
+      // Filtrer les avis utilisateurs (contiennent "je", "mon", "ma", "nous", "notre", "j'ai", "j'")
+      const avisPerso = ["j'ai", "j'", " je ", " mon ", " ma ", " mes ", " nous ", " notre ", " nos ", " je suppose", "cher je", "selon moi"];
+      if (avisPerso.some(a => pl.includes(a))) return false;
+      // Filtrer si la phrase contient " - " avec conjonction (liste inline = fragment de texte brut)
       if (phrase.includes(' - même si') || phrase.includes(' - bien que') || phrase.includes(' - cependant')) return false;
+      // La phrase doit mentionner un terme technique pour être valide
+      const termesTech = ['défaut', 'problème', 'rappel', 'panne', 'casse', 'usure', 'fissure', 'fuite', 'surchauffe', 'boîte', 'moteur', 'pompe', 'turbo', 'transmission', 'embrayage', 'distribution', 'culasse', 'courroie', 'injecteur', 'vanne', 'capteur', 'disques', 'plaquettes', 'suspension', 'roulement', 'joint', 'radiateur', 'compresseur', 'alternateur'];
+      if (!termesTech.some(t => pl.includes(t))) return false;
       return true;
     }
 
@@ -1022,6 +1033,24 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     console.log('Phase 2 supprimée du conseil — véhicule récent:', anneeVehicule);
   }
 
+  // Corriger conseil_achat si score_prix >= 7 : supprimer toute mention prix élevé/au-dessus
+  if ((parsed.score_prix || 0) >= 7 && parsed.conseil_achat) {
+    const motsPrixCA = [
+      'légèrement au-dessus', 'au-dessus de la moyenne', 'prix élevé',
+      'prix demandé est élevé', 'au-dessus du marché', 'prix est légèrement',
+      'prix légèrement', 'un peu au-dessus', 'légèrement supérieur au marché',
+      'supérieur au marché', 'supérieur à la moyenne', 'au-dessus de la cote',
+      'légèrement surévalué', 'légèrement surestimé', 'prix au-dessus'
+    ];
+    motsPrixCA.forEach(mot => {
+      parsed.conseil_achat = parsed.conseil_achat.replace(
+        new RegExp(`[^.!?]*${mot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^.!?]*[.!?]?`, 'gi'), ''
+      ).trim();
+    });
+    parsed.conseil_achat = parsed.conseil_achat.replace(/\s{2,}/g, ' ').trim();
+    console.log('CONSEIL_ACHAT : mention prix élevé supprimée (score_prix=' + parsed.score_prix + ')');
+  }
+
   // Supprimer problèmes vagues sur véhicules quasi neufs (<3 ans, <30000 km)
   const kmVehicule = parseInt(parsed.kilometrage) || 0;
   if (anneeVehicule >= 2023 && kmVehicule < 30000 && parsed.problemes_connus_modele) {
@@ -1299,7 +1328,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item" style="border-left:3px solid #28a745;"><span style="color:#28a745; font-weight:700; margin-right:6px;">></span>${c}</div>`).join('')}
   </div>
 
-  <div style="page-break-before:always; display:flex; flex-direction:column;">
+  <div style="page-break-before:always;">
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.questions}</div></div>
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
