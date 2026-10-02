@@ -382,111 +382,86 @@ function traduireOption(opt) {
 // ─── RECHERCHE TAVILY ────────────────────────────────────
 async function rechercherInfosVehicule(marque, modele, annee, km = '') {
   try {
-    const kmInfo = km ? ` ${Math.round(km/1000)*1000}km` : '';
+    const generation = annee >= 2021 ? '8Y' : annee >= 2012 ? '8V' : '';
+    const genStr = generation ? ` ${generation}` : '';
+
     const queries = [
-      `${marque} ${modele} ${annee}${kmInfo} prix argus cote occasion suisse CHF 2026 autoscout24`,
-      `${marque} ${modele} ${annee} problèmes connus défauts récurrents rappel constructeur forum fiabilité`
+      // Prix marché suisse
+      `${marque} ${modele} ${annee} occasion prix CHF autoscout24 suisse 2025 2026`,
+      // Problèmes fiabilité spécifiques au modèle
+      `${marque} ${modele}${genStr} problèmes fiabilité défauts récurrents forum`,
+      // Rappels constructeur
+      `${marque} ${modele} ${annee} rappel constructeur campagne recall`,
+      // Points faibles connus
+      `${marque} ${modele}${genStr} fiabilité boite moteur usure avis`
     ];
+
     const results = await Promise.all(queries.map(q =>
       axios.post('https://api.tavily.com/search', {
         api_key: process.env.TAVILY_API_KEY,
         query: q,
-        search_depth: 'basic',
+        search_depth: 'advanced',
         max_results: 5,
         include_answer: true
-      }, { timeout: 10000 })
+      }, { timeout: 15000 }).catch(() => ({ data: { answer: '', results: [] } }))
     ));
 
     const prix = results[0].data.answer || '';
 
-    // ── Problèmes : extraire les snippets bruts, ne PAS passer par GPT ──
-    const problemesAnswer = results[1].data.answer || '';
-    const problemesSnippets = (results[1].data.results || [])
-      .map(r => r.content || r.snippet || '')
-      .filter(Boolean)
-      .slice(0, 4);
+    // Collecter tout le contenu des résultats fiabilité/rappels/avis
+    const toutLeContenu = [
+      results[1].data.answer || '',
+      results[2].data.answer || '',
+      results[3].data.answer || '',
+      ...(results[1].data.results || []).map(r => r.content || r.snippet || ''),
+      ...(results[2].data.results || []).map(r => r.content || r.snippet || ''),
+      ...(results[3].data.results || []).map(r => r.content || r.snippet || ''),
+    ].filter(Boolean).join('\n\n');
 
-    // Construire une liste de problèmes RÉELS à partir des snippets
-    // On cherche des phrases courtes qui mentionnent des composants/défauts
-    const motsCles = ['défaut', 'problème', 'rappel', 'panne', 'casse', 'usure prématurée', 'fissure', 'fuite', 'surchauffe', 'boîte', 'moteur', 'pompe', 'turbo', 'transmission', 'embrayage', 'distribution', 'culasse'];
+    console.log(`Tavily contenu brut collecté: ${toutLeContenu.length} chars`);
+
+    // GPT-4o synthétise les vrais problèmes depuis le contenu brut
     let problemesListe = [];
+    if (toutLeContenu.length > 100) {
+      try {
+        const gptResp = await axios.post('https://api.openai.com/v1/chat/completions', {
+          model: 'gpt-4o',
+          temperature: 0,
+          max_tokens: 400,
+          messages: [{
+            role: 'system',
+            content: `Tu es un expert automobile. À partir du texte ci-dessous sur la ${marque} ${modele} ${annee}, extrais EXACTEMENT 3 à 4 problèmes ou points de vigilance connus et documentés pour ce modèle.
+Règles strictes :
+- Chaque problème = 1 phrase complète, claire, entre 40 et 120 caractères
+- Basé uniquement sur ce qui est mentionné dans le texte
+- Formulation objective et factuelle (pas "je", pas "nous")
+- En français uniquement
+- Si rappel constructeur trouvé, inclure
+- Format de réponse : JSON array de strings, exemple: ["Problème 1.", "Problème 2.", "Problème 3."]
+- Si aucun problème réel documenté dans le texte, retourne []`
+          }, {
+            role: 'user',
+            content: `Texte sur la ${marque} ${modele} ${annee}:\n\n${toutLeContenu.slice(0, 3000)}`
+          }]
+        }, {
+          headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+          timeout: 20000
+        });
 
-    // Détection phrase anglaise : mots qui n'existent PAS en français
-    const motsAnglaisStricts = ['the ', ' gearbox', ' clutch', ' engine ', ' failure', ' issue', ' recall ', ' warning', ' fault', ' neglect', ' discs ', ' wear '];
-
-    function estEnFrancais(phrase) {
-      const p = ' ' + phrase.toLowerCase() + ' ';
-      // Phrase anglaise si elle contient au moins 1 mot strictement anglais
-      const scoreAnglais = motsAnglaisStricts.filter(m => p.includes(m)).length;
-      return scoreAnglais === 0;
-    }
-
-    function estDonneeValide(phrase) {
-      const p = phrase.trim();
-      const pl = p.toLowerCase();
-      // Filtrer fragments vides ou trop courts
-      if (p.length < 25) return false;
-      // Filtrer les lignes de données brutes de base de données
-      if (p.startsWith(']') || p.startsWith('[') || p.startsWith('{')) return false;
-      if ((phrase.match(/\|/g) || []).length >= 2) return false;
-      if (phrase.includes('~') && phrase.includes('€') && phrase.includes('km')) return false;
-      // Filtrer les phrases marketing / appels à l'action
-      const phrasesBannies = ['découvrez', 'visitez', 'cliquez', 'inscrivez', 'abonnez', 'notre site', 'notre application', 'téléchargez', 'rejoignez', 'consultez notre', 'en savoir plus', 'voir les avis', 'lire la suite', 'contactez', 'appelez'];
-      if (phrasesBannies.some(b => pl.includes(b))) return false;
-      // Filtrer les phrases introductives ou de transition (fragments incomplets)
-      const prefixesIntro = ['elle présente néanmoins', 'elle présente cependant', 'néanmoins les défauts', 'cependant les défauts', 'les défauts suivants', 'parmi les défauts', 'on peut noter', 'il faut noter', 'à noter que', 'cependant, ', 'néanmoins, ', 'toutefois, ', 'en revanche,', 'bref ', 'ainsi ', 'donc ', 'or '];
-      if (prefixesIntro.some(pre => pl.startsWith(pre))) return false;
-      // Filtrer les phrases avec tiret narratif en début (continuation de liste)
-      if (p.startsWith('- ') || p.startsWith('– ') || p.startsWith('• ')) return false;
-      // Filtrer les phrases trop longues (> 160 chars) — fragments de paragraphe non structurés
-      if (phrase.length > 160) return false;
-      // Filtrer les phrases qui se terminent sans ponctuation ET contiennent un crochet (fragment coupé)
-      if (/\[$/.test(p) || /\]$/.test(p)) return false;
-      if (/\[\s*$/.test(p) || p.includes('qui n\'est [') || p.includes("n'est [")) return false;
-      // Filtrer les avis utilisateurs (contiennent "je", "mon", "ma", "nous", "notre", "j'ai", "j'")
-      const avisPerso = ["j'ai", "j'", " je ", " mon ", " ma ", " mes ", " nous ", " notre ", " nos ", " je suppose", "cher je", "selon moi"];
-      if (avisPerso.some(a => pl.includes(a))) return false;
-      // Filtrer si la phrase contient " - " avec conjonction (liste inline = fragment de texte brut)
-      if (phrase.includes(' - même si') || phrase.includes(' - bien que') || phrase.includes(' - cependant')) return false;
-      // La phrase doit mentionner un terme technique pour être valide
-      const termesTech = ['défaut', 'problème', 'rappel', 'panne', 'casse', 'usure', 'fissure', 'fuite', 'surchauffe', 'boîte', 'moteur', 'pompe', 'turbo', 'transmission', 'embrayage', 'distribution', 'culasse', 'courroie', 'injecteur', 'vanne', 'capteur', 'disques', 'plaquettes', 'suspension', 'roulement', 'joint', 'radiateur', 'compresseur', 'alternateur'];
-      if (!termesTech.some(t => pl.includes(t))) return false;
-      return true;
-    }
-
-    // D'abord essayer d'extraire depuis la réponse synthétique de Tavily
-    if (problemesAnswer && problemesAnswer.length > 30) {
-      // Découper en phrases et garder celles qui mentionnent un problème réel
-      const phrases = problemesAnswer.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 20);
-      for (const phrase of phrases) {
-        if (motsCles.some(m => phrase.toLowerCase().includes(m)) && estEnFrancais(phrase) && estDonneeValide(phrase)) {
-          problemesListe.push(phrase);
+        const raw = gptResp.data.choices[0].message.content.trim();
+        const match = raw.match(/\[[\s\S]*\]/);
+        if (match) {
+          problemesListe = JSON.parse(match[0]).filter(p => typeof p === 'string' && p.length > 20).slice(0, 4);
+          console.log(`GPT synthèse problèmes: ${problemesListe.length} problèmes extraits`);
         }
+      } catch (e) {
+        console.log('GPT synthèse problèmes erreur:', e.message);
       }
     }
-
-    // Si pas assez de résultats, chercher dans les snippets
-    if (problemesListe.length < 2) {
-      for (const snippet of problemesSnippets) {
-        const phrases = snippet.split(/[.!?\n]/).map(s => s.trim()).filter(s => s.length > 20 && s.length < 200);
-        for (const phrase of phrases) {
-          if (motsCles.some(m => phrase.toLowerCase().includes(m)) && estEnFrancais(phrase) && estDonneeValide(phrase)) {
-            problemesListe.push(phrase);
-            if (problemesListe.length >= 4) break;
-          }
-        }
-        if (problemesListe.length >= 4) break;
-      }
-    }
-
-    // Dédoublonner et limiter à 4
-    problemesListe = [...new Set(problemesListe)].slice(0, 4);
-
-    console.log(`Tavily problèmes trouvés: ${problemesListe.length}`);
 
     return {
       prix: prix,
-      problemesDocumentes: problemesListe  // tableau de strings, pas une string
+      problemesDocumentes: problemesListe
     };
   } catch (e) {
     console.log('Tavily erreur (non bloquant):', e.message);
@@ -548,10 +523,14 @@ async function analyserAvecGPT(scrapedData, langue, url) {
 
   // Tavily injecte UNIQUEMENT le prix dans le prompt GPT.
   // Les problèmes connus sont injectés directement dans le PDF APRÈS GPT — GPT ne les voit pas.
+  const tavilyProblemesSynth = tavilyProblemes.length > 0
+    ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS SUR LE WEB (à utiliser pour enrichir ton analyse) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
+    : '';
+
   const tavilySection = tavilyPrix
     ? `\n\nDONNÉES WEB RÉELLES SUR CE VÉHICULE (cote argus / prix marché suisse actuel) :
 ${tavilyPrix}
-
+${tavilyProblemesSynth}
 RÈGLE STRICTE :
 1. Pour la fourchette de prix marché : utilise ces données web comme base principale. Affine avec ta connaissance du marché suisse pour donner une fourchette précise (écart max 8000-10000 CHF). La fourchette doit refléter le kilométrage ET l'année ET les options réelles du véhicule — pas une fourchette générique du modèle.
 2. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — les problèmes connus sont gérés par un autre système. NE JAMAIS remplir ce champ.\n`
@@ -1328,7 +1307,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item" style="border-left:3px solid #28a745;"><span style="color:#28a745; font-weight:700; margin-right:6px;">></span>${c}</div>`).join('')}
   </div>
 
-  <div style="page-break-before:always;">
+  <div style="page-break-before:always; min-height:267mm; display:flex; flex-direction:column;">
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.questions}</div></div>
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
@@ -1352,6 +1331,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:4px 0;">${analyse.conseil_achat}</p>
     </div>` : ''}
 
+    <div style="flex:1;"></div>
     <div class="footer">
       Source : ${url}<br>
       ${L.disclaimer}<br>
