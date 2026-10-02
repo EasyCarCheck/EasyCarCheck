@@ -228,17 +228,50 @@ async function scrapeAnnonce(url, langue = 'fr') {
 
       // ── DESCRIPTION VENDEUR depuis JSON structuré (avant truncation) ──
       // AutoScout24 stocke la description dans "description":"..." dans le JSON Next.js
-      const descMatch = html.match(/\\"description\\":\\"((?:[^\\"\\\\]|\\\\.|(?:\\\\u[0-9a-fA-F]{4}))+)\\"/) ||
-                        html.match(/"description":"((?:[^"\\]|\\.)+)"(?:\s*,|\s*})/);
-      if (descMatch) {
-        let descText = descMatch[1]
+      // ATTENTION: le champ "description" contient souvent un disclaimer AS24, pas la vraie desc vendeur
+      // On filtre les disclaimers et on cherche plutôt le champ "sellerComment" ou "comment"
+      const DISCLAIMERS_AS24 = [
+        "l'équipement réel peut différer",
+        "die tatsächliche ausstattung",
+        "equipment may differ",
+        "les informations fournies sont données",
+        "angaben ohne gewähr",
+        "sous réserve de modifications"
+      ];
+
+      // D'abord chercher sellerComment qui contient la vraie description vendeur
+      const sellerCommentMatch = html.match(/\\"sellerComment\\":\\"((?:[^\\"\\\\]|\\\\.)+)\\"/) ||
+                                 html.match(/"sellerComment":"((?:[^"\\]|\\.)+)"/) ||
+                                 html.match(/\\"comment\\":\\"((?:[^\\"\\\\]|\\\\.)+)\\"/) ||
+                                 html.match(/"freeText":"((?:[^"\\]|\\.)+)"/);
+      if (sellerCommentMatch) {
+        let descText = sellerCommentMatch[1]
           .replace(/\\n/g, ' ').replace(/\\r/g, '').replace(/\\t/g, ' ')
           .replace(/\\"/g, '"').replace(/\\\\/g, '\\')
           .replace(/\s{2,}/g, ' ').trim();
-        // Filtrer les descriptions qui sont en fait du JSON ou du code (trop courtes ou trop techniques)
-        if (descText.length > 30 && descText.length < 5000 && !descText.startsWith('{') && !descText.startsWith('[')) {
+        const isDisclaimer = DISCLAIMERS_AS24.some(d => descText.toLowerCase().includes(d));
+        if (!isDisclaimer && descText.length > 30 && descText.length < 5000) {
           equipmentData += "\nDESCRIPTION_VENDEUR: " + descText;
-          console.log("DESCRIPTION VENDEUR EXTRAITE:", descText.substring(0, 100));
+          console.log("DESCRIPTION VENDEUR (sellerComment):", descText.substring(0, 100));
+        }
+      }
+
+      // Si pas trouvé, essayer le champ "description" mais filtrer les disclaimers
+      if (!equipmentData.includes('DESCRIPTION_VENDEUR:')) {
+        const descMatch = html.match(/\\"description\\":\\"((?:[^\\"\\\\]|\\\\.|(?:\\\\u[0-9a-fA-F]{4}))+)\\"/) ||
+                          html.match(/"description":"((?:[^"\\]|\\.)+)"(?:\s*,|\s*})/);
+        if (descMatch) {
+          let descText = descMatch[1]
+            .replace(/\\n/g, ' ').replace(/\\r/g, '').replace(/\\t/g, ' ')
+            .replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+            .replace(/\s{2,}/g, ' ').trim();
+          const isDisclaimer = DISCLAIMERS_AS24.some(d => descText.toLowerCase().includes(d));
+          if (!isDisclaimer && descText.length > 30 && descText.length < 5000 && !descText.startsWith('{') && !descText.startsWith('[')) {
+            equipmentData += "\nDESCRIPTION_VENDEUR: " + descText;
+            console.log("DESCRIPTION VENDEUR EXTRAITE:", descText.substring(0, 100));
+          } else {
+            console.log("DESCRIPTION VENDEUR IGNORÉE (disclaimer ou invalide):", descText.substring(0, 60));
+          }
         }
       }
 
@@ -477,8 +510,12 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '') {
     console.log(`Tavily contenu brut collecté: ${toutLeContenu.length} chars`);
 
     // Extraire les numéros de rappel constructeur AVANT la synthèse GPT (pour ne pas les perdre)
-    const recallMatches = [...toutLeContenu.matchAll(/\b([0-9]{2}[A-Z][0-9]{6,}|NHTSA[:\s#]*[A-Z0-9\-]+|campagne\s+(?:de\s+)?rappel\s+n[o°.]?\s*([A-Z0-9\-]+))/gi)];
-    const recallNums = [...new Set(recallMatches.map(m => (m[2] || m[1]).trim().toUpperCase()))].filter(n => n.length >= 5).slice(0, 3);
+    // Numéros de rappel officiels format NHTSA/NADA: 2 chiffres + 1 lettre + 6+ chiffres (ex: 22V901000)
+    // On filtre NHTSA FREE/FOR qui sont des faux positifs (texte de navigation de site)
+    const recallMatches = [...toutLeContenu.matchAll(/\b([0-9]{2}[A-Z][0-9]{6,})\b/g)];
+    const recallNums = [...new Set(recallMatches.map(m => m[1].trim().toUpperCase()))]
+      .filter(n => /^[0-9]{2}[A-Z][0-9]{6,}$/.test(n))  // format strict uniquement
+      .slice(0, 3);
     console.log('Numéros de rappel détectés:', recallNums);
 
     // GPT-4o synthétise les vrais problèmes depuis le contenu brut
@@ -735,7 +772,7 @@ RÈGLE STRICTE :
 2. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — les problèmes connus sont gérés par un autre système. NE JAMAIS remplir ce champ.\n`
     : `\n\nAUCUNE DONNÉE WEB DISPONIBLE — utilise ta connaissance du marché suisse pour estimer la fourchette précise (écart max 8000-10000 CHF selon kilométrage et année réels).${contexteMarche}\nPour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
 
-  // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
+  // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques allemands mal interprétés)
   const htmlNettoye = (scrapedData.html || '')
     .replace(/\*[^*]*abgass[^*]*\*/gi, '')
     .replace(/\*[^*]*exhaust[^*]*\*/gi, '')
@@ -745,13 +782,16 @@ RÈGLE STRICTE :
     .replace(/\*\s*RS\s+[^*]+\*/gi, '')
     .replace(/tuning|chiptuning|stage\s*[123]/gi, 'préparation sportive');
 
+  // Nettoyer aussi l'URL pour éviter les termes qui triggent le filtre
+  const urlNettoye = url.replace(/abgass/gi, 'echappement').replace(/auspuff/gi, 'echappement');
+
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
 
 Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
 Voici le contenu de l'annonce automobile :
-URL: ${url}
+URL: ${urlNettoye}
 Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 
 ÉTAPE 1 - Extrais ces données EXACTES depuis le contenu :
@@ -911,7 +951,8 @@ RÈGLES JSON :
 }
 IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce véhicule présente un bon rapport qualité/prix mais nécessite une vérification de la chaîne de distribution.") — NE PAS répéter le mot ACHETER/NÉGOCIER/ÉVITER dans ce champ.`;
 
-  const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+  // Appel GPT principal avec retry automatique si refus
+  let response = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.1,
@@ -923,10 +964,47 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     }
   });
 
-  const content = response.data.choices[0].message.content;
-  const finishReason = response.data.choices[0].finish_reason;
+  let content = response.data.choices[0].message.content;
+  let finishReason = response.data.choices[0].finish_reason;
   let clean = content.replace(/```json|```/g, '').trim();
   console.log('GPT RESPONSE (finish_reason:', finishReason + '):', clean.substring(0, 500));
+
+  // Retry si GPT a refusé (réponse en langage naturel au lieu de JSON)
+  const isRefusal = !clean.startsWith('{') && (
+    clean.toLowerCase().includes('je suis désolé') ||
+    clean.toLowerCase().includes('i cannot') ||
+    clean.toLowerCase().includes('je ne peux pas') ||
+    clean.toLowerCase().includes('unable to')
+  );
+  if (isRefusal) {
+    console.log('GPT REFUS DÉTECTÉ — retry avec prompt simplifié...');
+    // Prompt simplifié sans contenu HTML brut — juste les données structurées
+    const schemaJson = prompt.substring(prompt.lastIndexOf('\n{\n  "marque"'));
+    const promptRetry = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
+Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
+
+Analyse ce véhicule d'occasion et réponds UNIQUEMENT avec un objet JSON valide :
+${equipmentSection}${tavilySection}
+
+Schéma JSON à suivre exactement :
+${schemaJson}`;
+
+    const response2 = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: promptRetry }],
+      temperature: 0,
+      max_tokens: 8000
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    content = response2.data.choices[0].message.content;
+    finishReason = response2.data.choices[0].finish_reason;
+    clean = content.replace(/```json|```/g, '').trim();
+    console.log('GPT RETRY RESPONSE (finish_reason:', finishReason + '):', clean.substring(0, 500));
+  }
 
   let parsed;
   try {
