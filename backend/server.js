@@ -352,6 +352,19 @@ const OPTIONS_DICT = {
   'Frontscheibe mit Color-Band':   { fr: "Pare-brise avec bandeau teinté", de: "Frontscheibe mit Farbband", it: "Parabrezza con banda colorata", en: "Windscreen with tinted band" },
   'Fahrer-Informationssystem mit Farbdisplay': { fr: "Système d'info conducteur écran couleur", de: "Fahrerinformationssystem Farbdisplay", it: "Sistema info conducente display", en: "Colour driver info display" },
   'Garantie: 2 Jahre ohne Kilometerbegrenzung (ab 1. Inv.)': { fr: "Garantie 2 ans kilométrage illimité", de: "2 Jahre Garantie", it: "Garanzia 2 anni km illimitati", en: "2-year unlimited mileage warranty" },
+
+  // ─── AUDI RS SPECIFIC ───────────────────────────────────
+  'Cockpit virtuel Audi plus mit zusätzlichem RS-Layout': { fr: "Cockpit virtuel Audi plus avec layout RS", de: "Audi virtual cockpit plus mit RS-Layout", it: "Cockpit virtuale Audi plus con layout RS", en: "Audi virtual cockpit plus with RS layout" },
+  'Cockpit virtuel Audi plus':      { fr: "Cockpit virtuel Audi plus", de: "Audi virtual cockpit plus", it: "Cockpit virtuale Audi plus", en: "Audi virtual cockpit plus" },
+  'RS-Abgasanlage':                 { fr: "Échappement RS sport", de: "RS-Abgasanlage", it: "Scarico RS sport", en: "RS sport exhaust system" },
+  'RS-Performance-Paket':           { fr: "Pack RS Performance", de: "RS-Performance-Paket", it: "Pacchetto RS Performance", en: "RS Performance Package" },
+  'Sportfahrwerk':                  { fr: "Châssis sport", de: "Sportfahrwerk", it: "Telaio sportivo", en: "Sport suspension" },
+  'Magnetfahrwerk':                 { fr: "Suspension magnétique", de: "Magnetfahrwerk", it: "Sospensioni magnetiche", en: "Magnetic ride suspension" },
+  'RS-Sportsitze':                  { fr: "Sièges sport RS", de: "RS-Sportsitze", it: "Sedili sportivi RS", en: "RS sport seats" },
+  'RS-Sportlederlenkrad':           { fr: "Volant sport RS en cuir", de: "RS-Sportlederlenkrad", it: "Volante sportivo RS in pelle", en: "RS sport leather steering wheel" },
+  'Bang & Olufsen Soundsystem':     { fr: "Système audio Bang & Olufsen", de: "Bang & Olufsen Soundsystem", it: "Sistema audio Bang & Olufsen", en: "Bang & Olufsen sound system" },
+  'Matrix LED-Scheinwerfer':        { fr: "Phares Matrix LED", de: "Matrix LED-Scheinwerfer", it: "Fari Matrix LED", en: "Matrix LED headlights" },
+  'Quattro Allradantrieb':          { fr: "Transmission intégrale Quattro", de: "Quattro Allradantrieb", it: "Trazione integrale Quattro", en: "Quattro all-wheel drive" },
 };
 
 let _currentLangue = 'fr';
@@ -418,6 +431,15 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '') {
       const pl = phrase.toLowerCase();
       if (phrasesBannies.some(b => pl.includes(b))) return false;
       if (phrase.match(/^\s*[\[\]{}]/)) return false;  // fragments JSON
+      // Filtrer les phrases introductives ou de transition (fragments incomplets)
+      const prefixesIntro = ['elle présente néanmoins', 'elle présente cependant', 'néanmoins les défauts', 'cependant les défauts', 'les défauts suivants', 'parmi les défauts', 'on peut noter', 'il faut noter', 'à noter que', 'cependant, ', 'néanmoins, ', 'toutefois, ', 'en revanche,'];
+      if (prefixesIntro.some(p => pl.startsWith(p) || pl.includes(p))) return false;
+      // Filtrer les phrases avec tiret narratif en début (continuation de liste)
+      if (phrase.trim().startsWith('- ') || phrase.trim().startsWith('– ') || phrase.trim().startsWith('• ')) return false;
+      // Filtrer phrases trop longues (> 180 chars) — fragments de paragraphe non structurés
+      if (phrase.length > 180) return false;
+      // Filtrer si la phrase contient " - " (liste inline = fragment de texte brut)
+      if (phrase.includes(' - même si') || phrase.includes(' - bien que') || phrase.includes(' - cependant')) return false;
       return true;
     }
 
@@ -863,13 +885,26 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.points_negatifs = parsed.points_negatifs.filter(p =>
       !mots_interdits.some(mot => p.toLowerCase().includes(mot))
     );
-    // S'assurer qu'il y a toujours exactement 3 points négatifs
-    // Si le filtre en a supprimé, utiliser des points génériques mais pertinents
-    const pointsNegatifsFallback = [
-      `Prix légèrement au-dessus de la fourchette du marché suisse`,
-      `Contrôle technique approfondi recommandé avant achat`,
-      `Valeur de revente à surveiller selon l'évolution du marché`
-    ];
+    // RÈGLE COHÉRENCE PRIX : si score_prix >= 7, supprimer les points négatifs qui mentionnent le prix comme problème
+    const motsPrix = ['prix au-dessus', 'prix élevé', 'au-dessus du marché', 'au-dessus de la fourchette', 'prix légèrement élevé', 'légèrement au-dessus'];
+    if ((parsed.score_prix || 0) >= 7) {
+      parsed.points_negatifs = parsed.points_negatifs.filter(p =>
+        !motsPrix.some(mot => p.toLowerCase().includes(mot))
+      );
+    }
+    // Fallback si points supprimés — adapter selon le score prix
+    const scorePrix = parsed.score_prix || 0;
+    const pointsNegatifsFallback = scorePrix >= 7
+      ? [
+          `Contrôle technique approfondi recommandé avant achat`,
+          `Vérifier l'historique d'entretien complet auprès du vendeur`,
+          `Valeur de revente à surveiller selon l'évolution du marché`
+        ]
+      : [
+          `Prix légèrement au-dessus de la fourchette du marché suisse`,
+          `Contrôle technique approfondi recommandé avant achat`,
+          `Valeur de revente à surveiller selon l'évolution du marché`
+        ];
     while (parsed.points_negatifs.length < 3) {
       const fallback = pointsNegatifsFallback[parsed.points_negatifs.length];
       if (fallback) parsed.points_negatifs.push(fallback);
@@ -1074,26 +1109,26 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   .score-denom { font-size: 11px; color: #b8d0f0; }
   .score-badge { margin-top: 5px; border-radius: 4px; padding: 2px 7px; font-size: 9px; font-weight: 700; color: #000; }
   .scores-bar { padding: 8px 22px; page-break-inside: avoid; background: #fff; border-bottom: 1px solid #d0e4f7; }
-  .scores-bar-title { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
-  .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .scores-bar-title { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 6px; }
+  .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .score-item { text-align: center; }
   .score-item-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 3px; }
-  .score-item-num { font-size: 40px; font-weight: 900; line-height: 1; margin-bottom: 5px; }
+  .score-item-num { font-size: 36px; font-weight: 900; line-height: 1; margin-bottom: 3px; }
   .score-bar-bg { height: 7px; background: #d0e4f7; border-radius: 4px; }
   .score-bar-fill { height: 7px; border-radius: 4px; }
   .score-item-tag { font-size: 9px; font-weight: 700; margin-top: 3px; }
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
-  .cell { padding: 10px 12px; border-right: 1px solid #d0e4f7; }
+  .cell { padding: 7px 12px; border-right: 1px solid #d0e4f7; }
   .cell:last-child { border-right: none; }
   .cell-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 3px; text-transform: uppercase; }
   .cell-value { font-size: 14px; font-weight: 700; color: #0d1b35; }
   .cell-unit { font-size: 12px; color: #5a7a9a; font-weight: 600; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
-  .section { padding: 10px 22px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .section { padding: 8px 22px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
   .section-white { background: #fff; }
   .section-light { background: #f0f6ff; }
-  .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
   .section-bar { width: 4px; height: 16px; border-radius: 2px; flex-shrink: 0; }
   .section-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; }
   .description-box { background: #f0f6ff; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #3a5a7a; line-height: 1.55; border-left: 3px solid #1a3a6e; }
@@ -1101,22 +1136,22 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
   .point-card { background: #fff; border-radius: 5px; padding: 7px 10px; font-size: 12px; color: #0d1b35; }
   .point-card-light { background: #f0f6ff; border-radius: 5px; padding: 6px 9px; font-size: 11px; color: #0d1b35; }
-  .checklist-item { background: #f0f6ff; border-radius: 5px; padding: 9px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .checklist-item { background: #f0f6ff; border-radius: 5px; padding: 6px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
   .icon-check { display:inline-block; width:14px; height:14px; background:#28a745; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
   .icon-warn { display:inline-block; width:14px; height:14px; background:#d4a00a; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
   .icon-cross { display:inline-block; width:14px; height:14px; background:#dc3545; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
   .icon-q { display:inline-block; width:14px; height:14px; background:#1a3a6e; border-radius:50%; color:#fff; text-align:center; line-height:14px; font-size:10px; font-weight:bold; flex-shrink:0; }
-  .checklist-item-white { background: #fff; border-radius: 5px; padding: 9px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
-  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; page-break-inside: avoid; }
-  .cost-card { background: #fff; border-radius: 7px; padding: 12px; text-align: center; }
-  .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 5px; }
+  .checklist-item-white { background: #fff; border-radius: 5px; padding: 6px 10px; font-size: 12px; color: #0d1b35; display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+  .costs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; page-break-inside: avoid; }
+  .cost-card { background: #fff; border-radius: 7px; padding: 9px; text-align: center; }
+  .cost-label { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 3px; }
   .cost-value { font-size: 15px; font-weight: 800; }
   .cost-note { font-size: 8px; color: #5a7a9a; margin-top: 3px; }
   .redflag-section { padding: 12px 22px; background: rgba(220,53,69,0.04); border-bottom: 2px solid #dc3545; page-break-inside: avoid; }
   .redflag-badge { background: #dc3545; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-weight: 700; color: #fff; display: inline-block; margin-bottom: 8px; }
   .redflag-card { background: rgba(220,53,69,0.06); border-radius: 7px; padding: 8px; border: 1px solid rgba(220,53,69,0.2); margin-bottom: 5px; }
   .redflag-title { font-size: 12px; font-weight: 600; color: #dc3545; }
-  .verdict-section { padding: 28px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; page-break-before: avoid; }
+  .verdict-section { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1a3a6e, #2952a3); page-break-inside: avoid; page-break-before: avoid; }
   .verdict-label { font-size: 10px; color: #b8d0f0; letter-spacing: 2px; margin-bottom: 5px; }
   .verdict-value { font-size: 38px; font-weight: 900; letter-spacing: 2px; }
   .verdict-desc { font-size: 11px; color: #b8d0f0; margin-top: 6px; max-width: 280px; line-height: 1.5; }
@@ -1264,7 +1299,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item" style="border-left:3px solid #28a745;"><span style="color:#28a745; font-weight:700; margin-right:6px;">></span>${c}</div>`).join('')}
   </div>
 
-  <div style="page-break-before:always; display:flex; flex-direction:column; min-height:260mm;">
+  <div style="page-break-before:always; display:flex; flex-direction:column;">
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.questions}</div></div>
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
@@ -1283,10 +1318,10 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     </div>
 
     ${analyse.conseil_achat ? `
-    <div class="section section-white" style="flex:1;">
+    <div class="section section-white">
       <div class="section-title"><div class="section-bar" style="background:#1a6e3a;"></div><div class="section-label" style="color:#1a6e3a;">${L.conseil}</div></div>
-      <p style="font-size:12px; color:#0d1b35; line-height:1.8; padding:6px 0;">${analyse.conseil_achat}</p>
-    </div>` : `<div style="flex:1;"></div>`}
+      <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:4px 0;">${analyse.conseil_achat}</p>
+    </div>` : ''}
 
     <div class="footer">
       Source : ${url}<br>
