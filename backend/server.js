@@ -926,13 +926,38 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     }
   }
 
-  // 3. Verdict EVITER automatique si prix dépasse fourchette de plus de 15%
-  if (fourchMax > 0 && prixDemande > fourchMax * 1.15) {
-    parsed.verdict = 'ÉVITER';
-    parsed.score_prix = Math.min(parsed.score_prix, 3);
+  // 3. Verdict DÉTERMINISTE basé sur comparaison prix demandé vs médiane marché
+  {
+    const mediane = prixMarche?.mediane || 0;
+    const ratio = mediane > 0 ? prixDemande / mediane : 1;
+
+    if (fourchMax > 0 && prixDemande > fourchMax * 1.15) {
+      // Prix très au-dessus du marché → ÉVITER
+      parsed.verdict = 'ÉVITER';
+      parsed.score_prix = Math.min(parsed.score_prix, 3);
+      parsed.resume_verdict = 'Prix demandé nettement au-dessus de la valeur marché.';
+      console.log('VERDICT ÉVITER — prix trop élevé vs fourchette');
+    } else if (mediane > 0 && ratio <= 0.97) {
+      // Prix demandé en dessous de la médiane → BON PRIX → ACHETER
+      parsed.verdict = 'ACHETER';
+      parsed.resume_verdict = `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString()} CHF) — bonne affaire pour ce millésime.`;
+      // Économie symbolique nulle (pas de négociation nécessaire)
+      parsed.economie_potentielle_min = 0;
+      parsed.economie_potentielle_max = 0;
+      console.log(`VERDICT ACHETER — prix ${prixDemande} en dessous de la médiane ${mediane}`);
+    } else if (mediane > 0 && ratio <= 1.05) {
+      // Prix dans la médiane ±5% → NÉGOCIER légèrement
+      parsed.verdict = 'NÉGOCIER';
+      if (!parsed.resume_verdict) parsed.resume_verdict = 'Prix dans la moyenne du marché — une légère négociation est possible.';
+      console.log(`VERDICT NÉGOCIER — prix ${prixDemande} proche médiane ${mediane}`);
+    } else if (mediane > 0 && ratio > 1.05) {
+      // Prix au-dessus de la médiane → NÉGOCIER fermement
+      parsed.verdict = 'NÉGOCIER';
+      if (!parsed.resume_verdict) parsed.resume_verdict = 'Prix légèrement au-dessus de la médiane du marché — négociation recommandée.';
+      console.log(`VERDICT NÉGOCIER — prix ${prixDemande} au-dessus médiane ${mediane}`);
+    }
+    // Si pas de médiane dispo, on garde le verdict GPT tel quel
     parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
-    if (!parsed.resume_verdict) parsed.resume_verdict = 'Prix demandé nettement au-dessus de la valeur marché.';
-    console.log('VERDICT force EVITER — prix', prixDemande, 'depasse fourchette max', fourchMax, 'de +15%');
   }
 
   // FIX: calcul taxe avec le CO2 réel (scraping prioritaire sur GPT)
