@@ -490,39 +490,40 @@ async function scrapesPrixSimilaires(marque, modele, annee, km) {
         url: searchUrl,
         js_render: 'true',
         premium_proxy: 'true',
-        wait: '5000',
-        css_extractor: JSON.stringify({
-          prices: '[data-testid="listing-price"], .Price_price__APlgs, .cldt-price, [class*="price"]'
-        })
+        wait: '6000'
       },
       timeout: 60000
     });
 
-    // Extraire les prix depuis le HTML
+    // Extraire les prix depuis le HTML brut — plusieurs méthodes pour robustesse
     const html = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
     const prixTrouves = [];
-
-    // Méthode 1: CSS extractor
-    if (response.data && response.data.prices && Array.isArray(response.data.prices)) {
-      response.data.prices.forEach(p => {
-        const match = p.replace(/['\s]/g, '').match(/(\d{4,6})/g);
-        if (match) match.forEach(m => {
-          const val = parseInt(m);
-          if (val >= 3000 && val <= 200000) prixTrouves.push(val);
-        });
-      });
-    }
-
-    // Méthode 2: regex sur le HTML brut — chercher patterns "XX'XXX CHF" ou "XX.XXX CHF"
-    const prixRegex = /(\d{2,3}['.]\d{3})\s*CHF/g;
     let match;
-    while ((match = prixRegex.exec(html)) !== null) {
+
+    // Méthode 1: "XX'XXX CHF" ou "XX.XXX CHF" (format affiché AutoScout24 CH)
+    const prixRegex1 = /(\d{2,3}['.]\d{3})\s*(?:CHF|\.–)/g;
+    while ((match = prixRegex1.exec(html)) !== null) {
       const val = parseInt(match[1].replace(/['.]/g, ''));
       if (val >= 3000 && val <= 200000) prixTrouves.push(val);
     }
-    // Méthode 3: "price":XXXXX dans JSON
-    const jsonPriceRegex = /"price"\s*:\s*(\d{4,6})/g;
+
+    // Méthode 2: "CHF&nbsp;XX'XXX" (format HTML encodé AutoScout24)
+    const prixRegex2 = /CHF&nbsp;(\d{2,3}['.]?\d{3})/g;
+    while ((match = prixRegex2.exec(html)) !== null) {
+      const val = parseInt(match[1].replace(/['.]/g, ''));
+      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
+    }
+
+    // Méthode 3: "price":XXXXX dans JSON Next.js
+    const jsonPriceRegex = /["\s]price["']?\s*[":]\s*(\d{4,6})/g;
     while ((match = jsonPriceRegex.exec(html)) !== null) {
+      const val = parseInt(match[1]);
+      if (val >= 3000 && val <= 200000) prixTrouves.push(val);
+    }
+
+    // Méthode 4: \"price\":XXXXX (JSON échappé ZenRows)
+    const jsonEscRegex = /\\"price\\"[^:]*:\s*(\d{4,6})/g;
+    while ((match = jsonEscRegex.exec(html)) !== null) {
       const val = parseInt(match[1]);
       if (val >= 3000 && val <= 200000) prixTrouves.push(val);
     }
@@ -580,6 +581,11 @@ async function analyserAvecGPT(scrapedData, langue, url) {
         const after = snippet.substring(idx + m.length).trim();
         const modelWords = after.match(/^([A-Za-zÀ-ú0-9]{1,15}(?:\s+[A-Za-zÀ-ú0-9]{1,15}){0,2})/);
         modele = modelWords?.[1]?.trim() || '';
+        // Supprimer les suffixes moteur qui polluent le slug (ex: "RS3 Sportback 2" → "RS3 Sportback")
+        // Retire tout mot purement numérique ou suffixe technique à la fin
+        modele = modele.replace(/\s+\d+(\.\d+)?$/, '') // chiffre seul en fin (ex: "2", "2.5")
+                       .replace(/\s+(TSI|TDI|TFSI|HDI|CDI|GTI|GTE|GDI|CRDi|TCe|dCi|BlueHDi|THP|VTi|TDCi|EcoBoost|SkyActiv|e-Power)$/i, '')
+                       .trim();
         break;
       }
     }
