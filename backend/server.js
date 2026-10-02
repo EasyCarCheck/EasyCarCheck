@@ -367,10 +367,11 @@ function traduireOption(opt) {
 }
 
 // ─── RECHERCHE TAVILY ────────────────────────────────────
-async function rechercherInfosVehicule(marque, modele, annee) {
+async function rechercherInfosVehicule(marque, modele, annee, km = '') {
   try {
+    const kmInfo = km ? ` ${Math.round(km/1000)*1000}km` : '';
     const queries = [
-      `${marque} ${modele} ${annee} prix marché occasion suisse`,
+      `${marque} ${modele} ${annee}${kmInfo} prix argus cote occasion suisse CHF 2026 autoscout24`,
       `${marque} ${modele} ${annee} problèmes connus défauts récurrents rappel constructeur forum fiabilité`
     ];
     const results = await Promise.all(queries.map(q =>
@@ -412,6 +413,10 @@ async function rechercherInfosVehicule(marque, modele, annee) {
       if (phrase.trim().startsWith(']')) return false;
       if ((phrase.match(/\|/g) || []).length >= 2) return false;  // lignes de tableau avec pipes
       if (phrase.includes('~') && phrase.includes('€') && phrase.includes('km')) return false;  // données de coûts
+      // Filtrer les phrases marketing / appels à l'action
+      const phrasesBannies = ['découvrez', 'visitez', 'cliquez', 'inscrivez', 'abonnez', 'notre site', 'notre application', 'téléchargez', 'rejoignez', 'consultez notre', 'en savoir plus', 'voir les avis', 'lire la suite'];
+      const pl = phrase.toLowerCase();
+      if (phrasesBannies.some(b => pl.includes(b))) return false;
       if (phrase.match(/^\s*[\[\]{}]/)) return false;  // fragments JSON
       return true;
     }
@@ -463,7 +468,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   // FIX: injecter equipmentData directement dans le prompt
   const equipmentSection = scrapedData.equipmentData
     ? `\n\nDONNÉES STRUCTURÉES EXTRAITES (priorité sur le texte brut) :\n${scrapedData.equipmentData}`
-    : '';
+    : `\n\nDONNÉES STRUCTURÉES EXTRAITES : (aucune donnée structurée disponible — extraire les options directement du texte brut de l'annonce)`;
 
   // Extraire marque/modele/annee pour Tavily — depuis le titre de la page ou le début du texte
   let tavilyContext = '';
@@ -487,9 +492,12 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     }
     const anneeMatch = snippet.match(/\b(20[012]\d|19[89]\d)\b/);
     const annee = anneeMatch?.[0] || '';
-    console.log('Tavily extraction :', marque, modele, annee);
+    // Extraire kilométrage depuis le HTML
+    const kmMatch = html.match(/(\d[\d\s']{2,7})\s*km/i);
+    const km = kmMatch ? parseInt(kmMatch[1].replace(/[\s']/g, '')) : 0;
+    console.log('Tavily extraction :', marque, modele, annee, km ? km+'km' : '');
     if (marque && modele) {
-      const tavilyResult = await rechercherInfosVehicule(marque, modele, annee);
+      const tavilyResult = await rechercherInfosVehicule(marque, modele, annee, km);
       tavilyContext = tavilyResult;
       if (tavilyResult.prix || tavilyResult.problemesDocumentes) console.log('Tavily OK :', marque, modele, annee);
       else console.log('Tavily vide (non bloquant)');
@@ -508,13 +516,13 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   // Tavily injecte UNIQUEMENT le prix dans le prompt GPT.
   // Les problèmes connus sont injectés directement dans le PDF APRÈS GPT — GPT ne les voit pas.
   const tavilySection = tavilyPrix
-    ? `\n\nDONNÉES WEB RÉELLES SUR CE VÉHICULE :
-- Prix marché occasion suisse (données web) : ${tavilyPrix}
+    ? `\n\nDONNÉES WEB RÉELLES SUR CE VÉHICULE (cote argus / prix marché suisse actuel) :
+${tavilyPrix}
 
 RÈGLE STRICTE :
-1. Pour le prix marché : utilise ces données web en priorité sur ta connaissance interne.
+1. Pour la fourchette de prix marché : utilise ces données web comme base principale. Affine avec ta connaissance du marché suisse pour donner une fourchette précise (écart max 8000-10000 CHF). La fourchette doit refléter le kilométrage ET l'année ET les options réelles du véhicule — pas une fourchette générique du modèle.
 2. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — les problèmes connus sont gérés par un autre système. NE JAMAIS remplir ce champ.\n`
-    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
+    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE — utilise ta connaissance du marché suisse pour estimer la fourchette précise (écart max 8000-10000 CHF selon kilométrage et année réels). Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
 
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
@@ -537,7 +545,7 @@ Contenu: ${scrapedData.html}${equipmentSection}${tavilySection}
 - Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur
-- TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète), supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste"
+- TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète). Si la section "DONNÉES STRUCTURÉES" indique "aucune donnée structurée disponible", extraire les options depuis le texte brut de l'annonce (description, caractéristiques, titre). Supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste". Ne jamais retourner un tableau vide — extraire au minimum les équipements standards du modèle si aucune info disponible.
 
 ÉTAPE 2 - Analyse approfondie :
 
@@ -549,10 +557,16 @@ Détermine la fourchette de prix réaliste sur le marché suisse 2026 pour CE v�
 
 Score prix :
 - 9-10 : prix >10% sous le min de la fourchette — excellente affaire
-- 7-8 : prix dans la fourchette ou légèrement sous le milieu
-- 5-6 : prix 5-15% au-dessus du max
-- 3-4 : prix 15-30% au-dessus du max
-- 1-2 : prix >30% au-dessus du max
+- 8 : prix dans le tiers inférieur de la fourchette — bon prix
+- 7 : prix dans le milieu de la fourchette — prix correct
+- 6 : prix dans le tiers supérieur de la fourchette — légèrement élevé
+- 5 : prix 5-10% au-dessus du max — au-dessus du marché
+- 3-4 : prix 10-20% au-dessus du max
+- 1-2 : prix >20% au-dessus du max
+
+RÈGLE DE COHÉRENCE ABSOLUE : si score_prix ≤ 6, alors le point négatif doit mentionner le prix. Si score_prix ≥ 7, NE PAS mentionner le prix comme point négatif. Ne jamais avoir score_prix=7 ET dire "prix au-dessus du marché".
+
+FOURCHETTE PRÉCISE : l'écart max-min doit être ≤ 10 000 CHF pour les véhicules < 100 000 CHF. Ne pas donner une fourchette trop large — être précis sur le marché suisse 2026.
 
 ━━━ PROBLÈMES CONNUS DU MODÈLE ━━━
 Utilise ta connaissance réelle et documentée. Tu es un expert automobile — identifie les vrais défauts FRÉQUENTS et COÛTEUX de CE modèle exact, dans SA génération exacte, avec SA motorisation exacte. Règles :
@@ -618,7 +632,7 @@ Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur 
 - score_global = mettre 0 (calculé automatiquement par le système)
 - taxe_cantonale_ge = mettre 0 (calculé automatiquement par le système)
 - score_prix, score_fiabilite, score_entretien : OBLIGATOIRE entre 1 et 10, JAMAIS 0
-- options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer
+- options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer. Si DONNÉES STRUCTURÉES est vide, extraire depuis le texte brut. Ne JAMAIS retourner [].
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
@@ -806,18 +820,24 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // Configurer la langue pour la traduction des options
   setLangue(langue || 'fr');
 
-  // FIX OPTIONS: bypass GPT — injecter directement les options du scraping si disponibles
+  // FIX OPTIONS: prioriser scraping, fallback GPT si scraping vide
   if (scrapedData.options && scrapedData.options.length > 0) {
     parsed.options = scrapedData.options
       .map(o => traduireOption(o))
       .filter(o => o !== null);
     console.log('OPTIONS injectées depuis scraping:', parsed.options.length, 'options');
-  } else if (parsed.options && parsed.options.length > 0) {
-    // Fallback: utiliser les options GPT si scraping vide
-    parsed.options = parsed.options
-      .map(o => traduireOption(o))
-      .filter(o => o !== null);
-    console.log('OPTIONS depuis GPT (fallback):', parsed.options.length, 'options');
+  } else {
+    // Fallback: utiliser les options GPT (extraites du texte brut)
+    if (parsed.options && parsed.options.length > 0) {
+      parsed.options = parsed.options
+        .map(o => traduireOption(o))
+        .filter(o => o !== null);
+      console.log('OPTIONS depuis GPT (fallback texte brut):', parsed.options.length, 'options');
+    } else {
+      // Dernier recours: options vides
+      parsed.options = [];
+      console.log('AVERTISSEMENT: Aucune option disponible (scraping ET GPT vides)');
+    }
   }
 
   // Dédoublonner les options
@@ -984,7 +1004,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // ── INJECTION DIRECTE TAVILY : problèmes connus sans passer par GPT ──
   // GPT retourne toujours [] pour ce champ — on injecte ici les données réelles Tavily
   if (Array.isArray(tavilyProblemes) && tavilyProblemes.length > 0) {
-    parsed.problemes_connus_modele = tavilyProblemes.slice(0, 5);
+    parsed.problemes_connus_modele = tavilyProblemes.slice(0, 4);
     console.log('PROBLÈMES injectés depuis Tavily (bypass GPT):', parsed.problemes_connus_modele.length);
   } else {
     parsed.problemes_connus_modele = [];
@@ -1039,8 +1059,8 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #f0f6ff; color: #0d1b35; font-size: 13px; height: auto !important; }
-  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 18px 22px; border-bottom: 2px solid #00B4D8; }
-  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .header { background: linear-gradient(135deg, #1a3a6e, #2952a3); padding: 14px 22px; border-bottom: 2px solid #00B4D8; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .logo { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #fff; }
   .logo span { color: #00B4D8; }
   .report-num { font-size: 11px; color: #b8d0f0; }
@@ -1053,7 +1073,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   .score-num { font-size: 46px; font-weight: 900; line-height: 1; }
   .score-denom { font-size: 11px; color: #b8d0f0; }
   .score-badge { margin-top: 5px; border-radius: 4px; padding: 2px 7px; font-size: 9px; font-weight: 700; color: #000; }
-  .scores-bar { padding: 12px 22px; page-break-inside: avoid; background: #fff; border-bottom: 1px solid #d0e4f7; }
+  .scores-bar { padding: 8px 22px; page-break-inside: avoid; background: #fff; border-bottom: 1px solid #d0e4f7; }
   .scores-bar-title { font-size: 9px; color: #5a7a9a; letter-spacing: 1px; margin-bottom: 10px; }
   .scores-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .score-item { text-align: center; }
@@ -1070,7 +1090,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   .cell-unit { font-size: 12px; color: #5a7a9a; font-weight: 600; }
   .grid-white { background: #fff; }
   .grid-light { background: #f0f6ff; }
-  .section { padding: 16px 22px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
+  .section { padding: 10px 22px; border-bottom: 1px solid #d0e4f7; page-break-inside: avoid; }
   .section-white { background: #fff; }
   .section-light { background: #f0f6ff; }
   .section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -1177,7 +1197,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   </div>
 
   ${analyse.options?.length > 0 ? `
-  <div class="section section-white">
+  <div class="section section-white" style="page-break-before:always;">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.options}</div></div>
     <table style="width:100%; border-collapse:separate; border-spacing:0 3px;">
       ${(() => {
@@ -1244,12 +1264,11 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item" style="border-left:3px solid #28a745;"><span style="color:#28a745; font-weight:700; margin-right:6px;">></span>${c}</div>`).join('')}
   </div>
 
+  <div style="page-break-before:always; display:flex; flex-direction:column; min-height:260mm;">
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.questions}</div></div>
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
   </div>
-
-  <div style="page-break-before:always; display:flex; flex-direction:column; min-height:260mm;">
     <div class="verdict-section">
       <div>
         <div class="verdict-label">${L.verdict}</div>
