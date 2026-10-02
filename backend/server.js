@@ -198,7 +198,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
     cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
 
-    const finalContent = cleanHtml.substring(0, 35000);
+    const finalContent = cleanHtml.substring(0, 8000);
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
 
     // FIX: retourner equipmentData, co2Value et optionsList avec le html
@@ -663,7 +663,9 @@ RÈGLE STRICTE :
     .replace(/\*[^*]*exhaust[^*]*\*/gi, '')
     .replace(/\*[^*]*auspuff[^*]*\*/gi, '')
     .replace(/abgassanlage/gi, 'système d\'échappement')
-    .replace(/auspuffanlage/gi, 'système d\'échappement');
+    .replace(/auspuffanlage/gi, 'système d\'échappement')
+    .replace(/\*\s*RS\s+[^*]+\*/gi, '')
+    .replace(/tuning|chiptuning|stage\s*[123]/gi, 'préparation sportive');
 
   const prompt = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 IMPORTANT : Tu dois rédiger ABSOLUMENT TOUT le rapport en ${langues[langue] || 'français'}. Chaque mot, chaque phrase, chaque champ JSON doit être en ${langues[langue] || 'français'}. PAS DE MÉLANGE DE LANGUES.
