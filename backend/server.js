@@ -198,7 +198,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
     cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
 
-    const finalContent = cleanHtml.substring(0, 8000);
+    const finalContent = cleanHtml.substring(0, 15000);
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
 
     // FIX: retourner equipmentData, co2Value et optionsList avec le html
@@ -687,7 +687,7 @@ Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 - CO2 en g/km : utilise la valeur de la section "DONNÉES STRUCTURÉES" si disponible (nombre entier, sinon null)
 - Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
-- Description complète du vendeur
+- Description complète du vendeur : le texte descriptif du véhicule rédigé par le vendeur (état, historique, options, rappels, numéros de série, raison de vente). Exclure uniquement : menus de navigation du site, avis Google des clients, horaires d'ouverture du garage. Si aucune description vendeur n'est trouvée, mets "Non communiquée".
 - TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète). Si la section "DONNÉES STRUCTURÉES" indique "aucune donnée structurée disponible", extraire les options depuis le texte brut de l'annonce (description, caractéristiques, titre). Supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste". Ne jamais retourner un tableau vide — extraire au minimum les équipements standards du modèle si aucune info disponible.
 
 ÉTAPE 2 - Analyse approfondie :
@@ -1159,6 +1159,29 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       .replace(/\s{2,}/g, ' ')
       .trim();
   };
+  // Nettoyer la description vendeur — enlever les éléments de navigation AutoScout24
+  if (parsed.description_vendeur) {
+    parsed.description_vendeur = parsed.description_vendeur
+      .replace(/À vendre Rechercher Vendre Estimer.*?(?=\n|$)/gi, '')
+      .replace(/Rechercher Vendre Estimer Assurer.*?(?=\n|$)/gi, '')
+      .replace(/Se connecter FR Retour.*?(?=\n|$)/gi, '')
+      .replace(/Partager Imprimer.*?(?=\n|$)/gi, '')
+      .replace(/Comparer les assurances.*?(?=\n|$)/gi, '')
+      .replace(/Nos partenaires Fournisseur.*?(?=\n|$)/gi, '')
+      .replace(/Heures d.ouverture.*$/si, '')
+      .replace(/Lun \d{2}:\d{2}.*$/si, '')
+      .replace(/Avis du fournisseur.*$/si, '')
+      .replace(/Afficher tous les avis.*$/si, '')
+      .replace(/Signaler cette annonce.*$/si, '')
+      .replace(/Listing ID:.*$/si, '')
+      .replace(/\d{3}\s*\d{3}\s*\d{2}\s*\d{2}/g, '') // numéros de téléphone
+      .replace(/https?:\/\/\S+/g, '') // URLs
+      .replace(/CHF&nbsp;[\d''.–]+/g, '') // prix dupliqués
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (parsed.description_vendeur.length < 20) parsed.description_vendeur = 'Non communiquée';
+  }
+
   if (parsed.conseil_achat) {
     parsed.conseil_achat = nettoyerTexte(parsed.conseil_achat);
     // Corriger conseil_achat tronqué (phrase coupée sans ponctuation finale)
@@ -1187,8 +1210,8 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     console.log('Phase 2 supprimée du conseil — véhicule récent:', anneeVehicule);
   }
 
-  // Corriger conseil_achat si score_prix >= 7 : supprimer toute mention prix élevé/au-dessus
-  if ((parsed.score_prix || 0) >= 7 && parsed.conseil_achat) {
+  // Corriger conseil_achat si score_prix >= 7 ou verdict ACHETER : supprimer toute mention prix élevé/au-dessus
+  if (((parsed.score_prix || 0) >= 7 || parsed.verdict === 'ACHETER') && parsed.conseil_achat) {
     const motsPrixCA = [
       'légèrement au-dessus', 'au-dessus de la moyenne', 'prix élevé',
       'prix demandé est élevé', 'au-dessus du marché', 'prix est légèrement',
@@ -1203,6 +1226,16 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     });
     parsed.conseil_achat = parsed.conseil_achat.replace(/\s{2,}/g, ' ').trim();
     console.log('CONSEIL_ACHAT : mention prix élevé supprimée (score_prix=' + parsed.score_prix + ')');
+    // Si verdict ACHETER, ajouter mention prix bien positionné si pas déjà présente
+    if (parsed.verdict === 'ACHETER' && parsed.conseil_achat) {
+      const medianeCA = prixMarche?.mediane || 0;
+      const dejaPositif = parsed.conseil_achat.toLowerCase().includes('inférieur') ||
+        parsed.conseil_achat.toLowerCase().includes('bonne affaire') ||
+        parsed.conseil_achat.toLowerCase().includes('bien positionné');
+      if (!dejaPositif && medianeCA > 0) {
+        parsed.conseil_achat = `Prix demandé de ${prixDemande.toLocaleString()} CHF inférieur à la médiane du marché (${medianeCA.toLocaleString()} CHF) — bonne affaire. ` + parsed.conseil_achat;
+      }
+    }
   }
 
   // Supprimer problèmes vagues sur véhicules quasi neufs (<3 ans, <30000 km)
