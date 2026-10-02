@@ -652,7 +652,7 @@ QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : retourne TOUJOURS un tableau VIDE []. Ce champ est géré par un autre système — tu ne dois JAMAIS le remplir.
-- conseil_achat : 2-4 phrases de conseil d'achat personnalisé pour ce véhicule spécifique (budget total de possession, points de vigilance, positionnement marché). IMPORTANT : mentionner une Phase 2 ou génération suivante UNIQUEMENT si toutes ces conditions sont réunies : (1) le véhicule a plus de 4 ans, (2) une Phase 2 ou génération suivante EXISTE réellement et est disponible sur le marché, (3) cette génération corrige des problèmes documentés de la Phase 1. NE PAS mentionner de Phase 2 si : le véhicule a moins de 4 ans, si c'est déjà la dernière génération disponible, si aucune génération suivante n'existe, ou si le modèle est récent (2022+). Exemple de formulation : "Si vous êtes attaché à ce modèle, la Phase 2 (à partir de XXXX) corrige la plupart des problèmes de [boîte/moteur/pompe à eau etc.] et mérite d'être considérée. La Phase 1 reste néanmoins intéressante si le prix reflète les risques et selon vos préférences esthétiques personnelles." Ne pas imposer ce choix — c'est une suggestion respectueuse, le client décide selon ses goûts et son budget.
+- conseil_achat : 3-5 phrases de conseil d'achat PERSONNALISÉ et DÉTAILLÉ pour CE véhicule spécifique. Obligatoirement inclure : (1) positionnement du prix par rapport au marché suisse avec chiffres concrets, (2) le coût total de possession sur 3 ans (achat + entretien estimé), (3) les 1-2 points de vigilance prioritaires liés aux problèmes connus de CE modèle précis, (4) une recommandation claire sur quoi négocier ou vérifier en priorité. Être précis, concret, utile — pas générique. Exemple de niveau attendu : "L'Audi RS3 8Y en châssis 2023 se positionne dans le segment supérieur des sportives compactes. Avec 77 000 km, ce véhicule est encore sous free service Audi jusqu'en 2033, ce qui représente une économie réelle sur l'entretien. Le prix demandé de 48 890 CHF est légèrement au-dessus de la fourchette marché actuelle (45 000–53 000 CHF) pour ce kilométrage — une négociation de 1 500 à 3 000 CHF est réaliste. Vérifiez en priorité l'état de la boîte S-tronic (point faible documenté de la RS3 8Y) et exigez l'historique d'entretien complet chez Audi." IMPORTANT : mentionner une Phase 2 ou génération suivante UNIQUEMENT si toutes ces conditions sont réunies : (1) le véhicule a plus de 4 ans, (2) une Phase 2 ou génération suivante EXISTE réellement et est disponible sur le marché, (3) cette génération corrige des problèmes documentés de la Phase 1. NE PAS mentionner de Phase 2 si le modèle est récent (2022+).
 
 ÉTAPE 3 - Génère le rapport. Rappel : TOUT doit être en ${langues[langue] || 'français'}.
 
@@ -1307,7 +1307,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     ${(analyse.checklist_visite || []).map(c => `<div class="checklist-item" style="border-left:3px solid #28a745;"><span style="color:#28a745; font-weight:700; margin-right:6px;">></span>${c}</div>`).join('')}
   </div>
 
-  <div style="page-break-before:always; min-height:267mm; display:flex; flex-direction:column;">
+  <div style="page-break-before:always;">
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#1a3a6e;"></div><div class="section-label" style="color:#1a3a6e;">${L.questions}</div></div>
     ${(analyse.questions_vendeur || []).map(q => `<div class="checklist-item-white" style="border-left:3px solid #1a3a6e;"><span style="color:#1a3a6e; font-weight:700; margin-right:6px;">?</span>${q}</div>`).join('')}
@@ -1331,7 +1331,6 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <p style="font-size:12px; color:#0d1b35; line-height:1.7; padding:4px 0;">${analyse.conseil_achat}</p>
     </div>` : ''}
 
-    <div style="flex:1;"></div>
     <div class="footer">
       Source : ${url}<br>
       ${L.disclaimer}<br>
