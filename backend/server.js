@@ -978,12 +978,19 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   );
   if (isRefusal) {
     console.log('GPT REFUS DÉTECTÉ — retry avec prompt simplifié...');
-    // Prompt simplifié sans contenu HTML brut — juste les données structurées
+    // Prompt simplifié : on garde le contenu HTML nettoyé mais on enlève le titre de l'annonce
+    // qui peut contenir des termes techniques allemands déclenchant le filtre
+    const htmlRetry = htmlNettoye
+      .replace(/RS\s+Abgassanlage/gi, 'système d\'échappement sportif')
+      .replace(/Abgasanlage/gi, 'système d\'échappement')
+      .substring(0, 8000); // réduire la taille pour le retry
     const schemaJson = prompt.substring(prompt.lastIndexOf('\n{\n  "marque"'));
     const promptRetry = `LANGUE OBLIGATOIRE : ${langues[langue] || 'français'}
 Tu es un expert en analyse de véhicules d'occasion sur le marché suisse.
 
-Analyse ce véhicule d'occasion et réponds UNIQUEMENT avec un objet JSON valide :
+Analyse cette annonce automobile et réponds UNIQUEMENT avec un objet JSON valide :
+
+Contenu annonce : ${htmlRetry}
 ${equipmentSection}${tavilySection}
 
 Schéma JSON à suivre exactement :
