@@ -804,7 +804,7 @@ Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 - Boîte de vitesses
 - Puissance en PS uniquement (ex: "306 PS")
 - CO2 en g/km : utilise la valeur de la section "DONNÉES STRUCTURÉES" si disponible (nombre entier, sinon null)
-- Couleur exacte — utilise en priorité le champ "COULEUR" des données structurées si disponible. Sinon cherche partout dans la page (titre, description, caractéristiques). Si vraiment introuvable, mets "Non communiquée"
+- Couleur exacte — cherche ACTIVEMENT dans tout le contenu : champ "COULEUR" des données structurées, puis dans le texte "Extérieure [couleur]", "Couleur extérieure", "Farbe", ou toute mention de couleur dans le titre/description/caractéristiques. Exemples valides : "Noir Métallisé", "Blanc Nacré", "Gris Nardo", "Rouge Misano". NE MET "Non communiquée" QUE si aucune couleur n'est mentionnée nulle part dans la page.
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur : utilise en priorité le champ "DESCRIPTION_VENDEUR" de la section "DONNÉES STRUCTURÉES" ci-dessus s'il est présent. Sinon, extraire le texte descriptif du véhicule rédigé par le vendeur depuis le contenu HTML (état, historique, options, rappels, numéros de série, raison de vente). Exclure uniquement : menus de navigation du site, avis Google des clients, horaires d'ouverture du garage. Si vraiment aucune description vendeur n'est trouvée ni dans les données structurées ni dans le contenu, mets "Non communiquée".
 - TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète). Si la section "DONNÉES STRUCTURÉES" indique "aucune donnée structurée disponible", extraire les options depuis le texte brut de l'annonce (description, caractéristiques, titre). Supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste". Ne jamais retourner un tableau vide — extraire au minimum les équipements standards du modèle si aucune info disponible.
@@ -817,16 +817,20 @@ Détermine la fourchette de prix réaliste sur le marché suisse 2026 pour CE v�
 2. Estime la fourchette min-max réaliste pour cette génération sur le marché suisse (pas européen)
 3. Compare le prix demandé à cette fourchette et sois COHÉRENT : si le prix est dans la fourchette, ne dis pas "prix au-dessus de la moyenne"
 
-Score prix :
-- 9-10 : prix >10% sous le min de la fourchette — excellente affaire
-- 8 : prix dans le tiers inférieur de la fourchette — bon prix
-- 7 : prix dans le milieu de la fourchette — prix correct
-- 6 : prix dans le tiers supérieur de la fourchette — légèrement élevé
-- 5 : prix 5-10% au-dessus du max — au-dessus du marché
-- 3-4 : prix 10-20% au-dessus du max
-- 1-2 : prix >20% au-dessus du max
+Score prix — calcule EXPLICITEMENT la position du prix dans la fourchette :
+- Calcule : position = (prix_demandé - fourchette_min) / (fourchette_max - fourchette_min)
+- position < 0 (sous le min) → score 9-10
+- position 0.00–0.33 (tiers inférieur) → score 8
+- position 0.34–0.66 (milieu) → score 7
+- position 0.67–1.00 (tiers supérieur) → score 6
+- position > 1.00 jusqu'à +10% → score 5
+- position > 1.10 jusqu'à +20% → score 3-4
+- position > 1.20 → score 1-2
 
-RÈGLE DE COHÉRENCE ABSOLUE : si score_prix ≤ 6, alors le point négatif doit mentionner le prix. Si score_prix ≥ 7, NE PAS mentionner le prix comme point négatif. Ne jamais avoir score_prix=7 ET dire "prix au-dessus du marché".
+RÈGLE DE COHÉRENCE ABSOLUE :
+- Si score_prix ≥ 7 → NE PAS mentionner le prix dans les points négatifs
+- Si score_prix ≤ 6 → mentionner le prix dans les points négatifs
+- Si prix_demandé ≤ fourchette_mediane → NE PAS dire "prix au-dessus du marché"
 
 FOURCHETTE PRÉCISE : l'écart max-min doit être ≤ 10 000 CHF pour les véhicules < 100 000 CHF. Ne pas donner une fourchette trop large — être précis sur le marché suisse 2026.
 
