@@ -33,8 +33,13 @@ async function scrapeAnnonce(url, langue = 'fr') {
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
 
+    // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
+    let equipmentData = '';
+
     // Appel CSS extractor pour les équipements (toujours présent sur toutes les annonces)
     let cssEquipments = [];
+    let cssCouleur = null;
+    let cssDescVendeur = null;
     try {
       const cssResponse = await axios.get('https://api.zenrows.com/v1/', {
         params: {
@@ -43,7 +48,11 @@ async function scrapeAnnonce(url, langue = 'fr') {
           js_render: 'true',
           premium_proxy: 'true',
           wait: '8000',
-          css_extractor: JSON.stringify({ equipments: '#expandable-equipment li.chakra-list__item' })
+          css_extractor: JSON.stringify({
+            equipments: '#expandable-equipment li.chakra-list__item',
+            couleur_ext: '[data-testid="color-exterior"] span, [class*="color-exterior"] span, [class*="ColorExterior"] span',
+            description_vendeur: '[data-testid="seller-comment"], [class*="sellerComment"], [class*="SellerComment"], [class*="seller-comment"]'
+          })
         },
         timeout: 120000
       });
@@ -53,12 +62,18 @@ async function scrapeAnnonce(url, langue = 'fr') {
         cssEquipments = cssData.equipments.filter(e => e && e.trim().length > 2);
         console.log('CSS EXTRACTOR équipements:', cssEquipments.length);
       }
+      // Stocker couleur et description pour injection après equipmentData
+      if (cssData && cssData.couleur_ext) {
+        const v = Array.isArray(cssData.couleur_ext) ? cssData.couleur_ext[0] : cssData.couleur_ext;
+        if (v && v.trim().length > 1) cssCouleur = v.trim();
+      }
+      if (cssData && cssData.description_vendeur) {
+        const v = Array.isArray(cssData.description_vendeur) ? cssData.description_vendeur[0] : cssData.description_vendeur;
+        if (v && v.trim().length > 30) cssDescVendeur = v.trim();
+      }
     } catch(e) {
       console.log('CSS extractor erreur:', e.message);
     }
-
-    // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
-    let equipmentData = '';
     let co2Value = null;
     let optionsList = [];
 
@@ -293,6 +308,18 @@ async function scrapeAnnonce(url, langue = 'fr') {
           const t = cleanDesc(htmlDescMatch[1]);
           if (t) { equipmentData += "\nDESCRIPTION_VENDEUR: " + t; console.log("DESCRIPTION VENDEUR (HTML):", t.substring(0, 100)); }
         }
+      }
+
+      // Injecter couleur et description depuis CSS extractor (priorité sur regex HTML)
+      if (cssCouleur && !equipmentData.includes('COULEUR:')) {
+        equipmentData += "\nCOULEUR: " + cssCouleur;
+        console.log('COULEUR CSS:', cssCouleur);
+      } else if (cssCouleur) {
+        console.log('COULEUR CSS (ignorée, déjà trouvée):', cssCouleur);
+      }
+      if (cssDescVendeur && !equipmentData.includes('DESCRIPTION_VENDEUR:')) {
+        equipmentData += "\nDESCRIPTION_VENDEUR: " + cssDescVendeur;
+        console.log('DESCRIPTION VENDEUR CSS:', cssDescVendeur.substring(0, 100));
       }
 
       console.log("CO2 EXTRAIT:", co2Value);
@@ -545,7 +572,8 @@ Règles strictes :
 - Basé uniquement sur ce qui est mentionné dans le texte
 - Formulation objective et factuelle (pas "je", pas "nous")
 - En français uniquement
-- Si rappel constructeur trouvé, inclure
+- NE JAMAIS mentionner de codes, numéros ou identifiants alphanumériques (ex: 50ZZ, 22V123, etc.)
+- NE JAMAIS inventer un numéro de rappel — si un rappel est mentionné, décrire le problème sans le code
 - Format de réponse : JSON array de strings, exemple: ["Problème 1.", "Problème 2.", "Problème 3."]
 - Si aucun problème réel documenté dans le texte, retourne []`
           }, {
@@ -902,7 +930,7 @@ Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur 
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
-- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives). Chaque point doit être PRÉCIS et CHIFFRÉ si possible. Si le véhicule est encore sous free service (BMW/Audi/Mercedes/Volvo dont année+10 > 2026 ET km < 100000), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
+- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives, JAMAIS "couleur non communiquée" ou tout point lié à un manque d'information dans l'annonce). Chaque point doit être PRÉCIS et CHIFFRÉ si possible, et concerner CE véhicule ou CE modèle. Si le véhicule est encore sous free service (BMW/Audi/Mercedes/Volvo dont année+10 > 2026 ET km < 100000), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : retourne TOUJOURS un tableau VIDE []. Ce champ est géré par un autre système — tu ne dois JAMAIS le remplir.
@@ -1019,9 +1047,11 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // Fourchette marché : priorité au scraping réel, fallback GPT, fallback formule
   if (prixMarche && prixMarche.count >= 3) {
     // Données réelles AutoScout24 CH — on écrase GPT
+    // Plafonner le max à médiane + 12% pour éviter les fourchettes trop larges
+    const maxPlafonné = Math.min(prixMarche.max, Math.round(prixMarche.mediane * 1.12 / 500) * 500);
     parsed.fourchette_marche_min = arrondir(prixMarche.min);
-    parsed.fourchette_marche_max = arrondir(prixMarche.max);
-    console.log(`Fourchette marché TAVILY: ${parsed.fourchette_marche_min}–${parsed.fourchette_marche_max} CHF (confiance: ${prixMarche.confiance || '?'})`);
+    parsed.fourchette_marche_max = arrondir(maxPlafonné);
+    console.log(`Fourchette marché TAVILY: ${parsed.fourchette_marche_min}–${parsed.fourchette_marche_max} CHF (médiane: ${prixMarche.mediane}, confiance: ${prixMarche.confiance || '?'})`);
   } else if (!parsed.fourchette_marche_min || parsed.fourchette_marche_min === 0) {
     parsed.fourchette_marche_min = arrondir(prixDemande * 0.88);
     parsed.fourchette_marche_max = arrondir(prixDemande * 1.05);
