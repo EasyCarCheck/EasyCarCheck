@@ -226,19 +226,52 @@ async function scrapeAnnonce(url, langue = 'fr') {
         }
       }
 
+      // ── COULEUR depuis JSON structuré ──
+      const couleurMatch = html.match(/\\"color\\":\\"([^"\\]{2,40})\\"/) ||
+                           html.match(/"color":"([^"\\]{2,40})"/) ||
+                           html.match(/\\"colour\\":\\"([^"\\]{2,40})\\"/) ||
+                           html.match(/\\"bodyColor\\":\\"([^"\\]{2,40})\\"/) ||
+                           html.match(/"bodyColor":"([^"\\]{2,40})"/);
+      if (couleurMatch) {
+        const couleurVal = couleurMatch[1].replace(/\\"/g, '').trim();
+        if (couleurVal.length > 1) {
+          equipmentData += "\nCOULEUR: " + couleurVal;
+          console.log("COULEUR EXTRAITE:", couleurVal);
+        }
+      }
+
       // ── DESCRIPTION VENDEUR depuis JSON structuré (avant truncation) ──
-      // AutoScout24 stocke la description dans "description":"..." dans le JSON Next.js
-      const descMatch = html.match(/\\"description\\":\\"((?:[^\\"\\\\]|\\\\.|(?:\\\\u[0-9a-fA-F]{4}))+)\\"/) ||
-                        html.match(/"description":"((?:[^"\\]|\\.)+)"(?:\s*,|\s*})/);
-      if (descMatch) {
-        let descText = descMatch[1]
-          .replace(/\\n/g, ' ').replace(/\\r/g, '').replace(/\\t/g, ' ')
-          .replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-          .replace(/\s{2,}/g, ' ').trim();
-        // Filtrer les descriptions qui sont en fait du JSON ou du code (trop courtes ou trop techniques)
-        if (descText.length > 30 && descText.length < 5000 && !descText.startsWith('{') && !descText.startsWith('[')) {
-          equipmentData += "\nDESCRIPTION_VENDEUR: " + descText;
-          console.log("DESCRIPTION VENDEUR EXTRAITE:", descText.substring(0, 100));
+      // Chercher sellerComment (vraie description vendeur) en priorité, puis freeText
+      const DISCLAIMERS_AS24 = [
+        "l'équipement réel peut différer",
+        "die tatsächliche ausstattung",
+        "equipment may differ",
+        "angaben ohne gewähr",
+        "sous réserve de modifications",
+        "les informations fournies"
+      ];
+      const cleanDesc = (raw) => {
+        let t = raw.replace(/\\n/g, ' ').replace(/\\r/g, '').replace(/\\t/g, ' ')
+          .replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\s{2,}/g, ' ').trim();
+        const isDisclaimer = DISCLAIMERS_AS24.some(d => t.toLowerCase().includes(d));
+        if (isDisclaimer || t.length < 30 || t.length > 5000 || t.startsWith('{') || t.startsWith('[')) return null;
+        return t;
+      };
+      const sellerMatch = html.match(/\\"sellerComment\\":\\"((?:[^\\"\\\\]|\\\\.)+)\\"/) ||
+                          html.match(/"sellerComment":"((?:[^"\\]|\\.)+)"/) ||
+                          html.match(/\\"freeText\\":\\"((?:[^\\"\\\\]|\\\\.)+)\\"/) ||
+                          html.match(/"freeText":"((?:[^"\\]|\\.)+)"/);
+      if (sellerMatch) {
+        const t = cleanDesc(sellerMatch[1]);
+        if (t) { equipmentData += "\nDESCRIPTION_VENDEUR: " + t; console.log("DESCRIPTION VENDEUR (sellerComment):", t.substring(0, 100)); }
+      }
+      if (!equipmentData.includes('DESCRIPTION_VENDEUR:')) {
+        const descMatch = html.match(/\\"description\\":\\"((?:[^\\"\\\\]|\\\\.|(?:\\\\u[0-9a-fA-F]{4}))+)\\"/) ||
+                          html.match(/"description":"((?:[^"\\]|\\.)+)"(?:\s*,|\s*})/);
+        if (descMatch) {
+          const t = cleanDesc(descMatch[1]);
+          if (t) { equipmentData += "\nDESCRIPTION_VENDEUR: " + t; console.log("DESCRIPTION VENDEUR EXTRAITE:", t.substring(0, 100)); }
+          else console.log("DESCRIPTION VENDEUR ignorée (disclaimer):", descMatch[1].substring(0, 60));
         }
       }
 
@@ -741,7 +774,7 @@ Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 - Boîte de vitesses
 - Puissance en PS uniquement (ex: "306 PS")
 - CO2 en g/km : utilise la valeur de la section "DONNÉES STRUCTURÉES" si disponible (nombre entier, sinon null)
-- Couleur exacte — cherche PARTOUT dans la page (titre, description, caractéristiques, "Denim Blue", "Noir", etc). Si introuvable, mets "Non communiquée"
+- Couleur exacte — utilise en priorité le champ "COULEUR" des données structurées si disponible. Sinon cherche partout dans la page (titre, description, caractéristiques). Si vraiment introuvable, mets "Non communiquée"
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur : utilise en priorité le champ "DESCRIPTION_VENDEUR" de la section "DONNÉES STRUCTURÉES" ci-dessus s'il est présent. Sinon, extraire le texte descriptif du véhicule rédigé par le vendeur depuis le contenu HTML (état, historique, options, rappels, numéros de série, raison de vente). Exclure uniquement : menus de navigation du site, avis Google des clients, horaires d'ouverture du garage. Si vraiment aucune description vendeur n'est trouvée ni dans les données structurées ni dans le contenu, mets "Non communiquée".
 - TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète). Si la section "DONNÉES STRUCTURÉES" indique "aucune donnée structurée disponible", extraire les options depuis le texte brut de l'annonce (description, caractéristiques, titre). Supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste". Ne jamais retourner un tableau vide — extraire au minimum les équipements standards du modèle si aucune info disponible.
