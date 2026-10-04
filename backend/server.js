@@ -226,15 +226,21 @@ async function scrapeAnnonce(url, langue = 'fr') {
         }
       }
 
-      // ── COULEUR depuis JSON structuré ──
-      const couleurMatch = html.match(/\\"color\\":\\"([^"\\]{2,40})\\"/) ||
-                           html.match(/"color":"([^"\\]{2,40})"/) ||
+      // ── COULEUR depuis JSON structuré ou HTML ──
+      // JSON structuré : champs spécifiques voiture (pas les couleurs CSS)
+      const couleurMatch = html.match(/\\"bodyColor\\":\\"([^"\\]{2,40})\\"/) ||
+                           html.match(/"bodyColor":"([^"\\]{2,40})"/) ||
                            html.match(/\\"colour\\":\\"([^"\\]{2,40})\\"/) ||
-                           html.match(/\\"bodyColor\\":\\"([^"\\]{2,40})\\"/) ||
-                           html.match(/"bodyColor":"([^"\\]{2,40})"/);
+                           html.match(/\\"exteriorColor\\":\\"([^"\\]{2,40})\\"/) ||
+                           html.match(/"exteriorColor":"([^"\\]{2,40})"/) ||
+                           // HTML rendu AS24 : "Extérieure noir Intérieure" ou "Extérieure noir (Métallisé) Intérieure"
+                           html.match(/Ext[eé]rieure\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})\s+Int[eé]rieure/i) ||
+                           html.match(/[Cc]ouleur\s+ext[eé]rieure\s*[:\-]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})/i);
       if (couleurMatch) {
         const couleurVal = couleurMatch[1].replace(/\\"/g, '').trim();
-        if (couleurVal.length > 1) {
+        // Filtrer les faux positifs (mots trop courts, labels parasites)
+        const COULEURS_INVALIDES = ['extérieure', 'intérieure', 'couleur', 'exterior', 'interior', 'color', 'colour'];
+        if (couleurVal.length > 1 && !COULEURS_INVALIDES.includes(couleurVal.toLowerCase())) {
           equipmentData += "\nCOULEUR: " + couleurVal;
           console.log("COULEUR EXTRAITE:", couleurVal);
         }
@@ -257,12 +263,14 @@ async function scrapeAnnonce(url, langue = 'fr') {
         if (isDisclaimer || t.length < 30 || t.length > 5000 || t.startsWith('{') || t.startsWith('[')) return null;
         return t;
       };
-      const sellerMatch = html.match(/\\"sellerComment\\":\\"((?:[^\\"\\\\]|\\\\.)+)\\"/) ||
-                          html.match(/"sellerComment":"((?:[^"\\]|\\.)+)"/) ||
-                          html.match(/\\"freeText\\":\\"((?:[^\\"\\\\]|\\\\.)+)\\"/) ||
-                          html.match(/"freeText":"((?:[^"\\]|\\.)+)"/);
-      if (sellerMatch) {
-        const t = cleanDesc(sellerMatch[1]);
+      // Chercher sellerComment avec regex tolérante (contenu multiligne, caractères spéciaux)
+      const sellerRaw = html.match(/sellerComment["']?\s*:\s*["']([\s\S]{30,3000}?)["']\s*[,}]/)?.[1] ||
+                        html.match(/\\"sellerComment\\":\s*\\"((?:[^\\"\\\\]|\\\\.){30,3000})\\"/) ?.[1] ||
+                        html.match(/"sellerComment"\s*:\s*"((?:[^"\\]|\\.){30,3000})"/) ?.[1] ||
+                        html.match(/\\"freeText\\":\s*\\"((?:[^\\"\\\\]|\\\\.){30,3000})\\"/) ?.[1] ||
+                        html.match(/"freeText"\s*:\s*"((?:[^"\\]|\\.){30,3000})"/) ?.[1];
+      if (sellerRaw) {
+        const t = cleanDesc(sellerRaw);
         if (t) { equipmentData += "\nDESCRIPTION_VENDEUR: " + t; console.log("DESCRIPTION VENDEUR (sellerComment):", t.substring(0, 100)); }
       }
       if (!equipmentData.includes('DESCRIPTION_VENDEUR:')) {
@@ -272,6 +280,18 @@ async function scrapeAnnonce(url, langue = 'fr') {
           const t = cleanDesc(descMatch[1]);
           if (t) { equipmentData += "\nDESCRIPTION_VENDEUR: " + t; console.log("DESCRIPTION VENDEUR EXTRAITE:", t.substring(0, 100)); }
           else console.log("DESCRIPTION VENDEUR ignorée (disclaimer):", descMatch[1].substring(0, 60));
+        }
+      }
+      // ── DESCRIPTION VENDEUR depuis HTML rendu (fallback) ──
+      if (!equipmentData.includes('DESCRIPTION_VENDEUR:')) {
+        // AS24 affiche "Avis du fournisseur" ou "Seller comment" dans un bloc HTML
+        const htmlDescMatch = html.match(/Avis du fournisseur[^<]*<\/[^>]+>\s*<[^>]+>([^<]{30,2000})/i) ||
+                              html.match(/Seller comment[^<]*<\/[^>]+>\s*<[^>]+>([^<]{30,2000})/i) ||
+                              html.match(/Händlerkommentar[^<]*<\/[^>]+>\s*<[^>]+>([^<]{30,2000})/i) ||
+                              html.match(/data-testid="(?:seller-comment|seller-notes|description-content)"[^>]*>([^<]{30,2000})/i);
+        if (htmlDescMatch) {
+          const t = cleanDesc(htmlDescMatch[1]);
+          if (t) { equipmentData += "\nDESCRIPTION_VENDEUR: " + t; console.log("DESCRIPTION VENDEUR (HTML):", t.substring(0, 100)); }
         }
       }
 
@@ -548,13 +568,21 @@ Règles strictes :
       }
     }
 
+    // Extraire les numéros de campagne de rappel officiels (format NHTSA/OFROU: ex. 22V901000, 23A123456)
+    const recallMatches = [...toutLeContenu.matchAll(/\b([0-9]{2}[A-Z][0-9]{5,})\b/g)];
+    const recallNums = [...new Set(recallMatches.map(m => m[1].trim().toUpperCase()))]
+      .filter(n => /^[0-9]{2}[A-Z][0-9]{5,}$/.test(n))
+      .slice(0, 3);
+    if (recallNums.length > 0) console.log('NUMÉROS RAPPEL EXTRAITS:', recallNums.join(', '));
+
     return {
       prix: prix,
-      problemesDocumentes: problemesListe
+      problemesDocumentes: problemesListe,
+      numerosRappel: recallNums
     };
   } catch (e) {
     console.log('Tavily erreur (non bloquant):', e.message);
-    return { prix: '', problemesDocumentes: [] };
+    return { prix: '', problemesDocumentes: [], numerosRappel: [] };
   }
 }
 
@@ -610,13 +638,14 @@ async function rechercherPrixMarcheViaTavily(marque, modele, annee, km) {
       max_tokens: 200,
       messages: [{
         role: 'system',
-        content: `Tu es un expert automobile suisse. À partir du texte ci-dessous sur la ${marque} ${modele} de ${annee} (${km > 0 ? km+'km' : ''}), extrais la fourchette de prix du marché suisse en CHF pour CE millésime précis.
+        content: `Tu es un expert automobile suisse. À partir du texte ci-dessous sur la ${marque} ${modele} de ${annee} (${km > 0 ? km.toLocaleString('fr-CH')+'km' : ''}), extrais la fourchette de prix du marché suisse en CHF pour CE véhicule précis.
 
 Règles :
 - Ne considère que les véhicules de ${annee-1} à ${annee+1}
-- Ignore les autres années (trop anciennes ou trop récentes)
-- Donne le prix minimum réaliste, la médiane et le maximum du marché
-- Si les prix trouvés sont hétérogènes (mélange vieux/neuf), utilise uniquement les prix cohérents avec un véhicule de ${annee}
+- Ignore les années hors de cette plage
+- Tiens compte du kilométrage (${km > 0 ? km.toLocaleString('fr-CH')+'km' : 'inconnu'}) : un véhicule avec kilométrage élevé se vend moins cher que la moyenne du marché
+- La fourchette doit être réaliste pour UN véhicule de ${annee} avec ${km > 0 ? 'environ '+Math.round(km/10000)*10000+'km' : 'kilométrage inconnu'}, pas pour l'ensemble du marché toutes déclinaisons confondues
+- Le "max" ne doit pas dépasser le prix d'un exemplaire similaire bien entretenu avec kilométrage comparable
 - Format STRICT (JSON): {"min": 12000, "mediane": 15000, "max": 18000, "confiance": "haute|moyenne|basse"}
 - Si aucun prix fiable pour ${annee}, retourne null`
       }, {
@@ -724,6 +753,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
 
   const tavilyPrix = tavilyContext?.prix || '';
   const tavilyProblemes = tavilyContext?.problemesDocumentes || [];  // tableau de strings
+  const tavilyRappels = tavilyContext?.numerosRappel || [];  // numéros de campagne rappel
 
   // Tavily injecte UNIQUEMENT le prix dans le prompt GPT.
   // Les problèmes connus sont injectés directement dans le PDF APRÈS GPT — GPT ne les voit pas.
@@ -1350,6 +1380,9 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.problemes_connus_modele = [];
     console.log('PROBLÈMES : aucun trouvé par Tavily → tableau vide');
   }
+  // Numéros de rappel officiels
+  parsed.numeros_rappel = tavilyRappels;
+  if (tavilyRappels.length > 0) console.log('RAPPELS injectés:', tavilyRappels.join(', '));
 
   return parsed;
 }
@@ -1598,7 +1631,12 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.problemes}</div></div>
     ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white" style="border-left:3px solid #d4a00a;"><span style="color:#d4a00a; font-weight:700; margin-right:6px;">!</span>${p}</div>`).join('')}
-  </div>` : ''}
+    ${analyse.numeros_rappel?.length > 0 ? `<div style="margin-top:8px; padding:8px 12px; background:#fff8e1; border-left:3px solid #d4a00a; border-radius:4px; font-size:11px; color:#7a5800;"><span style="font-weight:700;">⚠ Rappel(s) constructeur officiel(s) :</span> ${analyse.numeros_rappel.join(' · ')} — Vérifier auprès du concessionnaire si effectué.</div>` : ''}
+  </div>` : `${analyse.numeros_rappel?.length > 0 ? `
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.problemes}</div></div>
+    <div style="padding:8px 12px; background:#fff8e1; border-left:3px solid #d4a00a; border-radius:4px; font-size:11px; color:#7a5800;"><span style="font-weight:700;">⚠ Rappel(s) constructeur officiel(s) :</span> ${analyse.numeros_rappel.join(' · ')} — Vérifier auprès du concessionnaire si effectué.</div>
+  </div>` : ''}`}
 
   <div class="section section-light">
     <div class="section-title"><div class="section-bar" style="background:#28a745;"></div><div class="section-label" style="color:#28a745;">${L.checklist}</div></div>
