@@ -256,16 +256,19 @@ async function scrapeAnnonce(url, langue = 'fr') {
                            html.match(/\\"colour\\":\\"([^"\\]{2,40})\\"/) ||
                            html.match(/\\"exteriorColor\\":\\"([^"\\]{2,40})\\"/) ||
                            html.match(/"exteriorColor":"([^"\\]{2,40})"/) ||
-                           // JSON AS24 : "color":"Gris Nardo" (sans "s" — clé simple)
-                           html.match(/\\"color\\":\\"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{2,40})\\"/) ||
-                           html.match(/"color":"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{2,40})"/) ||
+                           // JSON AS24 schema.org : "color": "black" ou "color":"Gris Nardo"
+                           html.match(/\\"color\\":\s*\\"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})\\"/) ||
+                           html.match(/"color":\s*"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})"/) ||
                            // HTML rendu AS24 : "Extérieure noir Intérieure" ou "Extérieure noir (Métallisé) Intérieure"
                            html.match(/Ext[eé]rieure\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})\s+Int[eé]rieure/i) ||
                            html.match(/[Cc]ouleur\s+ext[eé]rieure\s*[:\-]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})/i);
       if (couleurMatch) {
-        const couleurVal = couleurMatch[1].replace(/\\"/g, '').trim();
-        // Filtrer les faux positifs (mots trop courts, labels parasites)
+        const couleurRaw = couleurMatch[1].replace(/\\"/g, '').trim();
         const COULEURS_INVALIDES = ['extérieure', 'intérieure', 'couleur', 'exterior', 'interior', 'color', 'colour'];
+        const COULEURS_TRAD = { black: 'Noir', white: 'Blanc', grey: 'Gris', gray: 'Gris', silver: 'Argent',
+          red: 'Rouge', blue: 'Bleu', green: 'Vert', yellow: 'Jaune', orange: 'Orange',
+          brown: 'Marron', beige: 'Beige', purple: 'Violet', pink: 'Rose', gold: 'Or' };
+        const couleurVal = COULEURS_TRAD[couleurRaw.toLowerCase()] || couleurRaw;
         if (couleurVal.length > 1 && !COULEURS_INVALIDES.includes(couleurVal.toLowerCase())) {
           equipmentData += "\nCOULEUR: " + couleurVal;
           console.log("COULEUR EXTRAITE:", couleurVal);
@@ -1008,10 +1011,22 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     }
   });
 
-  const content = response.data.choices[0].message.content;
+  let content = response.data.choices[0].message.content;
   const finishReason = response.data.choices[0].finish_reason;
   let clean = content.replace(/```json|```/g, '').trim();
   console.log('GPT RESPONSE (finish_reason:', finishReason + '):', clean.substring(0, 500));
+
+  // D\u00e9tection refus GPT \u2014 retry avec le m\u00eame prompt
+  const isRefus = clean.startsWith('Je suis d\u00e9sol\u00e9') || clean.startsWith("I'm sorry") || clean.startsWith('I cannot') || clean.startsWith('Je ne peux pas');
+  if (isRefus) {
+    console.log('GPT REFUS d\u00e9tect\u00e9 \u2014 retry');
+    const retryResp = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 8000
+    }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 120000 });
+    content = retryResp.data.choices[0].message.content;
+    clean = content.replace(/```json|```/g, '').trim();
+    console.log('GPT RETRY RESPONSE:', clean.substring(0, 200));
+  }
 
   let parsed;
   try {
