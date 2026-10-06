@@ -571,6 +571,11 @@ async function scrapeAnnonce(url, langue = 'fr') {
 
     // FIX: retourner equipmentData, co2Value et optionsList avec le html
     if (co2Value && !infos.co2) infos.co2 = co2Value;
+    // Lien "recherche du même modèle" présent sur la page (ex : /fr/s/mo-rs3/mk-audi) — sert aux annonces comparables
+    const lienRech = html.match(/href=\\?["'](\/(?:fr|de|it|en)\/s\/mo-[a-z0-9-]+\/mk-[a-z0-9-]+)(?:[?"'\\])/i);
+    if (lienRech) { infos.lienRecherche = lienRech[1]; console.log('LIEN RECHERCHE MODÈLE:', infos.lienRecherche); }
+    const idAnnonce = (url.match(/-(\d{6,})(?:[/?#]|$)/) || [])[1];
+    if (idAnnonce) infos.idAnnonce = idAnnonce;
     console.log('INFOS ANNONCE:', JSON.stringify(infos));
     return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value, options: optionsList, infos };
   } catch (err) {
@@ -793,12 +798,16 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
 
     let problemesListe = [];
     let pointsSolides = [];
+    let noteFiabilite = null;
+    let justificationFiabilite = '';
     if (toutLeContenu.length > 100) {
       try {
         const gptResp = await axios.post('https://api.openai.com/v1/chat/completions', {
           model: 'gpt-4o',
-          temperature: 0,
-          max_tokens: 700,
+          // 3 analyses indépendantes des mêmes sources : on garde la note médiane (évite une note "accidentelle")
+          temperature: 0.4,
+          n: 3,
+          max_tokens: 800,
           response_format: { type: 'json_object' },
           messages: [{
             role: 'system',
@@ -819,7 +828,12 @@ Règles strictes :
   "oui" = la source parle explicitement de cette génération / ces années / ce moteur ;
   "probable" = même moteur ou même boîte, génération non précisée mais composant identique ;
   "incertain" = la source peut concerner une autre génération ou un composant qui a changé.
-Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|probable|incertain"}], "points_solides": ["..."]}`
+3. "note_fiabilite" : note de 1 à 10 pour CE véhicule, selon ce barème :
+  9-10 très fiable, aucun problème notable documenté ; 7-8 bonne fiabilité, défauts mineurs ou peu coûteux ;
+  5-6 problèmes connus et coûteux mais gérables avec un bon entretien ; 3-4 problèmes sérieux et fréquents ; 1-2 très problématique.
+  Pèse la GRAVITÉ et la FRÉQUENCE réelles : un défaut rare ou lié à un usage extrême (circuit) compte peu ; un moteur ou une boîte réputés robustes comptent beaucoup.
+4. "justification" : 1 phrase (max 160 caractères) qui cite ce qui est solide ET ce qui est fragile.
+Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|probable|incertain"}], "points_solides": ["..."], "note_fiabilite": 7, "justification": "..."}`
           }, {
             role: 'user',
             content: toutLeContenu
@@ -829,8 +843,21 @@ Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|p
           timeout: 30000
         });
 
-        const raw = gptResp.data.choices[0].message.content.trim();
-        const obj = JSON.parse(raw.replace(/```json|```/g, '').trim());
+        // Plusieurs analyses : on retient celle dont la note est la médiane
+        const lisibles = (gptResp.data.choices || []).map(c => {
+          try { return JSON.parse(String(c.message.content || '').replace(/```json|```/g, '').trim()); } catch (e) { return null; }
+        }).filter(Boolean);
+        if (!lisibles.length) throw new Error('aucune analyse de fiabilité lisible');
+        const analyses = lisibles.filter(a => Number(a.note_fiabilite) >= 1 && Number(a.note_fiabilite) <= 10);
+        let obj = lisibles[0];
+        if (analyses.length) {
+          const notes = analyses.map(a => Math.round(Number(a.note_fiabilite))).sort((x, y) => x - y);
+          const mediane = notes[Math.floor((notes.length - 1) / 2)];
+          obj = analyses.find(a => Math.round(Number(a.note_fiabilite)) === mediane);
+          noteFiabilite = mediane;
+          justificationFiabilite = String(obj.justification || '').trim();
+          console.log(`Fiabilité — notes des ${notes.length} analyses : ${notes.join(', ')} → retenue : ${mediane}`);
+        }
         const propre = (arr, n) => (Array.isArray(arr) ? arr : []).filter(p => typeof p === 'string' && p.trim().length > 15).map(p => p.trim()).slice(0, n);
         // On ne garde que les problèmes qui concernent vraiment CE véhicule
         const bruts = Array.isArray(obj.problemes) ? obj.problemes : [];
@@ -853,6 +880,8 @@ Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|p
       problemesDocumentes: problemesListe,
       pointsSolides,
       nbSources: sources.length,
+      noteFiabilite,
+      justificationFiabilite,
       moteur,
       numerosRappel: []
     };
@@ -865,6 +894,107 @@ Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|p
 // ─── PRIX MARCHÉ RÉEL (Tavily search sémantique) ──────────
 // Plus précis que le scraping AutoScout24 : Tavily cible la bonne génération
 // en cherchant par année exacte, évitant les confusions 8V/8Y, E46/E92, etc.
+// ─── VRAI PRIX DU MARCHÉ : annonces comparables sur AutoScout24 ──────────────
+// Lit la page de résultats du même modèle (année ±1), garde les annonces proches en km,
+// et calcule la médiane réelle. Renvoie null s'il y a moins de 5 annonces comparables.
+const slugAs24 = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const quantile = (arr, q) => {
+  const a = [...arr].sort((x, y) => x - y);
+  const pos = (a.length - 1) * q, b = Math.floor(pos), r = pos - b;
+  return a[b + 1] !== undefined ? a[b] + r * (a[b + 1] - a[b]) : a[b];
+};
+async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
+  try {
+    if (!annee || !km) { console.log('Comparables : année ou km inconnu — ignoré'); return null; }
+    let chemin = infos.lienRecherche;
+    if (!chemin) {
+      const motModele = String(modele || '').split(/\s+/)[0];
+      if (!marque || !motModele) return null;
+      chemin = `/fr/s/mo-${slugAs24(motModele)}/mk-${slugAs24(marque)}`;
+    }
+    const urlRecherche = `https://www.autoscout24.ch${chemin.replace(/^\/(de|it|en)\//, '/fr/')}?firstRegistrationYearFrom=${annee - 1}&firstRegistrationYearTo=${annee + 1}`;
+    console.log('Comparables — recherche :', urlRecherche);
+
+    const resp = await axios.get('https://api.zenrows.com/v1/', {
+      params: { apikey: process.env.ZENROWS_API_KEY, url: urlRecherche, js_render: 'true', premium_proxy: 'true', wait: '6000' },
+      timeout: 120000
+    });
+    let html = typeof resp.data === 'string' ? resp.data : JSON.stringify(resp.data);
+    html = reparerCaracteres(html);
+
+    // Chaque carte d'annonce = un lien /d/... ; on garde le lien + le texte de la carte
+    const cartes = [];
+    const vus = new Set();
+    for (const m of html.matchAll(/<a[^>]+href=["'](\/(?:fr|de|it|en)\/d\/[^"'?#]+)[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+      const lien = m[1];
+      const id = (lien.match(/-(\d{6,})$/) || [])[1];
+      if (!id || vus.has(id) || id === infos.idAnnonce) continue;
+      const texte = m[2].replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+      if (texte.length < 15) continue;
+      vus.add(id);
+      cartes.push(`${lien} | ${texte.slice(0, 300)}`);
+    }
+    let matiere = cartes.join('\n');
+    if (cartes.length < 5) {
+      // Repli : texte complet de la page
+      matiere = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<svg[\s\S]*?<\/svg>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+    }
+    matiere = matiere.slice(0, 16000);
+    console.log(`Comparables — ${cartes.length} cartes d'annonces trouvées dans la page`);
+
+    const gpt = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o-mini',
+      temperature: 0,
+      max_tokens: 2500,
+      response_format: { type: 'json_object' },
+      messages: [{
+        role: 'system',
+        content: `Extrais les annonces de voitures de ce texte de page de résultats AutoScout24. Pour chaque annonce : "titre", "prix" (CHF, nombre entier), "km" (nombre entier), "annee" (année de 1re immatriculation, 4 chiffres), "lien" (chemin /fr/d/... s'il est donné). Ne recopie QUE ce qui est écrit ; si une valeur manque, mets null. Ignore les publicités et les annonces sans prix. Réponds en JSON : {"annonces": [...]}`
+      }, { role: 'user', content: matiere }]
+    }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 60000 });
+
+    const obj = JSON.parse(gpt.data.choices[0].message.content);
+    const toutes = (obj.annonces || []).map(a => ({
+      titre: String(a.titre || '').slice(0, 90),
+      prix: parseInt(String(a.prix || '').replace(/[^\d]/g, '')) || 0,
+      km: parseInt(String(a.km ?? '').replace(/[^\d]/g, '')) || null,
+      annee: parseInt(a.annee) || null,
+      lien: a.lien && /^\/(fr|de|it|en)\/d\//.test(a.lien) ? 'https://www.autoscout24.ch' + a.lien : null
+    })).filter(a => a.prix > 1000 && a.km != null && a.annee && Math.abs(a.annee - annee) <= 1)
+      .filter(a => !(infos.idAnnonce && a.lien && a.lien.includes(infos.idAnnonce)));
+    console.log(`Comparables — ${toutes.length} annonces lisibles (année ${annee - 1}–${annee + 1})`);
+
+    // Annonces proches en km (±40 %, au moins ±20'000 km), élargi à ±70 % si trop peu
+    const bande = (f) => toutes.filter(a => Math.abs(a.km - km) <= Math.max(20000, km * f));
+    let proches = bande(0.4);
+    if (proches.length < 5) proches = bande(0.7);
+    if (proches.length < 5) { console.log(`Comparables — seulement ${proches.length} proches en km : données insuffisantes`); return null; }
+
+    // Retirer les valeurs aberrantes (séries spéciales, erreurs de saisie)
+    const prixListe = proches.map(a => a.prix);
+    const q1 = quantile(prixListe, 0.25), q3 = quantile(prixListe, 0.75), iqr = q3 - q1;
+    const retenues = proches.filter(a => a.prix >= q1 - 1.5 * iqr && a.prix <= q3 + 1.5 * iqr);
+    const p = retenues.map(a => a.prix);
+    const arr = (v) => Math.round(v / 100) * 100;
+    const resultat = {
+      min: arr(quantile(p, 0.2)),
+      mediane: arr(quantile(p, 0.5)),
+      max: arr(quantile(p, 0.8)),
+      confiance: retenues.length >= 8 ? 'haute' : 'moyenne',
+      count: retenues.length,
+      source: 'as24',
+      kmMoyen: Math.round(retenues.reduce((t, a) => t + a.km, 0) / retenues.length / 1000) * 1000,
+      comparables: [...retenues].sort((x, y) => (Math.abs(x.annee - annee) * 30000 + Math.abs(x.km - km)) - (Math.abs(y.annee - annee) * 30000 + Math.abs(y.km - km))).slice(0, 3)
+    };
+    console.log(`Comparables — ${resultat.count} retenues : médiane ${resultat.mediane}, fourchette ${resultat.min}–${resultat.max}, km moyen ${resultat.kmMoyen}`);
+    return resultat;
+  } catch (e) {
+    console.log('Comparables erreur (repli sur estimation web):', e.message);
+    return null;
+  }
+}
+
 async function rechercherPrixMarcheViaTavily(marque, modele, annee, km) {
   try {
     // Construire une query précise ciblant la bonne génération sur le marché suisse
@@ -979,13 +1109,18 @@ function calculerMarche(prixDemande, pm) {
     const d = prixDemande / max;
     sp = d <= 1.10 ? 5 : d <= 1.15 ? 4 : d <= 1.20 ? 3 : d <= 1.30 ? 2 : 1;
   }
-  const reduction = sp <= 3 ? 0.10 : sp <= 5 ? 0.07 : sp === 6 ? 0.05 : sp <= 8 ? 0.03 : 0.01;
-  const prixNegocie = Math.min(arr(mediane * (1 - reduction)), arr(prixDemande * 0.99));
+  // Objectif de négociation réaliste (marges habituelles du marché suisse de l'occasion) :
+  // - prix ≤ médiane : petite remise de ~2 %
+  // - prix > médiane : viser juste sous la médiane, sans dépasser ~8 % de rabais sur le prix demandé
+  let cible = prixDemande <= mediane ? prixDemande * 0.98 : Math.max(mediane * 0.98, prixDemande * 0.92);
+  let prixNegocie = arr(cible);
+  if (prixNegocie >= prixDemande) prixNegocie = Math.floor(prixDemande * 0.99 / 100) * 100;
+  const reduction = 1 - prixNegocie / prixDemande;
   const economie = prixDemande - prixNegocie;
   return {
     min, max, mediane, scorePrix: sp, reduction, prixNegocie,
-    ecoMin: economie > 0 ? arr(economie * 0.7, 100) : 0,
-    ecoMax: economie > 0 ? arr(economie * 1.3, 100) : 0
+    ecoMin: economie > 0 ? arr(economie, 100) : 0,
+    ecoMax: economie > 0 ? arr(economie, 100) : 0
   };
 }
 
@@ -1054,7 +1189,8 @@ async function analyserAvecGPT(scrapedData, langue, url) {
       if (marcheMemo) console.log('CACHE prix marché utilisé :', cleMarche);
       const [tavilyResult, prixMarche] = await Promise.all([
         fiabMemo ? Promise.resolve(fiabMemo.recherche) : rechercherInfosVehicule(marque, modele, annee, km, langue, infos.titre || ''),
-        marcheMemo !== null ? Promise.resolve(marcheMemo) : rechercherPrixMarcheViaTavily(marque, modele, annee, km)
+        marcheMemo !== null ? Promise.resolve(marcheMemo)
+          : rechercherComparablesAS24(infos, marque, modele, annee, km).then(r => r || rechercherPrixMarcheViaTavily(marque, modele, annee, km))
       ]);
       tavilyContext = { ...tavilyResult, prixMarche };
       if (!marcheMemo && prixMarche) cacheEcrire('marche', cleMarche, prixMarche);
@@ -1100,8 +1236,10 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     }
   }
 
-  const fiabiliteImposee = fiabMemo && fiabMemo.score
-    ? `\nNOTE DE FIABILITÉ DÉJÀ ÉTABLIE POUR CE MODÈLE (pour que tous les rapports soient cohérents) : score_fiabilite = ${fiabMemo.score}/10. Utilise EXACTEMENT cette note (sauf red flag propre à CETTE annonce, ex : culasse, accident). Justification de référence : "${fiabMemo.justification || ''}"\n`
+  const fiabRef = (fiabMemo && fiabMemo.score) ? fiabMemo
+    : (tavilyContext.noteFiabilite ? { score: tavilyContext.noteFiabilite, justification: tavilyContext.justificationFiabilite || '' } : null);
+  const fiabiliteImposee = fiabRef && fiabRef.score
+    ? `\nNOTE DE FIABILITÉ DÉJÀ ÉTABLIE POUR CE MODÈLE (pour que tous les rapports soient cohérents) : score_fiabilite = ${fiabRef.score}/10. Utilise EXACTEMENT cette note (sauf red flag propre à CETTE annonce, ex : culasse, accident). Justification de référence : "${fiabRef.justification || ''}"\n`
     : '';
   const tavilyProblemesSynth = tavilyProblemes.length > 0
     ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS DANS DES SOURCES RÉELLES (base principale pour noter la fiabilité) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
@@ -1109,14 +1247,17 @@ async function analyserAvecGPT(scrapedData, langue, url) {
 
   const marcheAvant = calculerMarche(prixRef, prixMarcheCtx);
   const contexteNegociation = marcheAvant
-    ? `\nCHIFFRES CALCULÉS PAR LE SYSTÈME (à utiliser tels quels, ne pas en inventer d'autres) : score_prix = ${marcheAvant.scorePrix}/10 ; prix négocié suggéré = ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF ; économie possible ≈ ${marcheAvant.ecoMin.toLocaleString('de-CH')}–${marcheAvant.ecoMax.toLocaleString('de-CH')} CHF. Dans conseil_achat, si tu donnes un objectif de négociation, cite EXACTEMENT ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF. Ne cite aucun montant d'entretien (il est calculé ailleurs).`
+    ? `\nCHIFFRES CALCULÉS PAR LE SYSTÈME (à utiliser tels quels, ne pas en inventer d'autres) : score_prix = ${marcheAvant.scorePrix}/10 ; prix négocié suggéré = ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF ; économie possible ≈ ${marcheAvant.ecoMin.toLocaleString('de-CH')} CHF. Dans conseil_achat, si tu donnes un objectif de négociation, cite EXACTEMENT ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF. Ne cite aucun montant d'entretien (il est calculé ailleurs).`
     : `\nDans conseil_achat, ne cite aucun prix de négociation chiffré ni montant d'entretien (pas de données marché fiables).`;
+  const contexteComparables = (prixMarcheCtx && prixMarcheCtx.source === 'as24')
+    ? `\nANNONCES COMPARABLES RÉELLES (AutoScout24, aujourd'hui) : ${prixMarcheCtx.count} annonces de ${annee - 1} à ${annee + 1} avec un kilométrage proche ; kilométrage moyen ${prixMarcheCtx.kmMoyen.toLocaleString('de-CH')} km (cette voiture : ${km ? km.toLocaleString('de-CH') : '?'} km). Exemples : ${prixMarcheCtx.comparables.map(c => `${c.annee}, ${c.km.toLocaleString('de-CH')} km, ${c.prix.toLocaleString('de-CH')} CHF`).join(' ; ')}. Dans conseil_achat, utilise ces faits comme ARGUMENTS DE NÉGOCIATION concrets (écart à la médiane, kilométrage par rapport à la moyenne).`
+    : '';
   const contexteMarche = prixMarcheCtx
-    ? `\nDONNÉE MARCHÉ SUISSE (sources web) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('de-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
+    ? `\nDONNÉE MARCHÉ SUISSE (${prixMarcheCtx.source === 'as24' ? `médiane de ${prixMarcheCtx.count} annonces réelles` : 'estimation à partir de sources web'}) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('de-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
     : `\nAUCUNE DONNÉE MARCHÉ FIABLE TROUVÉE. N'invente pas de fourchette : mets fourchette_marche_min et fourchette_marche_max à 0. Pour score_prix, donne ton estimation et indique clairement dans justification_prix qu'elle est faite sans annonces comparables.`;
 
   const tavilySection = `\n\nDONNÉES WEB SUR CE VÉHICULE :
-${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${fiabiliteImposee}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteNegociation}${contexteFreeService}
+${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${fiabiliteImposee}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteComparables}${contexteNegociation}${contexteFreeService}
 Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — ce champ est rempli par un autre système.\n`;
 
   // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
@@ -1343,10 +1484,11 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   parsed.score_fiabilite = Math.round(Number(parsed.score_fiabilite));
   // Même modèle → même note de fiabilité (les red flags propres à l'annonce s'appliquent ensuite)
   if (marque && modele) {
-    if (fiabMemo && fiabMemo.score) {
-      parsed.score_fiabilite = fiabMemo.score;
-      if (fiabMemo.justification) parsed.justification_fiabilite = fiabMemo.justification;
-    } else if (tavilyProblemes.length + (tavilyContext.pointsSolides || []).length > 0) {
+    if (fiabRef && fiabRef.score) {
+      parsed.score_fiabilite = fiabRef.score;
+      if (fiabRef.justification) parsed.justification_fiabilite = fiabRef.justification;
+    }
+    if (!fiabMemo && tavilyProblemes.length + (tavilyContext.pointsSolides || []).length > 0) {
       cacheEcrire('fiabilite', cleFiab, {
         score: parsed.score_fiabilite,
         justification: parsed.justification_fiabilite || '',
@@ -1357,6 +1499,9 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   }
   parsed.nb_sources_fiabilite = tavilyContext.nbSources || 0;
   parsed.marche_confiance = prixMarcheCtx ? (prixMarcheCtx.confiance || 'moyenne') : null;
+  parsed.marche_source = prixMarcheCtx ? (prixMarcheCtx.source || 'web') : null;
+  parsed.marche_nb_annonces = prixMarcheCtx && prixMarcheCtx.source === 'as24' ? prixMarcheCtx.count : 0;
+  parsed.comparables = prixMarcheCtx && prixMarcheCtx.source === 'as24' ? (prixMarcheCtx.comparables || []) : [];
 
   // Entretien : coûts calculés par le serveur à partir des deux estimations annuelles de l'IA
   // et de la durée de free service restante (même barème pour toutes les voitures).
@@ -1397,7 +1542,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.prix_negocie_suggere = marche.prixNegocie;
     parsed.economie_potentielle_min = marche.ecoMin;
     parsed.economie_potentielle_max = marche.ecoMax;
-    console.log(`PRIX NEGOCIE: médiane ${marche.mediane} × ${(1 - marche.reduction).toFixed(2)} → ${marche.prixNegocie}`);
+    console.log(`PRIX NEGOCIE: prix ${prixDemande}, médiane ${marche.mediane} → objectif ${marche.prixNegocie} (−${(marche.reduction * 100).toFixed(1)} %)`);
   } else {
     // Pas de données marché fiables : on n'affiche pas de fourchette inventée
     parsed.fourchette_marche_min = 0;
@@ -1743,7 +1888,12 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   };
   const L = labels[langue] || labels.fr;
   const insuffisant = { fr: 'Données marché insuffisantes', de: 'Unzureichende Marktdaten', it: 'Dati di mercato insufficienti', en: 'Insufficient market data' }[langue] || 'Données marché insuffisantes';
-  const noteEstimation = { fr: 'Estimation · sources web', de: 'Schätzung · Webquellen', it: 'Stima · fonti web', en: 'Estimate · web sources' }[langue] || 'Estimation · sources web';
+  const nbAnn = analyse.marche_nb_annonces || 0;
+  const noteEstimation = analyse.marche_source === 'as24' && nbAnn > 0
+    ? ({ fr: `Médiane de ${nbAnn} annonces similaires`, de: `Median von ${nbAnn} ähnlichen Inseraten`, it: `Mediana di ${nbAnn} annunci simili`, en: `Median of ${nbAnn} similar listings` }[langue] || `Médiane de ${nbAnn} annonces similaires`)
+    : ({ fr: 'Estimation · sources web', de: 'Schätzung · Webquellen', it: 'Stima · fonti web', en: 'Estimate · web sources' }[langue] || 'Estimation · sources web');
+  const titreComparables = { fr: 'ANNONCES SIMILAIRES EN SUISSE', de: 'ÄHNLICHE INSERATE IN DER SCHWEIZ', it: 'ANNUNCI SIMILI IN SVIZZERA', en: 'SIMILAR LISTINGS IN SWITZERLAND' }[langue] || 'ANNONCES SIMILAIRES EN SUISSE';
+  const noteComparables = { fr: 'Annonces AutoScout24 au moment du rapport — elles peuvent avoir été vendues depuis.', de: 'AutoScout24-Inserate zum Zeitpunkt des Berichts — evtl. inzwischen verkauft.', it: 'Annunci AutoScout24 al momento del rapporto — potrebbero essere già stati venduti.', en: 'AutoScout24 listings at the time of the report — they may have been sold since.' }[langue] || '';
   const nbSrc = analyse.nb_sources_fiabilite || 0;
   const noteSources = nbSrc > 0 ? ({
     fr: `Basé sur ${nbSrc} sources analysées pour ce modèle et ce moteur.`,
@@ -1972,6 +2122,13 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     </div>
   </div>
 
+  ${(analyse.comparables || []).length > 0 ? `
+  <div class="section section-white">
+    <div class="section-title"><div class="section-bar" style="background:#5a7a9a;"></div><div class="section-label" style="color:#5a7a9a;">${titreComparables}</div></div>
+    ${analyse.comparables.map(c => `<div class="checklist-item-white" style="border-left:3px solid #5a7a9a; justify-content:space-between;"><span>${c.titre || ''} · ${c.annee} · ${montant(c.km)} km</span><span style="font-weight:700; white-space:nowrap;">${c.lien ? `<a href="${c.lien}" style="color:#1a3a6e; text-decoration:none;">${montant(c.prix)} CHF</a>` : `${montant(c.prix)} CHF`}</span></div>`).join('')}
+    <div style="font-size:9px; color:#5a7a9a; margin-top:4px;">${noteComparables}</div>
+  </div>` : ''}
+
   ${analyse.red_flags?.length > 0 ? `
   <div class="redflag-section">
     <div class="redflag-badge">${L.red}</div>
@@ -2008,7 +2165,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <div style="text-align:right;">
         <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
         <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere > 0 ? montant(analyse.prix_negocie_suggere) + ' CHF' : '—'}</div>
-        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${!(analyse.prix_negocie_suggere > 0) ? insuffisant : analyse.verdict === 'ACHETER' ? (langue === "de" ? "✓ Preis im Markt" : langue === "it" ? "✓ Prezzo nel mercato" : langue === "en" ? "✓ Price within market" : "✓ Prix dans le marché") : `${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${montant(analyse.economie_potentielle_min)} – ${montant(analyse.economie_potentielle_max)} CHF`}</div>
+        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${!(analyse.prix_negocie_suggere > 0) ? insuffisant : analyse.verdict === 'ACHETER' ? (langue === "de" ? "✓ Preis im Markt" : langue === "it" ? "✓ Prezzo nel mercato" : langue === "en" ? "✓ Price within market" : "✓ Prix dans le marché") : `${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min === analyse.economie_potentielle_max ? '~' + montant(analyse.economie_potentielle_min) : montant(analyse.economie_potentielle_min) + ' – ' + montant(analyse.economie_potentielle_max)} CHF`}</div>
       </div>
     </div>
 
