@@ -1041,7 +1041,26 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
     const prixListe = proches.map(a => a.prix);
     const q1 = quantile(prixListe, 0.25), q3 = quantile(prixListe, 0.75), iqr = q3 - q1;
     const retenues = proches.filter(a => a.prix >= q1 - 1.5 * iqr && a.prix <= q3 + 1.5 * iqr);
-    const p = retenues.map(a => a.prix);
+    // AJUSTEMENT AU KILOMÉTRAGE : chaque annonce est ramenée au kilométrage de la voiture analysée
+    // (une voiture avec moins de km vaut plus cher). La "décote par km" est mesurée sur les annonces
+    // elles-mêmes (régression), puis bornée à des valeurs plausibles. Sinon : les annonces les plus proches en km.
+    let p, ajuste = false, decoteKm = 0;
+    const n = retenues.length;
+    const mx = retenues.reduce((t, a) => t + a.km, 0) / n, my = retenues.reduce((t, a) => t + a.prix, 0) / n;
+    const sxx = retenues.reduce((t, a) => t + (a.km - mx) ** 2, 0);
+    const sxy = retenues.reduce((t, a) => t + (a.km - mx) * (a.prix - my), 0);
+    const pente = sxx > 0 ? sxy / sxx : 0; // CHF par km (négatif attendu)
+    const decoteMax = Math.max(0.05, my / 100000); // au plus ~1 % du prix par 1'000 km
+    if (n >= 6 && pente < 0 && Math.abs(pente) <= decoteMax) {
+      decoteKm = pente;
+      p = retenues.map(a => a.prix + pente * (km - a.km));
+      ajuste = true;
+      console.log(`Comparables — ajustement km : ${Math.round(-pente * 1000)} CHF par 1'000 km`);
+    } else {
+      const proches = [...retenues].sort((x, y) => Math.abs(x.km - km) - Math.abs(y.km - km)).slice(0, Math.min(5, n));
+      p = proches.map(a => a.prix);
+      console.log(`Comparables — pas d'ajustement km fiable (pente ${pente.toFixed(3)}), médiane des ${proches.length} plus proches en km`);
+    }
     const arr = (v) => Math.round(v / 100) * 100;
     const resultat = {
       min: arr(quantile(p, 0.2)),
@@ -1051,6 +1070,8 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
       count: retenues.length,
       source: 'as24',
       anneeMin, anneeMax,
+      ajusteKm: ajuste,
+      decoteParMilleKm: ajuste ? Math.round(-decoteKm * 1000) : 0,
       kmMoyen: Math.round(retenues.reduce((t, a) => t + a.km, 0) / retenues.length / 1000) * 1000,
       comparables: [...retenues].sort((x, y) => (Math.abs((x.annee || annee) - annee) * 30000 + Math.abs(x.km - km)) - (Math.abs((y.annee || annee) - annee) * 30000 + Math.abs(y.km - km))).slice(0, 3)
         .map(c => ({ titre: c.titre, prix: c.prix, km: c.km, annee: c.annee, lien: c.lien }))
@@ -1318,7 +1339,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     ? `\nCHIFFRES CALCULÉS PAR LE SYSTÈME (à utiliser tels quels, ne pas en inventer d'autres) : score_prix = ${marcheAvant.scorePrix}/10 ; prix négocié suggéré = ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF ; économie possible ≈ ${marcheAvant.ecoMin.toLocaleString('de-CH')} CHF. Dans conseil_achat, si tu donnes un objectif de négociation, cite EXACTEMENT ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF. Ne cite aucun montant d'entretien (il est calculé ailleurs).`
     : `\nDans conseil_achat, ne cite aucun prix de négociation chiffré ni montant d'entretien (pas de données marché fiables).`;
   const contexteComparables = (prixMarcheCtx && prixMarcheCtx.source === 'as24')
-    ? `\nANNONCES COMPARABLES RÉELLES (AutoScout24, aujourd'hui) : ${prixMarcheCtx.count} annonces de ${prixMarcheCtx.anneeMin === prixMarcheCtx.anneeMax ? prixMarcheCtx.anneeMin : prixMarcheCtx.anneeMin + ' à ' + prixMarcheCtx.anneeMax} avec un kilométrage proche ; kilométrage moyen ${prixMarcheCtx.kmMoyen.toLocaleString('de-CH')} km (cette voiture : ${km ? km.toLocaleString('de-CH') : '?'} km). Exemples : ${prixMarcheCtx.comparables.map(c => `${c.annee ? c.annee + ', ' : ''}${c.km.toLocaleString('de-CH')} km, ${c.prix.toLocaleString('de-CH')} CHF`).join(' ; ')}. Dans conseil_achat, utilise ces faits comme ARGUMENTS DE NÉGOCIATION concrets (écart à la médiane, kilométrage par rapport à la moyenne).`
+    ? `\nANNONCES COMPARABLES RÉELLES (AutoScout24, aujourd'hui${prixMarcheCtx.ajusteKm ? `, prix ramenés au kilométrage de cette voiture : environ ${prixMarcheCtx.decoteParMilleKm} CHF de décote par 1'000 km mesurés sur ces annonces` : ''}) : ${prixMarcheCtx.count} annonces de ${prixMarcheCtx.anneeMin === prixMarcheCtx.anneeMax ? prixMarcheCtx.anneeMin : prixMarcheCtx.anneeMin + ' à ' + prixMarcheCtx.anneeMax} avec un kilométrage proche ; kilométrage moyen ${prixMarcheCtx.kmMoyen.toLocaleString('de-CH')} km (cette voiture : ${km ? km.toLocaleString('de-CH') : '?'} km). Exemples : ${prixMarcheCtx.comparables.map(c => `${c.annee ? c.annee + ', ' : ''}${c.km.toLocaleString('de-CH')} km, ${c.prix.toLocaleString('de-CH')} CHF`).join(' ; ')}. Dans conseil_achat, utilise ces faits comme ARGUMENTS DE NÉGOCIATION concrets (écart à la médiane, kilométrage par rapport à la moyenne).`
     : '';
   const contexteMarche = prixMarcheCtx
     ? `\nDONNÉE MARCHÉ SUISSE (${prixMarcheCtx.source === 'as24' ? `médiane de ${prixMarcheCtx.count} annonces réelles` : 'estimation à partir de sources web'}) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('de-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
@@ -1569,6 +1590,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   parsed.marche_confiance = prixMarcheCtx ? (prixMarcheCtx.confiance || 'moyenne') : null;
   parsed.marche_source = prixMarcheCtx ? (prixMarcheCtx.source || 'web') : null;
   parsed.marche_nb_annonces = prixMarcheCtx && prixMarcheCtx.source === 'as24' ? prixMarcheCtx.count : 0;
+  parsed.marche_ajuste_km = !!(prixMarcheCtx && prixMarcheCtx.ajusteKm);
   parsed.comparables = prixMarcheCtx && prixMarcheCtx.source === 'as24' ? (prixMarcheCtx.comparables || []) : [];
 
   // Entretien : coûts calculés par le serveur à partir des deux estimations annuelles de l'IA
@@ -1958,7 +1980,9 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   const insuffisant = { fr: 'Données marché insuffisantes', de: 'Unzureichende Marktdaten', it: 'Dati di mercato insufficienti', en: 'Insufficient market data' }[langue] || 'Données marché insuffisantes';
   const nbAnn = analyse.marche_nb_annonces || 0;
   const noteEstimation = analyse.marche_source === 'as24' && nbAnn > 0
-    ? ({ fr: `Médiane de ${nbAnn} annonces similaires`, de: `Median von ${nbAnn} ähnlichen Inseraten`, it: `Mediana di ${nbAnn} annunci simili`, en: `Median of ${nbAnn} similar listings` }[langue] || `Médiane de ${nbAnn} annonces similaires`)
+    ? (analyse.marche_ajuste_km
+        ? ({ fr: `${nbAnn} annonces similaires, ajustées au km`, de: `${nbAnn} ähnliche Inserate, km-bereinigt`, it: `${nbAnn} annunci simili, corretti per km`, en: `${nbAnn} similar listings, mileage-adjusted` }[langue] || `${nbAnn} annonces similaires, ajustées au km`)
+        : ({ fr: `Médiane de ${nbAnn} annonces similaires`, de: `Median von ${nbAnn} ähnlichen Inseraten`, it: `Mediana di ${nbAnn} annunci simili`, en: `Median of ${nbAnn} similar listings` }[langue] || `Médiane de ${nbAnn} annonces similaires`))
     : ({ fr: 'Estimation · sources web', de: 'Schätzung · Webquellen', it: 'Stima · fonti web', en: 'Estimate · web sources' }[langue] || 'Estimation · sources web');
   const titreComparables = { fr: 'ANNONCES SIMILAIRES EN SUISSE', de: 'ÄHNLICHE INSERATE IN DER SCHWEIZ', it: 'ANNUNCI SIMILI IN SVIZZERA', en: 'SIMILAR LISTINGS IN SWITZERLAND' }[langue] || 'ANNONCES SIMILAIRES EN SUISSE';
   const noteComparables = { fr: 'Annonces AutoScout24 au moment du rapport — elles peuvent avoir été vendues depuis.', de: 'AutoScout24-Inserate zum Zeitpunkt des Berichts — evtl. inzwischen verkauft.', it: 'Annunci AutoScout24 al momento del rapporto — potrebbero essere già stati venduti.', en: 'AutoScout24 listings at the time of the report — they may have been sold since.' }[langue] || '';
