@@ -256,7 +256,8 @@ async function scrapeAnnonce(url, langue = 'fr') {
                            html.match(/\\"colour\\":\\"([^"\\]{2,40})\\"/) ||
                            html.match(/\\"exteriorColor\\":\\"([^"\\]{2,40})\\"/) ||
                            html.match(/"exteriorColor":"([^"\\]{2,40})"/) ||
-                           // JSON AS24 schema.org : "color": "black" ou "color":"Gris Nardo"
+                           // JSON AS24 schema.org : "color": "black" (suivi de vehicleInteriorColor = contexte véhicule sûr)
+                           html.match(/"color":\s*"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})"\s*,\s*"vehicleInteriorColor"/) ||
                            html.match(/\\"color\\":\s*\\"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})\\"/) ||
                            html.match(/"color":\s*"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})"/) ||
                            // HTML rendu AS24 : "Extérieure noir Intérieure" ou "Extérieure noir (Métallisé) Intérieure"
@@ -1046,8 +1047,42 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     } catch(e2) {
       const match = clean.match(/\{[\s\S]*\}/);
       if (match) {
-        try { parsed = JSON.parse(match[0]); } catch(e3) { throw new Error('JSON invalide'); }
-      } else { throw new Error('JSON invalide'); }
+        try { parsed = JSON.parse(match[0]); } catch(e3) {
+          console.log('ERREUR: JSON invalide — utilisation données scraping comme fallback');
+          parsed = {
+            marque: scrapedData.marque || '', modele: scrapedData.modele || '', annee: scrapedData.annee || '',
+            kilometrage: scrapedData.km || 0, prix: scrapedData.prix || 0,
+            carburant: scrapedData.carburant || '', boite: scrapedData.boite || '',
+            puissance: scrapedData.puissance || '', co2: scrapedData.co2 || null,
+            couleur: scrapedData.couleur || 'Non communiquée', transmission: scrapedData.transmission || '',
+            options: scrapedData.options || [],
+            score_prix: 5, score_fiabilite: 5, score_entretien: 5, score_global: 5,
+            verdict: 'NÉGOCIER', resume_verdict: 'Analyse partielle — veuillez relancer.',
+            points_positifs: [], points_negatifs: [], red_flags: [],
+            problemes_connus_modele: [], checklist_visite: [], questions_vendeur: [],
+            conseil_achat: '', fourchette_marche_min: 0, fourchette_marche_max: 0,
+            prix_negocie_suggere: 0, economie_potentielle_min: 0, economie_potentielle_max: 0,
+            cout_entretien_annee1: 0, cout_total_3ans: 0, taxe_cantonale_ge: 600, numeros_rappel: []
+          };
+        }
+      } else {
+        console.log('ERREUR: JSON invalide — utilisation données scraping comme fallback');
+        parsed = {
+          marque: scrapedData.marque || '', modele: scrapedData.modele || '', annee: scrapedData.annee || '',
+          kilometrage: scrapedData.km || 0, prix: scrapedData.prix || 0,
+          carburant: scrapedData.carburant || '', boite: scrapedData.boite || '',
+          puissance: scrapedData.puissance || '', co2: scrapedData.co2 || null,
+          couleur: scrapedData.couleur || 'Non communiquée', transmission: scrapedData.transmission || '',
+          options: scrapedData.options || [],
+          score_prix: 5, score_fiabilite: 5, score_entretien: 5, score_global: 5,
+          verdict: 'NÉGOCIER', resume_verdict: 'Analyse partielle — veuillez relancer.',
+          points_positifs: [], points_negatifs: [], red_flags: [],
+          problemes_connus_modele: [], checklist_visite: [], questions_vendeur: [],
+          conseil_achat: '', fourchette_marche_min: 0, fourchette_marche_max: 0,
+          prix_negocie_suggere: 0, economie_potentielle_min: 0, economie_potentielle_max: 0,
+          cout_entretien_annee1: 0, cout_total_3ans: 0, taxe_cantonale_ge: 600, numeros_rappel: []
+        };
+      }
     }
   }
 
