@@ -241,6 +241,14 @@ async function scrapeAnnonce(url, langue = 'fr') {
         }
       }
 
+      // LOG DEBUG couleur — extraire contexte autour des mots-clés couleur
+      const colorIdx = html.search(/bodyColor|exteriorColor|couleur|farbe|colour/i);
+      if (colorIdx > 0) console.log('DEBUG COULEUR contexte:', html.substring(Math.max(0,colorIdx-20), colorIdx+80).replace(/\s+/g,' '));
+      else console.log('DEBUG COULEUR: aucun champ couleur trouvé dans le HTML');
+      const sellerIdx = html.search(/sellerComment|freeText|Avis du fournisseur|Händlerkommentar/i);
+      if (sellerIdx > 0) console.log('DEBUG DESC contexte:', html.substring(Math.max(0,sellerIdx-10), sellerIdx+200).replace(/\s+/g,' '));
+      else console.log('DEBUG DESC: aucun sellerComment/freeText trouvé');
+
       // ── COULEUR depuis JSON structuré ou HTML ──
       // JSON structuré : champs spécifiques voiture (pas les couleurs CSS)
       const couleurMatch = html.match(/\\"bodyColor\\":\\"([^"\\]{2,40})\\"/) ||
