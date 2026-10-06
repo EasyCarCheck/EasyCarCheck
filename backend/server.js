@@ -62,7 +62,10 @@ function extraireVehiculeJsonLd(html) {
     }
   };
   for (const b of blocs) {
-    try { aplatir(JSON.parse(b[1].trim())); } catch (e) { /* bloc illisible, ignoré */ }
+    const brut = b[1].trim().replace(/^<!\[CDATA\[|\]\]>$/g, '');
+    try { aplatir(JSON.parse(brut)); continue; } catch (e) {}
+    try { aplatir(JSON.parse(brut.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/[\r\n\t]+/g, ' '))); }
+    catch (e) { console.log('JSON-LD bloc illisible:', e.message.substring(0, 80)); }
   }
   const estVehicule = (o) => {
     const t = [].concat(o['@type'] || []).join(' ');
@@ -100,6 +103,37 @@ function extraireVehiculeJsonLd(html) {
   return r;
 }
 
+// Répare les caractères Windows-1252 mal encodés (ex : "l\u0092avant" → "l’avant")
+function reparerCaracteres(txt) {
+  if (!txt) return txt;
+  return String(txt)
+    .replace(/[\u0091\u0092]/g, '’')
+    .replace(/[\u0093\u0094]/g, '"')
+    .replace(/[\u0096\u0097]/g, '–')
+    .replace(/\u0085/g, '…')
+    .replace(/[\u0080-\u009F]/g, '');
+}
+
+// Lecture tolérante des champs schema.org directement dans le texte de la page
+// (utile quand le bloc JSON-LD n'est pas lisible en entier).
+function extraireChampsSchema(html) {
+  const r = {};
+  const g = (re) => { const m = html.match(re); return m ? m[1].trim() : null; };
+  const annee = g(/"(?:vehicleModelDate|productionDate|dateVehicleFirstRegistered|modelDate)"\s*:\s*"?(\d{4})/);
+  if (annee && +annee > 1950 && +annee < 2100) r.annee = +annee;
+  const co2 = g(/"emissionsCO2"\s*:\s*"?(\d{2,3})/);
+  if (co2) r.co2 = +co2;
+  const carb = g(/"fuelType"\s*:\s*"([^"]{2,30})"/);
+  if (carb) r.carburant = carb;
+  const boite = g(/"vehicleTransmission"\s*:\s*"([^"]{2,40})"/);
+  if (boite) r.boite = boite;
+  const traction = g(/"driveWheelConfiguration"\s*:\s*"([^"]{2,40})"/);
+  if (traction) r.transmission = traction.replace(/^https?:\/\/schema\.org\//, '');
+  const vin = g(/"vehicleIdentificationNumber"\s*:\s*"([A-HJ-NPR-Z0-9]{17})"/);
+  if (vin) r.vin = vin;
+  return r;
+}
+
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url, langue = 'fr') {
   // Forcer la langue dans l'URL AutoScout24
@@ -120,6 +154,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
     });
     let html = response.data;
     if (typeof html !== 'string') html = JSON.stringify(html);
+    html = reparerCaracteres(html);
 
     // Extraire les donnees structurees Next.js AVANT de supprimer les scripts
     let equipmentData = '';
@@ -283,8 +318,12 @@ async function scrapeAnnonce(url, langue = 'fr') {
           Object.assign(infos, ld);
           console.log('JSON-LD véhicule:', JSON.stringify(ld));
         } else {
-          console.log('JSON-LD véhicule: aucun bloc trouvé');
+          const nbBlocs = (html.match(/application\/ld\+json/gi) || []).length;
+          console.log(`JSON-LD véhicule: aucun bloc lisible (${nbBlocs} bloc(s) ld+json dans la page)`);
         }
+        const champs = extraireChampsSchema(html);
+        for (const [k, v] of Object.entries(champs)) if (infos[k] == null) infos[k] = v;
+        if (Object.keys(champs).length) console.log('CHAMPS schema.org (lecture directe):', JSON.stringify(champs));
       } catch (e) { console.log('JSON-LD erreur:', e.message); }
       // Marque depuis l'URL si toujours inconnue (ex: /d/alfa-romeo-giulia-...)
       if (!infos.marque) {
@@ -293,7 +332,9 @@ async function scrapeAnnonce(url, langue = 'fr') {
       }
 
       // CO2 — schema.org: "emissionsCO2":"210 g/km" OU JSON échappé \"co2Emission\":210
-      const co2Match = html.match(/"emissionsCO2":"(\d+)\s*g\/km"/) ||
+      const co2Match = html.match(/"emissionsCO2"\s*:\s*"?(\d{2,3})/) ||
+                       html.match(/\\"emissionsCO2\\"\s*:\s*\\?"?(\d{2,3})/) ||
+                       html.match(/\\"co2Emission\\"\s*:\s*(\d{2,3})/) ||
                        html.match(/\\"co2Emission\\":(\d+)/) ||
                        html.match(/"co2Emission":(\d+)/) ||
                        html.match(/"co2":(\d+)/);
@@ -360,29 +401,37 @@ async function scrapeAnnonce(url, langue = 'fr') {
 
       // ── COULEUR depuis JSON structuré ou HTML ──
       // JSON structuré : champs spécifiques voiture (pas les couleurs CSS)
-      const couleurMatch = html.match(/\\"bodyColor\\":\\"([^"\\]{2,40})\\"/) ||
-                           html.match(/"bodyColor":"([^"\\]{2,40})"/) ||
-                           html.match(/\\"colour\\":\\"([^"\\]{2,40})\\"/) ||
-                           html.match(/\\"exteriorColor\\":\\"([^"\\]{2,40})\\"/) ||
-                           html.match(/"exteriorColor":"([^"\\]{2,40})"/) ||
-                           // JSON AS24 schema.org : "color": "black" (suivi de vehicleInteriorColor = contexte véhicule sûr)
-                           html.match(/"color":\s*"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})"\s*,\s*"vehicleInteriorColor"/) ||
-                           html.match(/\\"color\\":\s*\\"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})\\"/) ||
-                           html.match(/"color":\s*"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})"/) ||
-                           // HTML rendu AS24 : "Extérieure noir Intérieure" ou "Extérieure noir (Métallisé) Intérieure"
-                           html.match(/Ext[eé]rieure\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})\s+Int[eé]rieure/i) ||
-                           html.match(/[Cc]ouleur\s+ext[eé]rieure\s*[:\-]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})/i);
-      if (couleurMatch) {
-        const couleurRaw = couleurMatch[1].replace(/\\"/g, '').trim();
-        const COULEURS_INVALIDES = ['extérieure', 'intérieure', 'couleur', 'exterior', 'interior', 'color', 'colour'];
-        const COULEURS_TRAD = { black: 'Noir', white: 'Blanc', grey: 'Gris', gray: 'Gris', silver: 'Argent',
-          red: 'Rouge', blue: 'Bleu', green: 'Vert', yellow: 'Jaune', orange: 'Orange',
-          brown: 'Marron', beige: 'Beige', purple: 'Violet', pink: 'Rose', gold: 'Or' };
-        const couleurVal = COULEURS_TRAD[couleurRaw.toLowerCase()] || couleurRaw;
-        if (couleurVal.length > 1 && !COULEURS_INVALIDES.includes(couleurVal.toLowerCase())) {
-          equipmentData += "\nCOULEUR: " + couleurVal;
-          console.log("COULEUR EXTRAITE:", couleurVal);
-        }
+      // On essaie chaque motif dans l'ordre et on garde la PREMIÈRE valeur valide
+      // (avant, un motif qui trouvait une valeur invalide bloquait tous les suivants).
+      const motifsCouleur = [
+        /"color"\s*:\s*"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})"\s*,\s*"vehicleInteriorColor"/,
+        /\\"color\\"\s*:\s*\\"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,40})\\"\s*,\s*\\"vehicleInteriorColor\\"/,
+        /\\"bodyColor\\"\s*:\s*\\"([^"\\]{2,40})\\"/,
+        /"bodyColor"\s*:\s*"([^"\\]{2,40})"/,
+        /\\"exteriorColor\\"\s*:\s*\\"([^"\\]{2,40})\\"/,
+        /"exteriorColor"\s*:\s*"([^"\\]{2,40})"/,
+        /\\"colour\\"\s*:\s*\\"([^"\\]{2,40})\\"/,
+        /Ext[eé]rieure\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})\s+Int[eé]rieure/i,
+        /[Cc]ouleur\s+ext[eé]rieure\s*[:\-]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})/i
+      ];
+      const COULEURS_INVALIDES = ['extérieure', 'intérieure', 'couleur', 'exterior', 'interior', 'color', 'colour', 'inherit', 'transparent', 'currentcolor', 'none'];
+      const COULEURS_TRAD = { black: 'Noir', white: 'Blanc', grey: 'Gris', gray: 'Gris', silver: 'Argent',
+        red: 'Rouge', blue: 'Bleu', green: 'Vert', yellow: 'Jaune', orange: 'Orange',
+        brown: 'Marron', beige: 'Beige', purple: 'Violet', pink: 'Rose', gold: 'Or' };
+      let couleurVal = null;
+      for (const motif of motifsCouleur) {
+        const m = html.match(motif);
+        if (!m) continue;
+        const brut = m[1].replace(/\\"/g, '').trim();
+        const val = COULEURS_TRAD[brut.toLowerCase()] || brut;
+        if (val.length > 1 && !COULEURS_INVALIDES.includes(val.toLowerCase())) { couleurVal = val; break; }
+      }
+      if (couleurVal) {
+        equipmentData += "\nCOULEUR: " + couleurVal;
+        if (!infos.couleur) infos.couleur = couleurVal;
+        console.log("COULEUR EXTRAITE:", couleurVal);
+      } else {
+        console.log("COULEUR: aucune valeur valide trouvée");
       }
 
       // ── DESCRIPTION VENDEUR depuis JSON structuré (avant truncation) ──
@@ -460,6 +509,8 @@ async function scrapeAnnonce(url, langue = 'fr') {
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
 
     const finalContent = cleanHtml.substring(0, 15000);
+    const titre = finalContent.split(/\s\*|\s(?:À vendre|Zu verkaufen|In vendita|For sale|Rechercher|Suchen|Cerca|Search|CHF)\b/)[0].trim();
+    if (titre && titre.length >= 4 && titre.length <= 120) infos.titre = titre;
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
 
     // FIX: retourner equipmentData, co2Value et optionsList avec le html
@@ -643,102 +694,103 @@ function traduireOption(opt) {
 }
 
 // ─── RECHERCHE TAVILY ────────────────────────────────────
-async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 'fr') {
+async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 'fr', titre = '') {
   try {
-    // (supprimé : codes de génération "8Y/8V" propres à l'Audi A3, qui faussaient les recherches des autres marques)
-    const genStr = '';
     const languesNoms = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
     const langueNom = languesNoms[langue] || 'français';
 
+    // Description précise du véhicule : le titre de l'annonce contient souvent le moteur (ex : "2.5 TSI quattro")
+    const titrePropre = (titre || '').replace(/\*[^*]*\*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    const moteur = (titrePropre.match(/\b\d[.,]\d\s*[A-Za-z-]{0,10}\b/) || [''])[0].trim();
+    const vehicule = `${marque} ${modele}${moteur ? ' ' + moteur : ''}${annee ? ' ' + annee : ''}`.replace(/\s{2,}/g, ' ').trim();
+
+    // 2 recherches ciblées fiabilité (FR + EN, les sources anglophones sont souvent plus détaillées).
+    // (supprimé : recherche "prix" en double avec rechercherPrixMarcheViaTavily, et recherche "rappels" qui ne
+    //  ramenait que des rappels américains — économie de 2 recherches par rapport)
     const queries = [
-      // Prix marché suisse
-      `${marque} ${modele} ${annee} occasion prix CHF autoscout24 suisse 2025 2026`,
-      // Problèmes fiabilité spécifiques au modèle
-      `${marque} ${modele}${genStr} problèmes fiabilité défauts récurrents forum`,
-      // Rappels constructeur
-      `${marque} ${modele} ${annee} rappel constructeur campagne recall`,
-      // Points faibles connus
-      `${marque} ${modele}${genStr} fiabilité boite moteur usure avis`
+      `${vehicule} fiabilité problèmes connus moteur boîte électronique`,
+      `${vehicule} reliability common problems engine gearbox owners`
     ];
+    console.log('Recherche fiabilité pour :', vehicule);
 
     const results = await Promise.all(queries.map(q =>
       axios.post('https://api.tavily.com/search', {
         api_key: process.env.TAVILY_API_KEY,
         query: q,
         search_depth: 'advanced',
-        max_results: 5,
-        include_answer: true
-      }, { timeout: 15000 }).catch(() => ({ data: { answer: '', results: [] } }))
+        max_results: 6,
+        include_answer: false
+      }, { timeout: 15000 }).catch(() => ({ data: { results: [] } }))
     ));
 
-    const prix = results[0].data.answer || '';
+    // Chaque source avec son adresse, pour que l'IA puisse juger de quoi elle parle
+    const vues = new Set();
+    const sources = [];
+    for (const r of results.flatMap(x => x.data.results || [])) {
+      if (!r || !r.url || vues.has(r.url)) continue;
+      vues.add(r.url);
+      const contenu = (r.content || r.snippet || '').replace(/\s+/g, ' ').trim();
+      if (contenu.length > 80) sources.push(`SOURCE: ${r.url}\n${contenu.slice(0, 1500)}`);
+    }
+    const toutLeContenu = sources.join('\n\n').slice(0, 12000);
+    console.log(`Sources fiabilité: ${sources.length} (${toutLeContenu.length} caractères)`);
 
-    // Collecter tout le contenu des résultats fiabilité/rappels/avis
-    const toutLeContenu = [
-      results[1].data.answer || '',
-      results[2].data.answer || '',
-      results[3].data.answer || '',
-      ...(results[1].data.results || []).map(r => r.content || r.snippet || ''),
-      ...(results[2].data.results || []).map(r => r.content || r.snippet || ''),
-      ...(results[3].data.results || []).map(r => r.content || r.snippet || ''),
-    ].filter(Boolean).join('\n\n');
-
-    console.log(`Tavily contenu brut collecté: ${toutLeContenu.length} chars`);
-
-    // GPT-4o synthétise les vrais problèmes depuis le contenu brut
     let problemesListe = [];
+    let pointsSolides = [];
     if (toutLeContenu.length > 100) {
       try {
         const gptResp = await axios.post('https://api.openai.com/v1/chat/completions', {
           model: 'gpt-4o',
           temperature: 0,
-          max_tokens: 400,
+          max_tokens: 700,
+          response_format: { type: 'json_object' },
           messages: [{
             role: 'system',
-            content: `Tu es un expert automobile. À partir du texte ci-dessous sur la ${marque} ${modele} ${annee}, extrais les problèmes ou points de vigilance RÉELLEMENT documentés pour ce modèle (moteur, boîte, électronique, châssis…), de 0 à 4 maximum.
+            content: `Tu es un expert automobile rigoureux. Véhicule analysé : ${vehicule}${titrePropre ? ` (titre de l'annonce : "${titrePropre}")` : ''}.
+À partir des sources ci-dessous, identifie :
+1. "problemes" : les défauts RÉELLEMENT documentés pour CE véhicule précis — même génération (années de production), même moteur, même boîte. De 0 à 4 maximum.
+2. "points_solides" : ce qui est réputé fiable sur CE véhicule (ex : moteur robuste, boîte sans souci connu). De 0 à 3.
+
 Règles strictes :
-- Si le modèle est réputé fiable et que le texte ne documente aucun problème concret, retourne [] — n'invente JAMAIS un problème pour remplir la liste
-- Ignore les problèmes qui concernent une autre génération, une autre motorisation ou un autre modèle
-- Chaque problème = 1 phrase complète, claire, entre 40 et 140 caractères, qui précise si c'est mineur ou coûteux quand le texte le permet
-- Basé uniquement sur ce qui est mentionné dans le texte
-- Formulation objective et factuelle (pas "je", pas "nous")
-- Rédigé en ${langueNom} uniquement
-- NE JAMAIS mentionner de codes, numéros ou identifiants alphanumériques (ex: 50ZZ, 22V123, etc.)
-- NE JAMAIS inventer un numéro de rappel — si un rappel est mentionné, décrire le problème sans le code
-- Format de réponse : JSON array de strings, exemple: ["Problème 1.", "Problème 2.", "Problème 3."]
-- Si aucun problème réel documenté dans le texte, retourne []`
+- Une source qui parle d'une autre génération, d'un autre moteur ou d'un autre modèle (ex : version 4 cylindres, ancienne génération) doit être IGNORÉE.
+- Exclure l'usure normale (freins, pneus, embrayage, amortisseurs) sauf si les sources la décrivent comme anormale pour CE modèle.
+- Pas de doublon : un même composant = un seul point.
+- Si les sources ne documentent aucun problème concret pour CE véhicule, "problemes" = [] — n'invente JAMAIS pour remplir.
+- Chaque problème : 1 phrase factuelle (40 à 150 caractères) qui nomme le composant et précise s'il est mineur ou coûteux.
+- Aucun code ni numéro (ex : 22V123), aucun "je"/"nous".
+- Rédigé en ${langueNom}.
+Réponds avec un objet JSON : {"problemes": ["..."], "points_solides": ["..."]}`
           }, {
             role: 'user',
-            content: `Texte sur la ${marque} ${modele} ${annee}:\n\n${toutLeContenu.slice(0, 3000)}`
+            content: toutLeContenu
           }]
         }, {
           headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-          timeout: 20000
+          timeout: 30000
         });
 
         const raw = gptResp.data.choices[0].message.content.trim();
-        const match = raw.match(/\[[\s\S]*\]/);
-        if (match) {
-          problemesListe = JSON.parse(match[0]).filter(p => typeof p === 'string' && p.length > 20).slice(0, 4);
-          console.log(`GPT synthèse problèmes: ${problemesListe.length} problèmes extraits`);
-        }
+        const obj = JSON.parse(raw.replace(/```json|```/g, '').trim());
+        const propre = (arr, n) => (Array.isArray(arr) ? arr : []).filter(p => typeof p === 'string' && p.trim().length > 15).map(p => p.trim()).slice(0, n);
+        problemesListe = propre(obj.problemes, 4);
+        pointsSolides = propre(obj.points_solides, 3);
+        console.log(`Fiabilité — problèmes: ${problemesListe.length}, points solides: ${pointsSolides.length}`);
       } catch (e) {
-        console.log('GPT synthèse problèmes erreur:', e.message);
+        console.log('GPT synthèse fiabilité erreur:', e.message);
       }
     }
 
     // Numéros de rappel : désactivés tant que la source est américaine (NHTSA) — non pertinents pour la Suisse.
     // Seront remplacés par la base officielle européenne (KBA / Safety Gate) dans une prochaine étape.
-    const recallNums = [];
-
     return {
-      prix: prix,
+      prix: '',
       problemesDocumentes: problemesListe,
-      numerosRappel: recallNums
+      pointsSolides,
+      numerosRappel: []
     };
   } catch (e) {
     console.log('Tavily erreur (non bloquant):', e.message);
-    return { prix: '', problemesDocumentes: [], numerosRappel: [] };
+    return { prix: '', problemesDocumentes: [], pointsSolides: [], numerosRappel: [] };
   }
 }
 
@@ -898,7 +950,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   try {
     if (marque && modele) {
       const [tavilyResult, prixMarche] = await Promise.all([
-        rechercherInfosVehicule(marque, modele, annee, km, langue),
+        rechercherInfosVehicule(marque, modele, annee, km, langue, infos.titre || ''),
         rechercherPrixMarcheViaTavily(marque, modele, annee, km)
       ]);
       tavilyContext = { ...tavilyResult, prixMarche };
@@ -917,16 +969,40 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   // Données marché exploitables seulement si la confiance n'est pas basse
   const prixMarcheCtx = (tavilyContext.prixMarche && tavilyContext.prixMarche.confiance !== 'basse') ? tavilyContext.prixMarche : null;
 
+  const pointsSolides = Array.isArray(tavilyContext.pointsSolides) ? tavilyContext.pointsSolides : [];
+  const pointsSolidesSynth = pointsSolides.length > 0
+    ? `\nPOINTS RÉPUTÉS SOLIDES SUR CE VÉHICULE (sources réelles) :\n${pointsSolides.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
+    : '';
+
+  // ── Free service : calcul précis de ce qu'il reste (10 ans / 100 000 km) ──
+  const anneeCourante = new Date().getFullYear();
+  const marquesFreeService = ['bmw', 'audi', 'mercedes', 'mercedes-benz', 'volvo'];
+  let contexteFreeService = '';
+  if (marque && marquesFreeService.includes(marque.toLowerCase()) && annee && km) {
+    const ageAns = Math.max(0.5, anneeCourante - annee + 0.5);
+    const kmParAn = Math.round(km / ageAns / 1000) * 1000;
+    const kmRestants = 100000 - km;
+    const ansRestantsAge = annee + 10 - anneeCourante;
+    if (kmRestants <= 0 || ansRestantsAge <= 0) {
+      contexteFreeService = `\nFREE SERVICE : TERMINÉ (${km.toLocaleString('de-CH')} km, mise en circulation ${annee}). Compter l'entretien complet sur les 3 ans.`;
+    } else {
+      const ansRestantsKm = kmParAn > 0 ? kmRestants / kmParAn : 99;
+      const ansRestants = Math.min(ansRestantsAge, ansRestantsKm);
+      contexteFreeService = `\nFREE SERVICE (si importation officielle) : encore ~${kmRestants.toLocaleString('de-CH')} km ou ${ansRestantsAge} an(s). Au rythme actuel (~${kmParAn.toLocaleString('de-CH')} km/an), il se termine dans environ ${ansRestants < 1 ? 'moins d\'un an' : ansRestants.toFixed(1).replace('.0', '') + ' an(s)'}. ` +
+        (ansRestants < 3 ? `cout_total_3ans DOIT donc inclure l'entretien complet (hors free service) pour les ~${(3 - ansRestants).toFixed(1).replace('.0', '')} dernière(s) année(s) — ce n'est PAS 3 × l'année 1.` : `Les 3 prochaines années restent sous free service.`);
+    }
+  }
+
   const tavilyProblemesSynth = tavilyProblemes.length > 0
     ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS DANS DES SOURCES RÉELLES (base principale pour noter la fiabilité) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
     : `\nAUCUN PROBLÈME DOCUMENTÉ TROUVÉ DANS LES SOURCES pour ce modèle. Ne pénalise pas la fiabilité sans raison concrète ; si tu connais un défaut réel et largement documenté de CE modèle/génération/moteur, tu peux en tenir compte dans la justification.\n`;
 
   const contexteMarche = prixMarcheCtx
-    ? `\nDONNÉE MARCHÉ SUISSE (sources web) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('fr-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
+    ? `\nDONNÉE MARCHÉ SUISSE (sources web) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('de-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
     : `\nAUCUNE DONNÉE MARCHÉ FIABLE TROUVÉE. N'invente pas de fourchette : mets fourchette_marche_min et fourchette_marche_max à 0. Pour score_prix, donne ton estimation et indique clairement dans justification_prix qu'elle est faite sans annonces comparables.`;
 
   const tavilySection = `\n\nDONNÉES WEB SUR CE VÉHICULE :
-${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${tavilyProblemesSynth}${contexteMarche}
+${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteFreeService}
 Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — ce champ est rempli par un autre système.\n`;
 
   // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
@@ -985,7 +1061,8 @@ Le prix n'entre JAMAIS dans cette note. justification_fiabilite doit citer les p
 
 ━━━ ENTRETIEN & COÛTS ━━━
 Estime cout_entretien_annee1 et cout_total_3ans pour CE modèle précis (entretien courant : vidange, filtres, révision, liquides, freins, pneus — PAS les réparations imprévues), en CHF, prix des garages suisses. Le serveur calcule score_entretien à partir de ce coût.
-FREE SERVICE (BMW, Audi, Mercedes, Volvo) : 10 ans OU 100 000 km depuis la 1re mise en circulation. Si (année + 10 > 2026) ET (km < 100 000) → encore sous free service : ne compter que ce qui n'est pas couvert (pneus, plaquettes, liquides). Si l'annonce mentionne une importation parallèle/directe, ne suppose PAS le free service et signale-le.
+FREE SERVICE (BMW, Audi, Mercedes, Volvo) : 10 ans OU 100 000 km depuis la 1re mise en circulation. Utilise le calcul FREE SERVICE fourni plus haut s'il existe. Sous free service, ne compter que ce qui n'est pas couvert (pneus, plaquettes, disques, liquides). Si l'annonce mentionne une importation parallèle/directe, ne suppose PAS le free service et signale-le.
+Pneus et freins : compte leur coût RÉEL pour CE véhicule (une sportive puissante use pneus et freins bien plus vite qu'une citadine, et ses pièces coûtent plus cher).
 Ordres de grandeur de référence (à ADAPTER au modèle réel, pas à recopier) :
 - Hors free service : citadine ~500 CHF/an, berline/break ~800, SUV ~1000, sportive premium ~1200, hypersportive ~2000
 - Sous free service : citadine ~250 CHF/an, berline/SUV ~400, sportive premium ~700, hypersportive ~1200
@@ -1024,7 +1101,7 @@ Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur 
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
 - points_positifs : de 1 à 3 éléments réels — OBLIGATOIREMENT en ${langues[langue] || 'français'}
-- points_negatifs : de 0 à 3 éléments RÉELS (n'en invente jamais pour atteindre 3) — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives, JAMAIS "couleur non communiquée" ou tout point lié à un manque d'information dans l'annonce). Chaque point doit être PRÉCIS et CHIFFRÉ si possible, et concerner CE véhicule ou CE modèle. Si le véhicule est encore sous free service (BMW/Audi/Mercedes/Volvo dont année+10 > 2026 ET km < 100000), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
+- points_negatifs : de 0 à 3 éléments RÉELS (n'en invente jamais pour atteindre 3) — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives, JAMAIS "couleur non communiquée" ou tout point lié à un manque d'information dans l'annonce). Chaque point doit être PRÉCIS et CHIFFRÉ si possible, et concerner CE véhicule ou CE modèle. Si le véhicule est encore sous free service (voir calcul FREE SERVICE fourni), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : retourne TOUJOURS un tableau VIDE []. Ce champ est géré par un autre système — tu ne dois JAMAIS le remplir.
@@ -1130,8 +1207,9 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if (infos.marque) parsed.marque = infos.marque;
   if (!parsed.modele && modele) parsed.modele = modele;
   if (infos.annee) parsed.annee = String(infos.annee);
-  if (km) parsed.kilometrage = km.toLocaleString('fr-CH');
-  if (prixRef) parsed.prix = prixRef.toLocaleString('fr-CH');
+  // Format suisse 48'890 (la police du PDF n'affiche pas l'espace fine du format français)
+  if (km) parsed.kilometrage = km.toLocaleString('de-CH');
+  if (prixRef) parsed.prix = prixRef.toLocaleString('de-CH');
   const co2Final = scrapedData.co2 || infos.co2 || parsed.co2 || null;
   parsed.co2 = co2Final;
   ['carburant', 'boite', 'transmission', 'couleur', 'puissance'].forEach(k => {
@@ -1227,7 +1305,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     raison = verdict === verdictGPT ? null : 'a_verifier';
   }
   const resumes = {
-    fr: { prix_trop_eleve: 'Prix nettement au-dessus de la valeur du marché suisse.', fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('fr-CH')} CHF) et fiabilité solide.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('fr-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
+    fr: { prix_trop_eleve: 'Prix nettement au-dessus de la valeur du marché suisse.', fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et fiabilité solide.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
     de: { prix_trop_eleve: 'Preis deutlich über dem Schweizer Marktwert.', fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und solide Zuverlässigkeit.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
     it: { prix_trop_eleve: 'Prezzo nettamente superiore al valore del mercato svizzero.', fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e affidabilità solida.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
     en: { prix_trop_eleve: 'Price well above Swiss market value.', fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with solid reliability.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
@@ -1266,6 +1344,14 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     }
   }
 
+  // Nettoyer les libellés : caractères cassés et préfixes de catégorie ("Assist: ", "Airbag: "…)
+  if (parsed.options && parsed.options.length > 0) {
+    parsed.options = parsed.options.map(o => {
+      let t = reparerCaracteres(String(o || '')).replace(/\s+/g, ' ').trim();
+      t = t.replace(/^[A-Za-zÀ-ÿ]{3,14}\s*:\s*(?=\S)/, '');
+      return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+    }).filter(Boolean);
+  }
   // Dédoublonner les options
   if (parsed.options && parsed.options.length > 0) {
     const seen = new Set();
@@ -1302,7 +1388,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       const dejaPositifPrix = (parsed.points_positifs || []).some(p => motsPrixPos.test(p));
       if (!dejaPositifPrix) {
         const pointsPrix = {
-          fr: `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString('fr-CH')} CHF)`,
+          fr: `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF)`,
           de: `Verlangter Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF)`,
           it: `Prezzo richiesto inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF)`,
           en: `Asking price below the market median (${mediane.toLocaleString('en-US')} CHF)`
@@ -1524,7 +1610,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   };
   const L = labels[langue] || labels.fr;
   const insuffisant = { fr: 'Données marché insuffisantes', de: 'Unzureichende Marktdaten', it: 'Dati di mercato insufficienti', en: 'Insufficient market data' }[langue] || 'Données marché insuffisantes';
-  const montant = (v) => (Number(v) > 0 ? Number(v).toLocaleString('fr-CH') : '—');
+  const montant = (v) => (Number(v) > 0 ? Number(v).toLocaleString('de-CH') : '—');
   const verdictColor = {
     'ACHETER': '#28a745', 'NÉGOCIER': '#d4a00a', 'ÉVITER': '#dc3545',
     'VERHANDELN': '#d4a00a', 'KAUFEN': '#28a745', 'MEIDEN': '#dc3545',
@@ -1800,7 +1886,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
         </div>
         <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
           <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">${langue === 'de' ? 'Schweizer Markt' : langue === 'it' ? 'Mercato Svizzero' : langue === 'en' ? 'Swiss Market' : 'Marché Suisse'}</div>
-          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'Preise und Kosten sind auf den Schweizer Markt 2026 kalibriert (CHF, Steuern, Versicherung).' : langue === 'it' ? 'Prezzi e costi calibrati sul mercato svizzero 2026 (CHF, tasse, assicurazione).' : langue === 'en' ? 'Prices and costs calibrated for the 2026 Swiss market (CHF, taxes, insurance).' : 'Prix et coûts calibrés pour le marché suisse 2026 (CHF, taxes, assurance).'}</div>
+          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'Preise und Kosten sind auf den Schweizer Markt ${new Date().getFullYear()} kalibriert (CHF, Steuern, Versicherung).' : langue === 'it' ? 'Prezzi e costi calibrati sul mercato svizzero ${new Date().getFullYear()} (CHF, tasse, assicurazione).' : langue === 'en' ? 'Prices and costs calibrated for the ${new Date().getFullYear()} Swiss market (CHF, taxes, insurance).' : 'Prix et coûts calibrés pour le marché suisse ${new Date().getFullYear()} (CHF, taxes, assurance).'}</div>
         </div>
         <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
           <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">${langue === 'de' ? 'Sofortbericht' : langue === 'it' ? 'Rapporto Immediato' : langue === 'en' ? 'Instant Report' : 'Rapport Immédiat'}</div>
