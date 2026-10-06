@@ -50,7 +50,11 @@ function marqueDepuisUrl(url) {
 // Lit les blocs <script type="application/ld+json"> (format schema.org) et renvoie les infos du véhicule.
 // Ne renvoie QUE ce qui est réellement écrit dans l'annonce.
 function extraireVehiculeJsonLd(html) {
-  const blocs = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const blocs = [...html.matchAll(/<script[^>]*type=\\?["']?application\/ld\+json\\?["']?[^>]*>([\s\S]*?)<\/script>/gi)];
+  if (blocs.length === 0) {
+    const i = html.indexOf('application/ld+json');
+    if (i !== -1) console.log('JSON-LD contexte (format inattendu):', html.substring(Math.max(0, i - 60), i + 160).replace(/\s+/g, ' '));
+  }
   const objets = [];
   const aplatir = (o) => {
     if (!o) return;
@@ -507,6 +511,24 @@ async function scrapeAnnonce(url, langue = 'fr') {
     cleanHtml = cleanHtml.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, "");
     cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ");
     cleanHtml = cleanHtml.replace(/\s+/g, " ").trim();
+
+    // ── PUISSANCE et CO2 : données JSON de la page, sinon texte affiché de l'annonce (page complète, avant coupure) ──
+    if (!infos.puissance) {
+      const hp = html.match(/\\?"(?:horsePower|horsepower|powerHp|powerPS|hp)\\?"\s*:\s*\\?"?(\d{2,4})/);
+      const kw = html.match(/\\?"(?:kiloWatts|kilowatts|powerKw|powerKW|kw)\\?"\s*:\s*\\?"?(\d{2,4})/);
+      const txtPs = cleanHtml.match(/(?:Puissance|Leistung|Potenza|Power)[^\d]{0,25}(\d{2,4})\s*(?:PS|ch|CV|hp|HP)\b/i) ||
+                    cleanHtml.match(/\b(\d{2,4})\s*kW\s*\(\s*(\d{2,4})\s*(?:PS|ch|CV)\s*\)/i);
+      let ps = null;
+      if (hp) ps = +hp[1];
+      else if (txtPs) ps = +(txtPs[2] || txtPs[1]);
+      else if (kw) ps = Math.round(+kw[1] * 1.36);
+      if (ps && ps >= 40 && ps <= 2000) { infos.puissance = ps + ' PS'; console.log('PUISSANCE EXTRAITE:', infos.puissance); }
+      else console.log('PUISSANCE: non trouvée dans l\'annonce');
+    }
+    if (!infos.co2) {
+      const co2Txt = cleanHtml.match(/CO(?:2|₂)[^\d]{0,40}(\d{2,3})\s*g\s*\/\s*km/i);
+      if (co2Txt) { infos.co2 = +co2Txt[1]; co2Value = co2Value || infos.co2; console.log('CO2 EXTRAIT (texte):', infos.co2); }
+    }
 
     const finalContent = cleanHtml.substring(0, 15000);
     const titre = finalContent.split(/\s\*|\s(?:À vendre|Zu verkaufen|In vendita|For sale|Rechercher|Suchen|Cerca|Search|CHF)\b/)[0].trim();
@@ -978,16 +1000,19 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   const anneeCourante = new Date().getFullYear();
   const marquesFreeService = ['bmw', 'audi', 'mercedes', 'mercedes-benz', 'volvo'];
   let contexteFreeService = '';
+  let fsAnsRestants = null; // null = pas de free service connu ; 0 = terminé ; sinon années restantes
   if (marque && marquesFreeService.includes(marque.toLowerCase()) && annee && km) {
     const ageAns = Math.max(0.5, anneeCourante - annee + 0.5);
     const kmParAn = Math.round(km / ageAns / 1000) * 1000;
     const kmRestants = 100000 - km;
     const ansRestantsAge = annee + 10 - anneeCourante;
     if (kmRestants <= 0 || ansRestantsAge <= 0) {
+      fsAnsRestants = 0;
       contexteFreeService = `\nFREE SERVICE : TERMINÉ (${km.toLocaleString('de-CH')} km, mise en circulation ${annee}). Compter l'entretien complet sur les 3 ans.`;
     } else {
       const ansRestantsKm = kmParAn > 0 ? kmRestants / kmParAn : 99;
       const ansRestants = Math.min(ansRestantsAge, ansRestantsKm);
+      fsAnsRestants = ansRestants;
       contexteFreeService = `\nFREE SERVICE (si importation officielle) : encore ~${kmRestants.toLocaleString('de-CH')} km ou ${ansRestantsAge} an(s). Au rythme actuel (~${kmParAn.toLocaleString('de-CH')} km/an), il se termine dans environ ${ansRestants < 1 ? 'moins d\'un an' : ansRestants.toFixed(1).replace('.0', '') + ' an(s)'}. ` +
         (ansRestants < 3 ? `cout_total_3ans DOIT donc inclure l'entretien complet (hors free service) pour les ~${(3 - ansRestants).toFixed(1).replace('.0', '')} dernière(s) année(s) — ce n'est PAS 3 × l'année 1.` : `Les 3 prochaines années restent sous free service.`);
     }
@@ -1060,7 +1085,10 @@ Note la fiabilité de CE modèle, dans SA génération et avec SA motorisation, 
 Le prix n'entre JAMAIS dans cette note. justification_fiabilite doit citer les points concrets (ce qui est solide ET ce qui est fragile).
 
 ━━━ ENTRETIEN & COÛTS ━━━
-Estime cout_entretien_annee1 et cout_total_3ans pour CE modèle précis (entretien courant : vidange, filtres, révision, liquides, freins, pneus — PAS les réparations imprévues), en CHF, prix des garages suisses. Le serveur calcule score_entretien à partir de ce coût.
+Estime pour CE modèle précis, en CHF par an, prix des garages suisses (entretien courant : vidange, filtres, révision, liquides, freins, pneus — PAS les réparations imprévues) :
+- cout_annuel_complet : coût annuel SANS free service (tout à la charge du propriétaire)
+- cout_annuel_couvert : coût annuel SOUS free service (seulement ce qui n'est pas couvert : pneus, plaquettes, disques, liquides). Pour une marque sans free service, mets la même valeur que cout_annuel_complet.
+Le serveur calcule lui-même cout_entretien_annee1, cout_total_3ans et score_entretien à partir de ces deux valeurs et de la durée de free service restante (mets 0 à ces trois champs).
 FREE SERVICE (BMW, Audi, Mercedes, Volvo) : 10 ans OU 100 000 km depuis la 1re mise en circulation. Utilise le calcul FREE SERVICE fourni plus haut s'il existe. Sous free service, ne compter que ce qui n'est pas couvert (pneus, plaquettes, disques, liquides). Si l'annonce mentionne une importation parallèle/directe, ne suppose PAS le free service et signale-le.
 Pneus et freins : compte leur coût RÉEL pour CE véhicule (une sportive puissante use pneus et freins bien plus vite qu'une citadine, et ses pièces coûtent plus cher).
 Ordres de grandeur de référence (à ADAPTER au modèle réel, pas à recopier) :
@@ -1079,7 +1107,7 @@ Adapter aux problèmes réels documentés de CE modèle. NE PAS poser des questi
 Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur documenté : compression, consommation huile, traces d'huile. Pour les sportives : freins, pneus, boîte. Pour les diesel : DPF, EGR, turbo.
 
 ━━━ VERDICT ━━━
-- ACHETER : bon prix (sous ou à la médiane) ET fiabilité ≥ 6 ET aucun red flag
+- ACHETER : aucun red flag ET [ (fiabilité ≥ 7 ET prix ≤ médiane) OU (fiabilité ≥ 6 ET prix ≥ 5 % sous la médiane) ]
 - NÉGOCIER : prix au-dessus de la médiane, OU points importants à vérifier, OU fiabilité moyenne
 - ÉVITER : red flag grave (ex : culasse, accident lourd) avec fiabilité faible, OU fiabilité ≤ 3, OU prix > 15 % au-dessus du max
 (Le serveur vérifiera la cohérence de ce verdict avec les notes.)
@@ -1133,6 +1161,8 @@ RÈGLES JSON :
   "score_prix": 0,
   "score_fiabilite": 0,
   "score_entretien": 0,
+  "cout_annuel_complet": 0,
+  "cout_annuel_couvert": 0,
   "justification_prix": "",
   "justification_fiabilite": "",
   "justification_entretien": "",
@@ -1210,6 +1240,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // Format suisse 48'890 (la police du PDF n'affiche pas l'espace fine du format français)
   if (km) parsed.kilometrage = km.toLocaleString('de-CH');
   if (prixRef) parsed.prix = prixRef.toLocaleString('de-CH');
+  if (infos.puissance) parsed.puissance = infos.puissance;
   const co2Final = scrapedData.co2 || infos.co2 || parsed.co2 || null;
   parsed.co2 = co2Final;
   ['carburant', 'boite', 'transmission', 'couleur', 'puissance'].forEach(k => {
@@ -1221,13 +1252,20 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   parsed.score_prix = Math.round(Number(parsed.score_prix));
   parsed.score_fiabilite = Math.round(Number(parsed.score_fiabilite));
 
-  // Entretien : note calculée à partir du coût annuel estimé pour CE modèle (même barème pour toutes les voitures)
+  // Entretien : coûts calculés par le serveur à partir des deux estimations annuelles de l'IA
+  // et de la durée de free service restante (même barème pour toutes les voitures).
   const scoreEntretienDepuisCout = (c) =>
     c <= 350 ? 9 : c <= 600 ? 8 : c <= 900 ? 7 : c <= 1100 ? 6 : c <= 1600 ? 5 : c <= 2200 ? 4 : c <= 3000 ? 3 : 2;
-  const cout1 = parseInt(parsed.cout_entretien_annee1) || 0;
-  if (cout1 > 0) {
-    parsed.score_entretien = scoreEntretienDepuisCout(cout1);
-    if (!(parseInt(parsed.cout_total_3ans) > 0)) parsed.cout_total_3ans = cout1 * 3;
+  const complet = parseInt(parsed.cout_annuel_complet) || parseInt(parsed.cout_entretien_annee1) || 0;
+  const couvert = parseInt(parsed.cout_annuel_couvert) || complet;
+  if (complet > 0) {
+    const fs = fsAnsRestants == null ? 0 : Math.max(0, fsAnsRestants);
+    const an1 = fs >= 1 ? couvert : couvert * fs + complet * (1 - fs);
+    const total3 = couvert * Math.min(3, fs) + complet * Math.max(0, 3 - fs);
+    parsed.cout_entretien_annee1 = Math.round(an1 / 50) * 50;
+    parsed.cout_total_3ans = Math.round(total3 / 50) * 50;
+    parsed.score_entretien = scoreEntretienDepuisCout(total3 / 3);
+    console.log(`ENTRETIEN: complet ${complet}/an, couvert ${couvert}/an, free service restant ${fs.toFixed(1)} an(s) → an 1 ${parsed.cout_entretien_annee1}, 3 ans ${parsed.cout_total_3ans}, note ${parsed.score_entretien}`);
   } else if (scoreValide(parsed.score_entretien)) {
     parsed.score_entretien = Math.round(Number(parsed.score_entretien));
   } else {
@@ -1296,19 +1334,26 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if (fourchMax > 0 && prixDemande > fourchMax * 1.15) { verdict = 'ÉVITER'; raison = 'prix_trop_eleve'; }
   else if (fiab <= 3 || (redFlags.length > 0 && fiab <= 4)) { verdict = 'ÉVITER'; raison = 'fiabilite'; }
   else if (mediane > 0) {
-    if (prixDemande <= mediane && fiab >= 6 && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'bon_prix'; }
+    const bonPrix = (fiab >= 7 && prixDemande <= mediane) || (fiab >= 6 && prixDemande <= mediane * 0.95);
+    if (bonPrix && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'bon_prix'; }
     else if (prixDemande > mediane) { verdict = 'NÉGOCIER'; raison = 'prix_au_dessus'; }
     else { verdict = 'NÉGOCIER'; raison = 'a_verifier'; }
   } else {
     verdict = verdictGPT;
-    if (verdict === 'ACHETER' && (fiab < 6 || redFlags.length > 0)) verdict = 'NÉGOCIER';
+    if (verdict === 'ACHETER' && (fiab < 7 || redFlags.length > 0)) verdict = 'NÉGOCIER';
     raison = verdict === verdictGPT ? null : 'a_verifier';
   }
+  const niveauFiab = {
+    fr: fiab >= 8 ? 'très bonne fiabilité' : fiab >= 7 ? 'bonne fiabilité' : 'fiabilité correcte',
+    de: fiab >= 8 ? 'sehr gute Zuverlässigkeit' : fiab >= 7 ? 'gute Zuverlässigkeit' : 'ordentliche Zuverlässigkeit',
+    it: fiab >= 8 ? 'ottima affidabilità' : fiab >= 7 ? 'buona affidabilità' : 'affidabilità discreta',
+    en: fiab >= 8 ? 'very good reliability' : fiab >= 7 ? 'good reliability' : 'decent reliability'
+  };
   const resumes = {
-    fr: { prix_trop_eleve: 'Prix nettement au-dessus de la valeur du marché suisse.', fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et fiabilité solide.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
-    de: { prix_trop_eleve: 'Preis deutlich über dem Schweizer Marktwert.', fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und solide Zuverlässigkeit.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
-    it: { prix_trop_eleve: 'Prezzo nettamente superiore al valore del mercato svizzero.', fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e affidabilità solida.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
-    en: { prix_trop_eleve: 'Price well above Swiss market value.', fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with solid reliability.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
+    fr: { prix_trop_eleve: 'Prix nettement au-dessus de la valeur du marché suisse.', fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr}.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
+    de: { prix_trop_eleve: 'Preis deutlich über dem Schweizer Marktwert.', fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de}.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
+    it: { prix_trop_eleve: 'Prezzo nettamente superiore al valore del mercato svizzero.', fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it}.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
+    en: { prix_trop_eleve: 'Price well above Swiss market value.', fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en}.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
   };
   if (raison && (verdict !== verdictGPT || !parsed.resume_verdict)) {
     parsed.resume_verdict = (resumes[langue] || resumes.fr)[raison];
@@ -1554,7 +1599,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       const dejaPositif = parsed.conseil_achat.toLowerCase().includes('inférieur') ||
         parsed.conseil_achat.toLowerCase().includes('bonne affaire') ||
         parsed.conseil_achat.toLowerCase().includes('bien positionné');
-      if (!dejaPositif && medianeCA > 0 && langue === 'fr') {
+      if (false && !dejaPositif && medianeCA > 0 && langue === 'fr') { // désactivé : texte forcé, redondant
         parsed.conseil_achat = `Prix demandé de ${prixDemande.toLocaleString()} CHF inférieur à la médiane du marché (${medianeCA.toLocaleString()} CHF) — bonne affaire. ` + parsed.conseil_achat;
       }
     }
@@ -1886,7 +1931,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
         </div>
         <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
           <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">${langue === 'de' ? 'Schweizer Markt' : langue === 'it' ? 'Mercato Svizzero' : langue === 'en' ? 'Swiss Market' : 'Marché Suisse'}</div>
-          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'Preise und Kosten sind auf den Schweizer Markt ${new Date().getFullYear()} kalibriert (CHF, Steuern, Versicherung).' : langue === 'it' ? 'Prezzi e costi calibrati sul mercato svizzero ${new Date().getFullYear()} (CHF, tasse, assicurazione).' : langue === 'en' ? 'Prices and costs calibrated for the ${new Date().getFullYear()} Swiss market (CHF, taxes, insurance).' : 'Prix et coûts calibrés pour le marché suisse ${new Date().getFullYear()} (CHF, taxes, assurance).'}</div>
+          <div style="font-size:10px; color:#b8d0f0; line-height:1.5;">${langue === 'de' ? 'Preise und Kosten sind auf den Schweizer Markt ' + new Date().getFullYear() + ' kalibriert (CHF, Steuern, Versicherung).' : langue === 'it' ? 'Prezzi e costi calibrati sul mercato svizzero ' + new Date().getFullYear() + ' (CHF, tasse, assicurazione).' : langue === 'en' ? 'Prices and costs calibrated for the ' + new Date().getFullYear() + ' Swiss market (CHF, taxes, insurance).' : 'Prix et coûts calibrés pour le marché suisse ' + new Date().getFullYear() + ' (CHF, taxes, assurance).'}</div>
         </div>
         <div style="background:rgba(255,255,255,0.08); border-radius:8px; padding:12px;">
           <div style="font-size:10px; color:#00B4D8; font-weight:700; margin-bottom:4px;">${langue === 'de' ? 'Sofortbericht' : langue === 'it' ? 'Rapporto Immediato' : langue === 'en' ? 'Instant Report' : 'Rapport Immédiat'}</div>
