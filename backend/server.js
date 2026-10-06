@@ -903,6 +903,34 @@ const quantile = (arr, q) => {
   const pos = (a.length - 1) * q, b = Math.floor(pos), r = pos - b;
   return a[b + 1] !== undefined ? a[b] + r * (a[b + 1] - a[b]) : a[b];
 };
+// Lit la liste officielle des annonces (schema.org "OfferCatalog") de la page de résultats AutoScout24.
+// Chaque annonce : nom, lien, description ("Essence, Automatique, 400 PS, 31'000 km") et prix.
+function lireCatalogueResultats(html) {
+  const annonces = [];
+  const vus = new Set();
+  const re = /"@type"\s*:\s*"Product"\s*,\s*"name"\s*:\s*"([^"]{2,200})"\s*,\s*"url"\s*:\s*"([^"]+)"([\s\S]{0,1500}?)"price"\s*:\s*"?(\d{3,7})/g;
+  for (const m of html.matchAll(re)) {
+    const lien = m[2];
+    const id = (lien.match(/-(\d{6,})(?:[/?#]|$)/) || [])[1];
+    if (!id || vus.has(id)) continue;
+    vus.add(id);
+    const desc = (m[3].match(/"description"\s*:\s*"([^"]*)"/) || [])[1] || '';
+    const kmM = desc.match(/(\d{1,3}(?:['’\u2019.\s]\d{3})+|\d{1,7})\s*km/i);
+    const psM = desc.match(/(\d{2,4})\s*(?:PS|ch|CV|hp)\b/i);
+    const anM = (m[3].match(/"(?:vehicleModelDate|productionDate|dateVehicleFirstRegistered|modelDate)"\s*:\s*"?(\d{4})/) || [])[1];
+    annonces.push({
+      titre: reparerCaracteres(m[1]).slice(0, 90),
+      prix: parseInt(m[4]),
+      km: kmM ? parseInt(kmM[1].replace(/[^\d]/g, '')) : null,
+      annee: anM ? parseInt(anM) : null,
+      puissance: psM ? parseInt(psM[1]) : null,
+      lien: lien.startsWith('http') ? lien : 'https://www.autoscout24.ch' + lien,
+      id
+    });
+  }
+  return annonces;
+}
+
 async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
   try {
     if (!annee || !km) { console.log('Comparables : année ou km inconnu — ignoré'); return null; }
@@ -922,6 +950,19 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
     let html = typeof resp.data === 'string' ? resp.data : JSON.stringify(resp.data);
     html = reparerCaracteres(html);
 
+    // MÉTHODE 1 (fiable, sans IA) : le catalogue schema.org de la page
+    // L'année de chaque annonce est déjà garantie par le filtre de la recherche (année ±1).
+    const catalogue = lireCatalogueResultats(html).filter(a => a.id !== infos.idAnnonce);
+    console.log(`Comparables — catalogue de la page : ${catalogue.length} annonces (${catalogue.filter(a => a.km != null).length} avec km)`);
+    let toutes = null;
+    if (catalogue.filter(a => a.km != null && a.prix > 1000).length >= 5) {
+      toutes = catalogue.filter(a => a.km != null && a.prix > 1000)
+        .filter(a => !a.annee || Math.abs(a.annee - annee) <= 1)
+        .map(a => ({ ...a, annee: a.annee || null }));
+    }
+
+    if (!toutes) {
+    // MÉTHODE 2 (secours) : extraction par IA du texte de la page
     // Chaque carte d'annonce = un lien /d/... ; on garde le lien + le texte de la carte
     const cartes = [];
     const vus = new Set();
@@ -968,7 +1009,7 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
     }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 60000 });
 
     const obj = JSON.parse(gpt.data.choices[0].message.content);
-    const toutes = (obj.annonces || []).map(a => ({
+    toutes = (obj.annonces || []).map(a => ({
       titre: String(a.titre || '').slice(0, 90),
       prix: parseInt(String(a.prix || '').replace(/[^\d]/g, '')) || 0,
       km: parseInt(String(a.km ?? '').replace(/[^\d]/g, '')) || null,
@@ -977,6 +1018,7 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
           : (a.id && /^\d{6,}$/.test(String(a.id)) ? `https://www.autoscout24.ch/fr/d/${a.id}` : null)
     })).filter(a => a.prix > 1000 && a.km != null && a.annee && Math.abs(a.annee - annee) <= 1)
       .filter(a => !(infos.idAnnonce && a.lien && a.lien.includes(infos.idAnnonce)));
+    } // fin méthode 2
     console.log(`Comparables — ${toutes.length} annonces lisibles (année ${annee - 1}–${annee + 1})`);
 
     // Annonces proches en km (±40 %, au moins ±20'000 km), élargi à ±70 % si trop peu
@@ -999,7 +1041,8 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
       count: retenues.length,
       source: 'as24',
       kmMoyen: Math.round(retenues.reduce((t, a) => t + a.km, 0) / retenues.length / 1000) * 1000,
-      comparables: [...retenues].sort((x, y) => (Math.abs(x.annee - annee) * 30000 + Math.abs(x.km - km)) - (Math.abs(y.annee - annee) * 30000 + Math.abs(y.km - km))).slice(0, 3)
+      comparables: [...retenues].sort((x, y) => (Math.abs((x.annee || annee) - annee) * 30000 + Math.abs(x.km - km)) - (Math.abs((y.annee || annee) - annee) * 30000 + Math.abs(y.km - km))).slice(0, 3)
+        .map(c => ({ titre: c.titre, prix: c.prix, km: c.km, annee: c.annee, lien: c.lien }))
     };
     console.log(`Comparables — ${resultat.count} retenues : médiane ${resultat.mediane}, fourchette ${resultat.min}–${resultat.max}, km moyen ${resultat.kmMoyen}`);
     return resultat;
@@ -1264,7 +1307,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     ? `\nCHIFFRES CALCULÉS PAR LE SYSTÈME (à utiliser tels quels, ne pas en inventer d'autres) : score_prix = ${marcheAvant.scorePrix}/10 ; prix négocié suggéré = ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF ; économie possible ≈ ${marcheAvant.ecoMin.toLocaleString('de-CH')} CHF. Dans conseil_achat, si tu donnes un objectif de négociation, cite EXACTEMENT ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF. Ne cite aucun montant d'entretien (il est calculé ailleurs).`
     : `\nDans conseil_achat, ne cite aucun prix de négociation chiffré ni montant d'entretien (pas de données marché fiables).`;
   const contexteComparables = (prixMarcheCtx && prixMarcheCtx.source === 'as24')
-    ? `\nANNONCES COMPARABLES RÉELLES (AutoScout24, aujourd'hui) : ${prixMarcheCtx.count} annonces de ${annee - 1} à ${annee + 1} avec un kilométrage proche ; kilométrage moyen ${prixMarcheCtx.kmMoyen.toLocaleString('de-CH')} km (cette voiture : ${km ? km.toLocaleString('de-CH') : '?'} km). Exemples : ${prixMarcheCtx.comparables.map(c => `${c.annee}, ${c.km.toLocaleString('de-CH')} km, ${c.prix.toLocaleString('de-CH')} CHF`).join(' ; ')}. Dans conseil_achat, utilise ces faits comme ARGUMENTS DE NÉGOCIATION concrets (écart à la médiane, kilométrage par rapport à la moyenne).`
+    ? `\nANNONCES COMPARABLES RÉELLES (AutoScout24, aujourd'hui) : ${prixMarcheCtx.count} annonces de ${annee - 1} à ${annee + 1} avec un kilométrage proche ; kilométrage moyen ${prixMarcheCtx.kmMoyen.toLocaleString('de-CH')} km (cette voiture : ${km ? km.toLocaleString('de-CH') : '?'} km). Exemples : ${prixMarcheCtx.comparables.map(c => `${c.annee ? c.annee + ', ' : ''}${c.km.toLocaleString('de-CH')} km, ${c.prix.toLocaleString('de-CH')} CHF`).join(' ; ')}. Dans conseil_achat, utilise ces faits comme ARGUMENTS DE NÉGOCIATION concrets (écart à la médiane, kilométrage par rapport à la moyenne).`
     : '';
   const contexteMarche = prixMarcheCtx
     ? `\nDONNÉE MARCHÉ SUISSE (${prixMarcheCtx.source === 'as24' ? `médiane de ${prixMarcheCtx.count} annonces réelles` : 'estimation à partir de sources web'}) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('de-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
@@ -2139,7 +2182,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   ${(analyse.comparables || []).length > 0 ? `
   <div class="section section-white">
     <div class="section-title"><div class="section-bar" style="background:#5a7a9a;"></div><div class="section-label" style="color:#5a7a9a;">${titreComparables}</div></div>
-    ${analyse.comparables.map(c => `<div class="checklist-item-white" style="border-left:3px solid #5a7a9a; justify-content:space-between;"><span>${c.titre || ''} · ${c.annee} · ${montant(c.km)} km</span><span style="font-weight:700; white-space:nowrap;">${c.lien ? `<a href="${c.lien}" style="color:#1a3a6e; text-decoration:none;">${montant(c.prix)} CHF</a>` : `${montant(c.prix)} CHF`}</span></div>`).join('')}
+    ${analyse.comparables.map(c => `<div class="checklist-item-white" style="border-left:3px solid #5a7a9a; justify-content:space-between;"><span>${c.titre || ''}${c.annee ? ' · ' + c.annee : ''} · ${montant(c.km)} km</span><span style="font-weight:700; white-space:nowrap;">${c.lien ? `<a href="${c.lien}" style="color:#1a3a6e; text-decoration:none;">${montant(c.prix)} CHF</a>` : `${montant(c.prix)} CHF`}</span></div>`).join('')}
     <div style="font-size:9px; color:#5a7a9a; margin-top:4px;">${noteComparables}</div>
   </div>` : ''}
 
@@ -2463,7 +2506,11 @@ app.post('/analyse-gratuite', async (req, res) => {
     const analyse = await obtenirAnalyse(url.trim(), langue);
     res.json({
       marque: analyse.marque, modele: analyse.modele, annee: analyse.annee,
-      prix: analyse.prix, score_global: analyse.score_global, verdict: analyse.verdict, teaser: true
+      prix: analyse.prix, score_global: analyse.score_global, verdict: analyse.verdict,
+      // Détails publics de l'annonce (déjà visibles sur AutoScout24) pour enrichir l'aperçu
+      kilometrage: analyse.kilometrage, puissance: analyse.puissance, couleur: analyse.couleur,
+      carburant: analyse.carburant, boite: analyse.boite, transmission: analyse.transmission,
+      teaser: true
     });
   } catch (err) {
     console.error('APERÇU GRATUIT erreur :', err.message);
