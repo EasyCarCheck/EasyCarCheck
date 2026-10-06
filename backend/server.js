@@ -1107,7 +1107,8 @@ Adapter aux problèmes réels documentés de CE modèle. NE PAS poser des questi
 Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur documenté : compression, consommation huile, traces d'huile. Pour les sportives : freins, pneus, boîte. Pour les diesel : DPF, EGR, turbo.
 
 ━━━ VERDICT ━━━
-- ACHETER : aucun red flag ET [ (fiabilité ≥ 7 ET prix ≤ médiane) OU (fiabilité ≥ 6 ET prix ≥ 5 % sous la médiane) ]
+- ACHETER : aucun red flag ET [ (fiabilité ≥ 8 ET prix ≤ médiane) OU (fiabilité ≥ 7 ET prix ≥ 3 % sous la médiane) OU (fiabilité ≥ 6 ET prix ≥ 5 % sous la médiane) ]
+- Un prix simplement égal à la médiane est un prix « correct », pas une bonne affaire.
 - NÉGOCIER : prix au-dessus de la médiane, OU points importants à vérifier, OU fiabilité moyenne
 - ÉVITER : red flag grave (ex : culasse, accident lourd) avec fiabilité faible, OU fiabilité ≤ 3, OU prix > 15 % au-dessus du max
 (Le serveur vérifiera la cohérence de ce verdict avec les notes.)
@@ -1334,7 +1335,10 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if (fourchMax > 0 && prixDemande > fourchMax * 1.15) { verdict = 'ÉVITER'; raison = 'prix_trop_eleve'; }
   else if (fiab <= 3 || (redFlags.length > 0 && fiab <= 4)) { verdict = 'ÉVITER'; raison = 'fiabilite'; }
   else if (mediane > 0) {
-    const bonPrix = (fiab >= 7 && prixDemande <= mediane) || (fiab >= 6 && prixDemande <= mediane * 0.95);
+    // ACHETER = vraie bonne affaire : plus la fiabilité est haute, moins l'écart sous la médiane doit être grand
+    const bonPrix = (fiab >= 8 && prixDemande <= mediane) ||
+                    (fiab >= 7 && prixDemande <= mediane * 0.97) ||
+                    (fiab >= 6 && prixDemande <= mediane * 0.95);
     if (bonPrix && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'bon_prix'; }
     else if (prixDemande > mediane) { verdict = 'NÉGOCIER'; raison = 'prix_au_dessus'; }
     else { verdict = 'NÉGOCIER'; raison = 'a_verifier'; }
