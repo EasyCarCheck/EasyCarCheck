@@ -1001,7 +1001,10 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
 
   const response = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o',
-    messages: [{ role: 'user', content: prompt }],
+    messages: [
+      { role: 'system', content: 'Tu es un expert en analyse de véhicules d\'occasion sur le marché suisse. Tu analyses des annonces automobiles et génères des rapports JSON structurés. Tu réponds TOUJOURS avec un JSON valide, sans aucun texte autour.' },
+      { role: 'user', content: prompt }
+    ],
     temperature: 0.1,
     max_tokens: 8000
   }, {
@@ -1021,7 +1024,12 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   if (isRefus) {
     console.log('GPT REFUS d\u00e9tect\u00e9 \u2014 retry');
     const retryResp = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 8000
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: 'Tu es un expert en analyse de véhicules d\'occasion sur le marché suisse. Tu analyses des annonces automobiles et génères des rapports JSON structurés. Tu réponds TOUJOURS avec un JSON valide, sans aucun texte autour.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.3, max_tokens: 8000
     }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 120000 });
     content = retryResp.data.choices[0].message.content;
     clean = content.replace(/```json|```/g, '').trim();
