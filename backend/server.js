@@ -50,8 +50,8 @@ async function scrapeAnnonce(url, langue = 'fr') {
           wait: '8000',
           css_extractor: JSON.stringify({
             equipments: '#expandable-equipment li.chakra-list__item',
-            couleur_ext: '[data-testid="color-exterior"] span, [class*="color-exterior"] span, [class*="ColorExterior"] span',
-            description_vendeur: '[data-testid="seller-comment"], [class*="sellerComment"], [class*="SellerComment"], [class*="seller-comment"]'
+            couleur_ext: '[data-testid="color-exterior"] span, [data-testid="color-exterior"], [data-testid="exterior-color"] span, [data-testid="exterior-color"]',
+            description_vendeur: '[data-testid="description-content"], [data-testid="seller-comment"], [data-testid="clp-description"], [class*="description-content"]'
           })
         },
         timeout: 120000
@@ -242,8 +242,8 @@ async function scrapeAnnonce(url, langue = 'fr') {
       }
 
       // LOG DEBUG couleur — extraire contexte autour des mots-clés couleur
-      const colorIdx = html.search(/bodyColor|exteriorColor|couleur|farbe|colour/i);
-      if (colorIdx > 0) console.log('DEBUG COULEUR contexte:', html.substring(Math.max(0,colorIdx-20), colorIdx+80).replace(/\s+/g,' '));
+      const colorIdx = html.search(/bodyColor|exteriorColor|\\\"color\\\":|\"color\":|couleur|farbe|colour/i);
+      if (colorIdx > 0) console.log('DEBUG COULEUR contexte:', html.substring(Math.max(0,colorIdx-20), colorIdx+120).replace(/\s+/g,' '));
       else console.log('DEBUG COULEUR: aucun champ couleur trouvé dans le HTML');
       const sellerIdx = html.search(/sellerComment|freeText|Avis du fournisseur|Händlerkommentar/i);
       if (sellerIdx > 0) console.log('DEBUG DESC contexte:', html.substring(Math.max(0,sellerIdx-10), sellerIdx+200).replace(/\s+/g,' '));
@@ -256,6 +256,9 @@ async function scrapeAnnonce(url, langue = 'fr') {
                            html.match(/\\"colour\\":\\"([^"\\]{2,40})\\"/) ||
                            html.match(/\\"exteriorColor\\":\\"([^"\\]{2,40})\\"/) ||
                            html.match(/"exteriorColor":"([^"\\]{2,40})"/) ||
+                           // JSON AS24 : "color":"Gris Nardo" (sans "s" — clé simple)
+                           html.match(/\\"color\\":\\"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{2,40})\\"/) ||
+                           html.match(/"color":"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{2,40})"/) ||
                            // HTML rendu AS24 : "Extérieure noir Intérieure" ou "Extérieure noir (Métallisé) Intérieure"
                            html.match(/Ext[eé]rieure\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})\s+Int[eé]rieure/i) ||
                            html.match(/[Cc]ouleur\s+ext[eé]rieure\s*[:\-]?\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\(\)\/\-]{1,35})/i);
@@ -308,10 +311,11 @@ async function scrapeAnnonce(url, langue = 'fr') {
       // ── DESCRIPTION VENDEUR depuis HTML rendu (fallback) ──
       if (!equipmentData.includes('DESCRIPTION_VENDEUR:')) {
         // AS24 affiche "Avis du fournisseur" ou "Seller comment" dans un bloc HTML
-        const htmlDescMatch = html.match(/Avis du fournisseur[^<]*<\/[^>]+>\s*<[^>]+>([^<]{30,2000})/i) ||
-                              html.match(/Seller comment[^<]*<\/[^>]+>\s*<[^>]+>([^<]{30,2000})/i) ||
-                              html.match(/Händlerkommentar[^<]*<\/[^>]+>\s*<[^>]+>([^<]{30,2000})/i) ||
-                              html.match(/data-testid="(?:seller-comment|seller-notes|description-content)"[^>]*>([^<]{30,2000})/i);
+        // AS24: le bloc description vendeur est dans data-testid="description-content" ou class contenant "description"
+        // Le titre "Avis du fournisseur" est séparé du contenu par plusieurs balises — ne pas se fier à lui
+        const htmlDescMatch = html.match(/data-testid="(?:seller-comment|seller-notes|description-content|clp-description)"[^>]*>([\s\S]{30,3000}?)<\/(?:p|div|section)/i) ||
+                              html.match(/class="[^"]*(?:seller-comment|sellerComment|description-text|description-content)[^"]*"[^>]*>([\s\S]{30,3000}?)<\/(?:p|div)/i) ||
+                              html.match(/Händlerkommentar[^<]*<\/[^>]+>\s*(?:<[^>]+>\s*){1,5}([^<]{30,2000})/i);
         if (htmlDescMatch) {
           const t = cleanDesc(htmlDescMatch[1]);
           if (t) { equipmentData += "\nDESCRIPTION_VENDEUR: " + t; console.log("DESCRIPTION VENDEUR (HTML):", t.substring(0, 100)); }
