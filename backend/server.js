@@ -8,9 +8,97 @@ const puppeteer = require('puppeteer');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// IMPORTANT : le webhook Stripe a besoin du corps BRUT de la requête pour vérifier la signature.
+// express.json() ne doit donc PAS s'appliquer à /webhook, sinon tous les paiements échouent à la vérification.
+app.use((req, res, next) => {
+  if (req.originalUrl === '/webhook') return next();
+  express.json()(req, res, next);
+});
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Protection des routes de test : sans la bonne clé, personne ne peut générer de rapport gratuit à vos frais.
+function exigerCleAdmin(req, res, next) {
+  if (!process.env.ADMIN_KEY || req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
+    return res.status(403).json({ error: 'Accès refusé' });
+  }
+  next();
+}
+
+// ─── MARQUES CONNUES (multi-mots en premier pour éviter "alfa" seul) ─────
+const MARQUES = [
+  'Alfa Romeo', 'Aston Martin', 'Land Rover', 'Range Rover', 'Rolls-Royce', 'Mercedes-Benz', 'Lynk & Co',
+  'Abarth', 'Alpine', 'Audi', 'Bentley', 'BMW', 'BYD', 'Cadillac', 'Chevrolet', 'Chrysler', 'Citroën', 'Citroen',
+  'Cupra', 'Dacia', 'Dodge', 'DS', 'Ferrari', 'Fiat', 'Ford', 'Genesis', 'Honda', 'Hyundai', 'Infiniti', 'Isuzu',
+  'Jaguar', 'Jeep', 'Kia', 'Lamborghini', 'Lancia', 'Lexus', 'Lotus', 'Maserati', 'Mazda', 'McLaren', 'Mercedes',
+  'MG', 'Mini', 'Mitsubishi', 'Nissan', 'Opel', 'Peugeot', 'Polestar', 'Porsche', 'Renault', 'Seat', 'Skoda',
+  'Smart', 'SsangYong', 'Subaru', 'Suzuki', 'Tesla', 'Toyota', 'Volkswagen', 'VW', 'Volvo'
+];
+
+// Marque depuis l'URL AutoScout24 : /fr/d/<marque>-<modele>-...-<id>
+function marqueDepuisUrl(url) {
+  const slug = (url.match(/\/d\/([^/?#]+)/) || [])[1];
+  if (!slug) return '';
+  const s = slug.toLowerCase();
+  for (const m of MARQUES) {
+    const key = m.toLowerCase().replace(/ë/g, 'e').replace(/&/g, '').replace(/[\s-]+/g, '-');
+    if (s === key || s.startsWith(key + '-')) return m === 'VW' ? 'Volkswagen' : m;
+  }
+  return '';
+}
+
+// Lit les blocs <script type="application/ld+json"> (format schema.org) et renvoie les infos du véhicule.
+// Ne renvoie QUE ce qui est réellement écrit dans l'annonce.
+function extraireVehiculeJsonLd(html) {
+  const blocs = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const objets = [];
+  const aplatir = (o) => {
+    if (!o) return;
+    if (Array.isArray(o)) return o.forEach(aplatir);
+    if (typeof o === 'object') {
+      objets.push(o);
+      if (o['@graph']) aplatir(o['@graph']);
+      if (o.itemOffered) aplatir(o.itemOffered);
+    }
+  };
+  for (const b of blocs) {
+    try { aplatir(JSON.parse(b[1].trim())); } catch (e) { /* bloc illisible, ignoré */ }
+  }
+  const estVehicule = (o) => {
+    const t = [].concat(o['@type'] || []).join(' ');
+    return /Car|Vehicle|Motorcycle/i.test(t) || (o.brand && (o.mileageFromOdometer || o.vehicleModelDate || o.model));
+  };
+  const v = objets.find(estVehicule);
+  if (!v) return null;
+
+  const texte = (x) => (x == null ? '' : typeof x === 'object' ? (x.name || x.value || '') : String(x)).toString().trim();
+  const nombre = (x) => {
+    const n = parseInt(String(texte(x)).replace(/[^\d]/g, ''), 10);
+    return isNaN(n) ? null : n;
+  };
+  const offre = [].concat(v.offers || [])[0] || {};
+  const r = {};
+  const marque = texte(v.brand) || texte(v.manufacturer);
+  if (marque) r.marque = marque;
+  const modele = texte(v.model);
+  if (modele) r.modele = modele;
+  const annee = nombre(v.vehicleModelDate) || nombre(String(texte(v.productionDate) || texte(v.dateVehicleFirstRegistered)).slice(0, 4));
+  if (annee && annee > 1950 && annee < 2100) r.annee = annee;
+  const km = nombre(v.mileageFromOdometer);
+  if (km && km > 0 && km < 2000000) r.km = km;
+  const prix = nombre(offre.price || (offre.priceSpecification && offre.priceSpecification.price));
+  if (prix && prix > 500) r.prix = prix;
+  if (texte(v.color)) r.couleur = texte(v.color);
+  if (texte(v.fuelType)) r.carburant = texte(v.fuelType);
+  if (texte(v.vehicleTransmission)) r.boite = texte(v.vehicleTransmission);
+  if (texte(v.driveWheelConfiguration)) r.transmission = texte(v.driveWheelConfiguration);
+  const moteur = [].concat(v.vehicleEngine || [])[0];
+  if (moteur && moteur.enginePower) r.puissance = texte(moteur.enginePower) + (moteur.enginePower.unitText ? ' ' + moteur.enginePower.unitText : '');
+  const co2 = nombre(v.emissionsCO2);
+  if (co2 && co2 < 1000) r.co2 = co2;
+  if (texte(v.vehicleIdentificationNumber)) r.vin = texte(v.vehicleIdentificationNumber);
+  return r;
+}
 
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url, langue = 'fr') {
@@ -76,6 +164,8 @@ async function scrapeAnnonce(url, langue = 'fr') {
     }
     let co2Value = null;
     let optionsList = [];
+    // Données de base lues directement dans l'annonce (source de vérité, jamais inventées)
+    const infos = {};
 
     try {
       // ── MÉTHODE 1: JSON échappé \"optional\":[ dans scripts Next.js (format ZenRows) ──
@@ -186,6 +276,22 @@ async function scrapeAnnonce(url, langue = 'fr') {
 
       console.log("OPTIONS EXTRAITES:", optionsList.length);
 
+      // ── DONNÉES STRUCTURÉES schema.org (JSON-LD) : marque, modèle, année, km, prix, couleur… ──
+      try {
+        const ld = extraireVehiculeJsonLd(html);
+        if (ld) {
+          Object.assign(infos, ld);
+          console.log('JSON-LD véhicule:', JSON.stringify(ld));
+        } else {
+          console.log('JSON-LD véhicule: aucun bloc trouvé');
+        }
+      } catch (e) { console.log('JSON-LD erreur:', e.message); }
+      // Marque depuis l'URL si toujours inconnue (ex: /d/alfa-romeo-giulia-...)
+      if (!infos.marque) {
+        const m = marqueDepuisUrl(url);
+        if (m) { infos.marque = m; console.log('MARQUE depuis URL:', m); }
+      }
+
       // CO2 — schema.org: "emissionsCO2":"210 g/km" OU JSON échappé \"co2Emission\":210
       const co2Match = html.match(/"emissionsCO2":"(\d+)\s*g\/km"/) ||
                        html.match(/\\"co2Emission\\":(\d+)/) ||
@@ -207,6 +313,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
       if (kmJsonMatch) {
         const kmVal = parseInt(kmJsonMatch[1]);
         if (kmVal > 100 && kmVal < 2000000) {
+          if (!infos.km) infos.km = kmVal;
           equipmentData += "\nKILOMÉTRAGE: " + kmVal.toLocaleString('fr-CH') + " km";
           console.log("KM EXTRAIT (JSON):", kmVal);
         }
@@ -227,6 +334,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
                              html.match(/"firstRegistration":"?(\d{4})/) ||
                              html.match(/\\"year\\":(\d{4})/) || html.match(/"year":(\d{4})/);
       if (anneeJsonMatch) {
+        if (!infos.annee) infos.annee = parseInt(anneeJsonMatch[1]);
         equipmentData += "\nANNÉE: " + anneeJsonMatch[1];
         console.log("ANNÉE EXTRAITE:", anneeJsonMatch[1]);
       }
@@ -236,6 +344,7 @@ async function scrapeAnnonce(url, langue = 'fr') {
       if (prixJsonMatch) {
         const prixVal = parseInt(prixJsonMatch[1]);
         if (prixVal > 1000) {
+          if (!infos.prix) infos.prix = prixVal;
           equipmentData += "\nPRIX DEMANDÉ: " + prixVal.toLocaleString('fr-CH') + " CHF";
           console.log("PRIX EXTRAIT (JSON):", prixVal);
         }
@@ -354,10 +463,12 @@ async function scrapeAnnonce(url, langue = 'fr') {
     console.log("ZENROWS OK:", finalContent.substring(0, 500));
 
     // FIX: retourner equipmentData, co2Value et optionsList avec le html
-    return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value, options: optionsList };
+    if (co2Value && !infos.co2) infos.co2 = co2Value;
+    console.log('INFOS ANNONCE:', JSON.stringify(infos));
+    return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value, options: optionsList, infos };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
-    return { html: `URL: ${url}`, url: url, equipmentData: '', co2: null, options: [] };
+    return { html: `URL: ${url}`, url: url, equipmentData: '', co2: null, options: [], infos: {}, erreurScraping: true };
   }
 }
 
@@ -532,10 +643,12 @@ function traduireOption(opt) {
 }
 
 // ─── RECHERCHE TAVILY ────────────────────────────────────
-async function rechercherInfosVehicule(marque, modele, annee, km = '') {
+async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 'fr') {
   try {
-    const generation = annee >= 2021 ? '8Y' : annee >= 2012 ? '8V' : '';
-    const genStr = generation ? ` ${generation}` : '';
+    // (supprimé : codes de génération "8Y/8V" propres à l'Audi A3, qui faussaient les recherches des autres marques)
+    const genStr = '';
+    const languesNoms = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
+    const langueNom = languesNoms[langue] || 'français';
 
     const queries = [
       // Prix marché suisse
@@ -582,12 +695,14 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '') {
           max_tokens: 400,
           messages: [{
             role: 'system',
-            content: `Tu es un expert automobile. À partir du texte ci-dessous sur la ${marque} ${modele} ${annee}, extrais EXACTEMENT 3 à 4 problèmes ou points de vigilance connus et documentés pour ce modèle.
+            content: `Tu es un expert automobile. À partir du texte ci-dessous sur la ${marque} ${modele} ${annee}, extrais les problèmes ou points de vigilance RÉELLEMENT documentés pour ce modèle (moteur, boîte, électronique, châssis…), de 0 à 4 maximum.
 Règles strictes :
-- Chaque problème = 1 phrase complète, claire, entre 40 et 120 caractères
+- Si le modèle est réputé fiable et que le texte ne documente aucun problème concret, retourne [] — n'invente JAMAIS un problème pour remplir la liste
+- Ignore les problèmes qui concernent une autre génération, une autre motorisation ou un autre modèle
+- Chaque problème = 1 phrase complète, claire, entre 40 et 140 caractères, qui précise si c'est mineur ou coûteux quand le texte le permet
 - Basé uniquement sur ce qui est mentionné dans le texte
 - Formulation objective et factuelle (pas "je", pas "nous")
-- En français uniquement
+- Rédigé en ${langueNom} uniquement
 - NE JAMAIS mentionner de codes, numéros ou identifiants alphanumériques (ex: 50ZZ, 22V123, etc.)
 - NE JAMAIS inventer un numéro de rappel — si un rappel est mentionné, décrire le problème sans le code
 - Format de réponse : JSON array de strings, exemple: ["Problème 1.", "Problème 2.", "Problème 3."]
@@ -612,12 +727,9 @@ Règles strictes :
       }
     }
 
-    // Extraire les numéros de campagne de rappel officiels (format NHTSA/OFROU: ex. 22V901000, 23A123456)
-    const recallMatches = [...toutLeContenu.matchAll(/\b([0-9]{2}[A-Z][0-9]{5,})\b/g)];
-    const recallNums = [...new Set(recallMatches.map(m => m[1].trim().toUpperCase()))]
-      .filter(n => /^[0-9]{2}[A-Z][0-9]{5,}$/.test(n))
-      .slice(0, 3);
-    if (recallNums.length > 0) console.log('NUMÉROS RAPPEL EXTRAITS:', recallNums.join(', '));
+    // Numéros de rappel : désactivés tant que la source est américaine (NHTSA) — non pertinents pour la Suisse.
+    // Seront remplacés par la base officielle européenne (KBA / Safety Gate) dans une prochaine étape.
+    const recallNums = [];
 
     return {
       prix: prix,
@@ -741,84 +853,81 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     ? `\n\nDONNÉES STRUCTURÉES EXTRAITES (priorité sur le texte brut) :\n${scrapedData.equipmentData}`
     : `\n\nDONNÉES STRUCTURÉES EXTRAITES : (aucune donnée structurée disponible — extraire les options directement du texte brut de l'annonce)`;
 
-  // Extraire marque/modele/annee pour Tavily — depuis le titre de la page ou le début du texte
-  let tavilyContext = '';
-  try {
-    const html = scrapedData.html || '';
-    // Cherche marque/modele dans les premières 3000 chars du HTML scrappé
-    const snippet = html.substring(0, 3000);
-    const marquePatterns = ['Audi', 'BMW', 'Mercedes', 'Volkswagen', 'VW', 'Porsche', 'Ferrari', 'Lamborghini', 'Toyota', 'Honda', 'Ford', 'Renault', 'Peugeot', 'Citroën', 'Volvo', 'Skoda', 'Seat', 'Kia', 'Hyundai', 'Mazda', 'Subaru', 'Mitsubishi', 'Nissan', 'Opel', 'Fiat', 'Alfa Romeo', 'Lancia', 'Maserati', 'Bentley', 'Rolls-Royce', 'Jaguar', 'Land Rover', 'Range Rover', 'Mini', 'Smart', 'Tesla', 'Lexus', 'Infiniti', 'Acura', 'Genesis', 'Aston Martin', 'McLaren', 'Bugatti', 'Koenigsegg', 'Pagani'];
-    let marque = '';
-    let modele = '';
-    for (const m of marquePatterns) {
-      const idx = snippet.toLowerCase().indexOf(m.toLowerCase());
-      if (idx !== -1) {
-        marque = m;
-        // Prend les mots qui suivent comme modele (jusqu'à 4 mots)
-        const after = snippet.substring(idx + m.length).trim();
-        const modelWords = after.match(/^([A-Za-zÀ-ú0-9]{1,15}(?:\s+[A-Za-zÀ-ú0-9]{1,15}){0,2})/);
-        modele = modelWords?.[1]?.trim() || '';
-        // Supprimer les suffixes moteur qui polluent le slug (ex: "RS3 Sportback 2" → "RS3 Sportback")
-        // Retire tout mot purement numérique ou suffixe technique à la fin
-        modele = modele.replace(/\s+\d+(\.\d+)?$/, '') // chiffre seul en fin (ex: "2", "2.5")
-                       .replace(/\s+(TSI|TDI|TFSI|HDI|CDI|GTI|GTE|GDI|CRDi|TCe|dCi|BlueHDi|THP|VTi|TDCi|EcoBoost|SkyActiv|e-Power)$/i, '')
-                       .trim();
+  // ── Données de base de l'annonce : priorité aux données structurées lues dans l'annonce ──
+  const infos = scrapedData.infos || {};
+  let marque = infos.marque || '';
+  let modele = infos.modele || '';
+  let annee = parseInt(infos.annee) || 0;
+  let km = parseInt(infos.km) || 0;
+  let prixRef = parseInt(infos.prix) || 0;
+  // Repli : prix et km affichés dans le texte de l'annonce (ex : CHF 48'890.– / 77'000 km)
+  if (!prixRef) {
+    const pm = (scrapedData.html || '').match(/CHF[&nbsp;\s]*(\d{1,3}(?:['’.\s]\d{3})+)/);
+    if (pm) prixRef = parseInt(pm[1].replace(/[^\d]/g, '')) || 0;
+  }
+  if (!km) {
+    const kmM = (scrapedData.html || '').match(/(\d{1,3}(?:['’.\s]\d{3})+|\d{3,7})\s*km/i);
+    if (kmM) { const v = parseInt(kmM[1].replace(/[^\d]/g, '')); if (v > 100 && v < 2000000) km = v; }
+  }
+
+  // Repli uniquement si l'annonce n'a pas de données structurées : recherche avec limites de mots
+  // (évite que "Mini" corresponde à "minimum" ou "Seat" à "seats")
+  if (!marque || !modele) {
+    const snippet = (scrapedData.html || '').substring(0, 3000);
+    for (const m of MARQUES) {
+      const re = new RegExp(`(^|[^A-Za-zÀ-ú])${m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=[^A-Za-zÀ-ú]|$)`, 'i');
+      const found = snippet.match(re);
+      if (found) {
+        if (!marque) marque = m === 'VW' ? 'Volkswagen' : m;
+        if (!modele) {
+          const after = snippet.substring(found.index + found[0].length).trim();
+          const modelWords = after.match(/^([A-Za-zÀ-ú0-9-]{1,15}(?:\s+[A-Za-zÀ-ú0-9-]{1,15}){0,1})/);
+          modele = (modelWords?.[1] || '').replace(/\s+\d+(\.\d+)?$/, '').trim();
+        }
         break;
       }
     }
-    const anneeMatch = snippet.match(/\b(20[012]\d|19[89]\d)\b/);
-    const annee = anneeMatch?.[0] || '';
-    // Extraire kilométrage depuis le HTML
-    const kmMatch = html.match(/(\d[\d\s']{2,7})\s*km/i);
-    const km = kmMatch ? parseInt(kmMatch[1].replace(/[\s']/g, '')) : 0;
-    // Extraire le prix demandé depuis le HTML (ex: CHF&nbsp;48'890.–)
-    const prixMatch = html.match(/CHF[&nbsp;\s]*(\d{2,3}['.]\d{3})/);
-    const prixRef = prixMatch ? parseInt(prixMatch[1].replace(/['.]/g, '')) : 0;
-    console.log('Tavily extraction :', marque, modele, annee, km ? km+'km' : '', prixRef ? prixRef+'CHF' : '');
+  }
+  if (!annee) {
+    const anneeMatch = (scrapedData.html || '').substring(0, 3000).match(/\b(20[0-3]\d|19[5-9]\d)\b/);
+    annee = anneeMatch ? parseInt(anneeMatch[0]) : 0;
+  }
+  console.log('VÉHICULE IDENTIFIÉ :', marque, modele, annee || '?', km ? km + ' km' : 'km ?', prixRef ? prixRef + ' CHF' : 'prix ?');
+
+  let tavilyContext = { prix: '', problemesDocumentes: [], numerosRappel: [], prixMarche: null };
+  try {
     if (marque && modele) {
-      // Lancer Tavily ET scraping prix en parallèle
       const [tavilyResult, prixMarche] = await Promise.all([
-        rechercherInfosVehicule(marque, modele, parseInt(annee)||0, km),
-        rechercherPrixMarcheViaTavily(marque, modele, parseInt(annee)||0, km)
+        rechercherInfosVehicule(marque, modele, annee, km, langue),
+        rechercherPrixMarcheViaTavily(marque, modele, annee, km)
       ]);
-      tavilyContext = tavilyResult;
-      tavilyContext.prixMarche = prixMarche; // médiane, min, max, count
-      if (tavilyResult.prix || tavilyResult.problemesDocumentes) console.log('Tavily OK :', marque, modele, annee);
-      else console.log('Tavily vide (non bloquant)');
+      tavilyContext = { ...tavilyResult, prixMarche };
       if (prixMarche) console.log('Prix marché Tavily:', prixMarche);
     } else {
-      console.log('Tavily skip — marque/modele non trouvés');
-      tavilyContext = { prix: '', problemesDocumentes: '', prixMarche: null };
+      console.log('Recherche web ignorée — marque/modèle non identifiés');
     }
   } catch(e) {
-    console.log('Tavily extraction erreur:', e.message);
-    tavilyContext = { prix: '', problemesDocumentes: '', prixMarche: null };
+    console.log('Recherche web erreur (non bloquant):', e.message);
   }
 
-  const tavilyPrix = tavilyContext?.prix || '';
-  const tavilyProblemes = tavilyContext?.problemesDocumentes || [];  // tableau de strings
-  const tavilyRappels = tavilyContext?.numerosRappel || [];  // numéros de campagne rappel
+  const tavilyPrix = tavilyContext.prix || '';
+  const tavilyProblemes = Array.isArray(tavilyContext.problemesDocumentes) ? tavilyContext.problemesDocumentes : [];
+  const tavilyRappels = tavilyContext.numerosRappel || [];
 
-  // Tavily injecte UNIQUEMENT le prix dans le prompt GPT.
-  // Les problèmes connus sont injectés directement dans le PDF APRÈS GPT — GPT ne les voit pas.
+  // Données marché exploitables seulement si la confiance n'est pas basse
+  const prixMarcheCtx = (tavilyContext.prixMarche && tavilyContext.prixMarche.confiance !== 'basse') ? tavilyContext.prixMarche : null;
+
   const tavilyProblemesSynth = tavilyProblemes.length > 0
-    ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS SUR LE WEB (à utiliser pour enrichir ton analyse) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
-    : '';
+    ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS DANS DES SOURCES RÉELLES (base principale pour noter la fiabilité) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
+    : `\nAUCUN PROBLÈME DOCUMENTÉ TROUVÉ DANS LES SOURCES pour ce modèle. Ne pénalise pas la fiabilité sans raison concrète ; si tu connais un défaut réel et largement documenté de CE modèle/génération/moteur, tu peux en tenir compte dans la justification.\n`;
 
-  // Contexte marché réel pour GPT — permet un score_prix naturellement juste
-  const prixMarcheCtx = tavilyContext?.prixMarche;
-  const contexteMarche = prixMarcheCtx?.mediane > 0
-    ? `\nDONNÉE MARCHÉ RÉELLE VÉRIFIÉE : La médiane du marché suisse pour cette ${tavilyContext?.marque || ''} ${tavilyContext?.modele || ''} ${tavilyContext?.annee || ''} est de ${prixMarcheCtx.mediane.toLocaleString()} CHF (fourchette : ${prixMarcheCtx.min.toLocaleString()} – ${prixMarcheCtx.max.toLocaleString()} CHF). Le prix demandé est de ${(scrapedData.prix || 0).toLocaleString()} CHF. Utilise ces chiffres réels pour calculer le score_prix avec précision.`
-    : '';
+  const contexteMarche = prixMarcheCtx
+    ? `\nDONNÉE MARCHÉ SUISSE (sources web) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('fr-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
+    : `\nAUCUNE DONNÉE MARCHÉ FIABLE TROUVÉE. N'invente pas de fourchette : mets fourchette_marche_min et fourchette_marche_max à 0. Pour score_prix, donne ton estimation et indique clairement dans justification_prix qu'elle est faite sans annonces comparables.`;
 
-  const tavilySection = tavilyPrix
-    ? `\n\nDONNÉES WEB RÉELLES SUR CE VÉHICULE (cote argus / prix marché suisse actuel) :
-${tavilyPrix}
-${tavilyProblemesSynth}${contexteMarche}
-RÈGLE STRICTE :
-1. Pour la fourchette de prix marché : utilise ces données web comme base principale. Affine avec ta connaissance du marché suisse pour donner une fourchette précise (écart max 8000-10000 CHF). La fourchette doit refléter le kilométrage ET l'année ET les options réelles du véhicule — pas une fourchette générique du modèle.
-2. Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — les problèmes connus sont gérés par un autre système. NE JAMAIS remplir ce champ.\n`
-    : `\n\nAUCUNE DONNÉE WEB DISPONIBLE — utilise ta connaissance du marché suisse pour estimer la fourchette précise (écart max 8000-10000 CHF selon kilométrage et année réels).${contexteMarche}\nPour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE []. NE JAMAIS remplir ce champ.\n`;
+  const tavilySection = `\n\nDONNÉES WEB SUR CE VÉHICULE :
+${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${tavilyProblemesSynth}${contexteMarche}
+Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — ce champ est rempli par un autre système.\n`;
 
   // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
   const htmlNettoye = (scrapedData.html || '')
@@ -851,70 +960,36 @@ Contenu: ${htmlNettoye}${equipmentSection}${tavilySection}
 - Couleur exacte — cherche ACTIVEMENT dans tout le contenu : champ "COULEUR" des données structurées, puis dans le texte "Extérieure [couleur]", "Couleur extérieure", "Farbe", ou toute mention de couleur dans le titre/description/caractéristiques. Exemples valides : "Noir Métallisé", "Blanc Nacré", "Gris Nardo", "Rouge Misano". NE MET "Non communiquée" QUE si aucune couleur n'est mentionnée nulle part dans la page.
 - Transmission (2 roues motrices / 4 roues motrices)
 - Description complète du vendeur : utilise en priorité le champ "DESCRIPTION_VENDEUR" de la section "DONNÉES STRUCTURÉES" ci-dessus s'il est présent. Sinon, extraire le texte descriptif du véhicule rédigé par le vendeur depuis le contenu HTML (état, historique, options, rappels, numéros de série, raison de vente). Exclure uniquement : menus de navigation du site, avis Google des clients, horaires d'ouverture du garage. Si vraiment aucune description vendeur n'est trouvée ni dans les données structurées ni dans le contenu, mets "Non communiquée".
-- TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète). Si la section "DONNÉES STRUCTURÉES" indique "aucune donnée structurée disponible", extraire les options depuis le texte brut de l'annonce (description, caractéristiques, titre). Supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste". Ne jamais retourner un tableau vide — extraire au minimum les équipements standards du modèle si aucune info disponible.
+- TOUTES les options et équipements listés — utilise la liste de la section "DONNÉES STRUCTURÉES" ci-dessus en priorité (elle est complète). Si la section "DONNÉES STRUCTURÉES" indique "aucune donnée structurée disponible", extraire les options depuis le texte brut de l'annonce (description, caractéristiques, titre). Supprimer les doublons, traduire tout en ${langues[langue] || 'français'}, supprimer les mentions "Détails consultez la liste de prix" et "Details siehe Preisliste". Si l'annonce ne liste aucune option, retourne [] — n'invente jamais d'équipements.
 
 ÉTAPE 2 - Analyse approfondie :
 
-━━━ PRIX & FOURCHETTE MARCHÉ ━━━
-Détermine la fourchette de prix réaliste sur le marché suisse 2026 pour CE véhicule exact (marque, modèle, génération/châssis, carrosserie, motorisation, kilométrage, année). Utilise ta connaissance réelle du marché suisse — tu connais ces valeurs mieux que n'importe quelle liste hardcodée. Méthode :
-1. Identifie la génération exacte à partir de l'année (ex : RS3 2023 = châssis 8Y, pas 8V)
-2. Estime la fourchette min-max réaliste pour cette génération sur le marché suisse (pas européen)
-3. Compare le prix demandé à cette fourchette et sois COHÉRENT : si le prix est dans la fourchette, ne dis pas "prix au-dessus de la moyenne"
+━━━ PRINCIPE GÉNÉRAL — TOUT DOIT ÊTRE RÉEL ET JUSTIFIÉ ━━━
+Chaque note doit être méritée et expliquée par des faits concrets (données de l'annonce, sources web fournies, faits techniques largement documentés sur CE modèle/génération/moteur). N'invente jamais un chiffre, un défaut ou une option. Si une information manque, dis-le au lieu de la deviner.
+Les trois notes sont INDÉPENDANTES : un prix trop élevé fait baisser score_prix, PAS score_fiabilite. Une voiture fiable vendue trop cher reste une voiture fiable.
 
-Score prix — calcule EXPLICITEMENT la position du prix dans la fourchette :
-- Calcule : position = (prix_demandé - fourchette_min) / (fourchette_max - fourchette_min)
-- position < 0 (sous le min) → score 9-10
-- position 0.00–0.33 (tiers inférieur) → score 8
-- position 0.34–0.66 (milieu) → score 7
-- position 0.67–1.00 (tiers supérieur) → score 6
-- position > 1.00 jusqu'à +10% → score 5
-- position > 1.10 jusqu'à +20% → score 3-4
-- position > 1.20 → score 1-2
-
-RÈGLE DE COHÉRENCE ABSOLUE :
-- Si score_prix ≥ 7 → NE PAS mentionner le prix dans les points négatifs
-- Si score_prix ≤ 6 → mentionner le prix dans les points négatifs
-- Si prix_demandé ≤ fourchette_mediane → NE PAS dire "prix au-dessus du marché"
-
-FOURCHETTE PRÉCISE : l'écart max-min doit être ≤ 10 000 CHF pour les véhicules < 100 000 CHF. Ne pas donner une fourchette trop large — être précis sur le marché suisse 2026.
-
-━━━ PROBLÈMES CONNUS DU MODÈLE ━━━
-Utilise ta connaissance réelle et documentée. Tu es un expert automobile — identifie les vrais défauts FRÉQUENTS et COÛTEUX de CE modèle exact, dans SA génération exacte, avec SA motorisation exacte. Règles :
-- Détermine la génération/châssis réel depuis l'année du véhicule (JAMAIS depuis des exemples)
-- Liste les problèmes DOCUMENTÉS sur cette génération précise, pas sur une autre
-- Distingue clairement : problème SYSTÉMATIQUE (défaut de conception) vs LIÉ À L'USAGE INTENSIF
-- Focus sur les problèmes COÛTEUX (>500 CHF) et FRÉQUENTS sur ce modèle
-- Pour les véhicules récents (<3 ans, <30 000 km) : mentionne les problèmes à surveiller À TERME, sans dramatiser
-- NE JAMAIS mettre des généralités vagues ("usure des freins", "capteurs") sauf si vraiment documenté sur ce modèle
-- Format : "[Composant exact] — [description du problème] — réparation ~XXXX-XXXX CHF — [systématique / lié à l'usage intensif]"
+━━━ PRIX ━━━
+Utilise les DONNÉES MARCHÉ ci-dessus si elles existent (le serveur recalculera score_prix à partir de ces chiffres).
+Si aucune donnée marché fiable : fourchette_marche_min = 0, fourchette_marche_max = 0, et score_prix = ton estimation prudente, avec une justification_prix qui précise qu'il n'y a pas d'annonces comparables.
+Barème score_prix (position du prix demandé dans la fourchette) : sous le min → 9-10 ; tiers inférieur → 8 ; milieu → 7 ; tiers supérieur → 6 ; jusqu'à +10 % au-dessus du max → 5 ; +10 à +20 % → 3-4 ; plus de +20 % → 1-2.
+Cohérence : si le prix est sous la médiane, ne dis jamais « prix au-dessus du marché ».
 
 ━━━ FIABILITÉ ━━━
-Évalue la fiabilité réelle de ce modèle dans cette génération. Sois précis et nuancé :
-- 9-10 : très fiable, peu de problèmes documentés (japonaises fiables, Porsche 911 récent, diesel modernes sobres)
-- 7-8 : bonne fiabilité, quelques points faibles mineurs ou liés uniquement à l'abus
-- 5-6 : fiabilité moyenne, problèmes connus mais gérables avec bon entretien
-- 3-4 : problèmes sérieux et coûteux documentés sur ce modèle
+Note la fiabilité de CE modèle, dans SA génération et avec SA motorisation, d'après les PROBLÈMES DOCUMENTÉS ci-dessus et les faits largement reconnus. Barème :
+- 9-10 : très fiable, aucun problème notable documenté
+- 7-8 : bonne fiabilité, quelques défauts mineurs ou peu coûteux (ex : petit souci électronique connu mais moteur et boîte solides → 8)
+- 5-6 : problèmes connus et coûteux, mais gérables avec un bon entretien
+- 3-4 : problèmes sérieux et coûteux fréquents sur ce modèle
 - 1-2 : très problématique, risque financier élevé même bien entretenu
+Le prix n'entre JAMAIS dans cette note. justification_fiabilite doit citer les points concrets (ce qui est solide ET ce qui est fragile).
 
 ━━━ ENTRETIEN & COÛTS ━━━
-FREE SERVICE BMW, Audi, Mercedes, Volvo : valable 10 ans OU 100 000 km depuis la 1re mise en circulation.
-Calcul OBLIGATOIRE : si (année + 10 > 2026) ET (kilométrage < 100 000) → ENCORE sous free service. Sinon HORS free service.
-Exemples : 2015 → 2015+10=2025 < 2026 → HORS. 2017 → 2017+10=2027 > 2026 → ENCORE sous free service. 2023 → 2023+10=2033 > 2026 → ENCORE sous free service.
-ATTENTION : applique scrupuleusement cette règle. Une Audi RS3 de 2023 avec 77 000 km est ENCORE sous free service → cout_entretien_annee1=700, cout_total_3ans=2100.
-
-Sous free service — les seuls coûts réels (liquides, pneus, plaquettes non couverts). Affiche TOUJOURS le signe "~" devant les montants pour indiquer que c'est une estimation :
-- Citadine/compacte : cout_entretien_annee1=250, cout_total_3ans=750, score_entretien=9
-- Berline/break/SUV standard : cout_entretien_annee1=400, cout_total_3ans=1200, score_entretien=8
-- Sportive premium (RS3, RS4, M3, C63, A45, Golf R, etc.) : cout_entretien_annee1=700, cout_total_3ans=2100, score_entretien=7
-- Hypersportive (RS6, M5, GT3, AMG63, Ferrari, Lamborghini, etc.) : cout_entretien_annee1=1200, cout_total_3ans=3600, score_entretien=6
-
-Sans free service — entretien courant uniquement (vidange, filtres, révision, liquides, freins — PAS les réparations imprévues). Affiche TOUJOURS le signe "~" devant les montants pour indiquer que c'est une estimation :
-- Citadine/compacte (<1.6L essence ou diesel) : cout_entretien_annee1=500, cout_total_3ans=1500, score_entretien=8
-- Berline/break standard : cout_entretien_annee1=800, cout_total_3ans=2400, score_entretien=7
-- SUV/4x4 standard : cout_entretien_annee1=1000, cout_total_3ans=3000, score_entretien=6
-- Sportive premium (RS3, RS4, M3, C63, A45, Golf R, etc.) : cout_entretien_annee1=1200, cout_total_3ans=3600, score_entretien=5
-- Hypersportive (RS6, M5, GT3, Ferrari, Lamborghini, Porsche 911 turbo, etc.) : cout_entretien_annee1=2000, cout_total_3ans=6000, score_entretien=4
-- Marques sans free service (Renault, Peugeot, Citroën, Fiat, Seat, Skoda, Kia, Hyundai, Toyota, etc.) : estimer selon le segment ci-dessus
+Estime cout_entretien_annee1 et cout_total_3ans pour CE modèle précis (entretien courant : vidange, filtres, révision, liquides, freins, pneus — PAS les réparations imprévues), en CHF, prix des garages suisses. Le serveur calcule score_entretien à partir de ce coût.
+FREE SERVICE (BMW, Audi, Mercedes, Volvo) : 10 ans OU 100 000 km depuis la 1re mise en circulation. Si (année + 10 > 2026) ET (km < 100 000) → encore sous free service : ne compter que ce qui n'est pas couvert (pneus, plaquettes, liquides). Si l'annonce mentionne une importation parallèle/directe, ne suppose PAS le free service et signale-le.
+Ordres de grandeur de référence (à ADAPTER au modèle réel, pas à recopier) :
+- Hors free service : citadine ~500 CHF/an, berline/break ~800, SUV ~1000, sportive premium ~1200, hypersportive ~2000
+- Sous free service : citadine ~250 CHF/an, berline/SUV ~400, sportive premium ~700, hypersportive ~1200
+justification_entretien doit dire en une phrase sur quoi repose l'estimation (free service ou non, type de moteur, pneus, freins…).
 
 ━━━ QUESTIONS VENDEUR ━━━
 Adapter aux problèmes réels documentés de CE modèle. NE PAS poser des questions de circuit/launch control sur une voiture familiale ou quasi neuve (<3 ans, <30 000 km). Exemples d'adaptation :
@@ -927,9 +1002,10 @@ Adapter aux problèmes réels documentés de CE modèle. NE PAS poser des questi
 Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur documenté : compression, consommation huile, traces d'huile. Pour les sportives : freins, pneus, boîte. Pour les diesel : DPF, EGR, turbo.
 
 ━━━ VERDICT ━━━
-- ACHETER : score_global ≥ 7 ET pas de red flags graves ET prix dans la fourchette
-- NÉGOCIER : score_global 5-6 OU prix légèrement au-dessus OU points à vérifier
-- ÉVITER : score_global ≤ 4 OU red flags critiques OU prix >15% au-dessus du max
+- ACHETER : bon prix (sous ou à la médiane) ET fiabilité ≥ 6 ET aucun red flag
+- NÉGOCIER : prix au-dessus de la médiane, OU points importants à vérifier, OU fiabilité moyenne
+- ÉVITER : red flag grave (ex : culasse, accident lourd) avec fiabilité faible, OU fiabilité ≤ 3, OU prix > 15 % au-dessus du max
+(Le serveur vérifiera la cohérence de ce verdict avec les notes.)
 
 ━━━ RÈGLES TRANSVERSALES ━━━
 - CULASSE : si "Zylinderkopf", "culasse" mentionné dans l'annonce → red_flag obligatoire, baisser score_fiabilite de 2 points minimum
@@ -942,11 +1018,13 @@ Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur 
 - score_global = mettre 0 (calculé automatiquement par le système)
 - taxe_cantonale_ge = mettre 0 (calculé automatiquement par le système)
 - score_prix, score_fiabilite, score_entretien : OBLIGATOIRE entre 1 et 10, JAMAIS 0
-- options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer. Si DONNÉES STRUCTURÉES est vide, extraire depuis le texte brut. Ne JAMAIS retourner [].
+- justification_prix, justification_fiabilite, justification_entretien : OBLIGATOIRES, 1 phrase concrète chacune (max 160 caractères), en ${langues[langue] || 'français'}
+- options : inclure TOUTES les options de la liste DONNÉES STRUCTURÉES sans en supprimer, sans tronquer. Si DONNÉES STRUCTURÉES est vide, extraire depuis le texte brut. Si l'annonce n'en mentionne aucune, retourner [].
+- Champs de base (carburant, boîte, couleur, transmission…) : si l'information n'est pas dans l'annonce, mettre "Non communiquée" (traduit). Ne jamais deviner.
 
 QUANTITÉS STRICTES — NE PAS DÉPASSER :
-- points_positifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'}
-- points_negatifs : exactement 3 éléments — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives, JAMAIS "couleur non communiquée" ou tout point lié à un manque d'information dans l'annonce). Chaque point doit être PRÉCIS et CHIFFRÉ si possible, et concerner CE véhicule ou CE modèle. Si le véhicule est encore sous free service (BMW/Audi/Mercedes/Volvo dont année+10 > 2026 ET km < 100000), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
+- points_positifs : de 1 à 3 éléments réels — OBLIGATOIREMENT en ${langues[langue] || 'français'}
+- points_negatifs : de 0 à 3 éléments RÉELS (n'en invente jamais pour atteindre 3) — OBLIGATOIREMENT en ${langues[langue] || 'français'} (JAMAIS kilométrage, JAMAIS consommation pour sportives, JAMAIS "couleur non communiquée" ou tout point lié à un manque d'information dans l'annonce). Chaque point doit être PRÉCIS et CHIFFRÉ si possible, et concerner CE véhicule ou CE modèle. Si le véhicule est encore sous free service (BMW/Audi/Mercedes/Volvo dont année+10 > 2026 ET km < 100000), NE PAS mentionner les coûts d'entretien comme point négatif — mentionne plutôt d'autres points concrets liés au modèle ou à l'annonce.
 - checklist_visite : exactement 4 éléments
 - questions_vendeur : exactement 3 questions
 - problemes_connus_modele : retourne TOUJOURS un tableau VIDE []. Ce champ est géré par un autre système — tu ne dois JAMAIS le remplir.
@@ -978,6 +1056,9 @@ RÈGLES JSON :
   "score_prix": 0,
   "score_fiabilite": 0,
   "score_entretien": 0,
+  "justification_prix": "",
+  "justification_fiabilite": "",
+  "justification_entretien": "",
   "score_global": 0,
   "verdict": "NÉGOCIER",
   "economie_potentielle_min": 0,
@@ -1000,219 +1081,167 @@ RÈGLES JSON :
 }
 IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce véhicule présente un bon rapport qualité/prix mais nécessite une vérification de la chaîne de distribution.") — NE PAS répéter le mot ACHETER/NÉGOCIER/ÉVITER dans ce champ.`;
 
-  const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: 'Tu es un expert en analyse de véhicules d\'occasion sur le marché suisse. Tu analyses des annonces automobiles et génères des rapports JSON structurés. Tu réponds TOUJOURS avec un JSON valide, sans aucun texte autour.' },
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.1,
-    max_tokens: 8000
-  }, {
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  let content = response.data.choices[0].message.content;
-  const finishReason = response.data.choices[0].finish_reason;
-  let clean = content.replace(/```json|```/g, '').trim();
-  console.log('GPT RESPONSE (finish_reason:', finishReason + '):', clean.substring(0, 500));
-
-  // D\u00e9tection refus GPT \u2014 retry avec le m\u00eame prompt
-  const isRefus = clean.startsWith('Je suis d\u00e9sol\u00e9') || clean.startsWith("I'm sorry") || clean.startsWith('I cannot') || clean.startsWith('Je ne peux pas');
-  if (isRefus) {
-    console.log('GPT REFUS d\u00e9tect\u00e9 \u2014 retry');
-    const retryResp = await axios.post('https://api.openai.com/v1/chat/completions', {
+  // ── APPEL GPT-4o en mode JSON (élimine presque tous les JSON invalides) ──
+  const systemMsg = 'Tu es un expert en analyse de véhicules d\'occasion sur le marché suisse. Tu analyses des annonces automobiles et génères des rapports JSON structurés. Tu réponds TOUJOURS avec un objet JSON valide, sans aucun texte autour. Tu n\'inventes jamais de données.';
+  const appelerGPT = async (temperature) => {
+    const r = await axios.post('https://api.openai.com/v1/chat/completions', {
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: 'Tu es un expert en analyse de véhicules d\'occasion sur le marché suisse. Tu analyses des annonces automobiles et génères des rapports JSON structurés. Tu réponds TOUJOURS avec un JSON valide, sans aucun texte autour.' },
+        { role: 'system', content: systemMsg },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.3, max_tokens: 8000
-    }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 120000 });
-    content = retryResp.data.choices[0].message.content;
-    clean = content.replace(/```json|```/g, '').trim();
-    console.log('GPT RETRY RESPONSE:', clean.substring(0, 200));
-  }
+      temperature,
+      max_tokens: 8000,
+      response_format: { type: 'json_object' }
+    }, {
+      headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+      timeout: 120000
+    });
+    return { content: r.data.choices[0].message.content || '', finish: r.data.choices[0].finish_reason };
+  };
+  const essayerParse = (txt) => {
+    let clean = (txt || '').replace(/```json|```/g, '').trim();
+    try { return JSON.parse(clean); } catch (e) {}
+    clean = clean.replace(/,(\s*[}\]])/g, '$1');
+    try { return JSON.parse(clean); } catch (e) {}
+    const m = clean.match(/\{[\s\S]*\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch (e) {} }
+    return null;
+  };
+  const scoreValide = (x) => Number.isFinite(Number(x)) && Number(x) >= 1 && Number(x) <= 10;
 
-  let parsed;
-  try {
-    parsed = JSON.parse(clean);
-  } catch(e) {
-    clean = clean.replace(/,(\s*[}\]])/g, '$1').replace(/[\u2018\u2019]/g, '');
-    try {
-      parsed = JSON.parse(clean);
-    } catch(e2) {
-      const match = clean.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { parsed = JSON.parse(match[0]); } catch(e3) {
-          console.log('ERREUR: JSON invalide — utilisation données scraping comme fallback');
-          parsed = {
-            marque: scrapedData.marque || '', modele: scrapedData.modele || '', annee: scrapedData.annee || '',
-            kilometrage: scrapedData.km || 0, prix: scrapedData.prix || 0,
-            carburant: scrapedData.carburant || '', boite: scrapedData.boite || '',
-            puissance: scrapedData.puissance || '', co2: scrapedData.co2 || null,
-            couleur: scrapedData.couleur || 'Non communiquée', transmission: scrapedData.transmission || '',
-            options: scrapedData.options || [],
-            score_prix: 5, score_fiabilite: 5, score_entretien: 5, score_global: 5,
-            verdict: 'NÉGOCIER', resume_verdict: 'Analyse partielle — veuillez relancer.',
-            points_positifs: [], points_negatifs: [], red_flags: [],
-            problemes_connus_modele: [], checklist_visite: [], questions_vendeur: [],
-            conseil_achat: '', fourchette_marche_min: 0, fourchette_marche_max: 0,
-            prix_negocie_suggere: 0, economie_potentielle_min: 0, economie_potentielle_max: 0,
-            cout_entretien_annee1: 0, cout_total_3ans: 0, taxe_cantonale_ge: 600, numeros_rappel: []
-          };
-        }
-      } else {
-        console.log('ERREUR: JSON invalide — utilisation données scraping comme fallback');
-        parsed = {
-          marque: scrapedData.marque || '', modele: scrapedData.modele || '', annee: scrapedData.annee || '',
-          kilometrage: scrapedData.km || 0, prix: scrapedData.prix || 0,
-          carburant: scrapedData.carburant || '', boite: scrapedData.boite || '',
-          puissance: scrapedData.puissance || '', co2: scrapedData.co2 || null,
-          couleur: scrapedData.couleur || 'Non communiquée', transmission: scrapedData.transmission || '',
-          options: scrapedData.options || [],
-          score_prix: 5, score_fiabilite: 5, score_entretien: 5, score_global: 5,
-          verdict: 'NÉGOCIER', resume_verdict: 'Analyse partielle — veuillez relancer.',
-          points_positifs: [], points_negatifs: [], red_flags: [],
-          problemes_connus_modele: [], checklist_visite: [], questions_vendeur: [],
-          conseil_achat: '', fourchette_marche_min: 0, fourchette_marche_max: 0,
-          prix_negocie_suggere: 0, economie_potentielle_min: 0, economie_potentielle_max: 0,
-          cout_entretien_annee1: 0, cout_total_3ans: 0, taxe_cantonale_ge: 600, numeros_rappel: []
-        };
-      }
-    }
+  let parsed = null;
+  for (let tentative = 1; tentative <= 2 && !parsed; tentative++) {
+    const { content, finish } = await appelerGPT(tentative === 1 ? 0 : 0.2);
+    console.log(`GPT RESPONSE tentative ${tentative} (finish_reason: ${finish}):`, content.substring(0, 300));
+    const p = essayerParse(content);
+    if (p && scoreValide(p.score_prix) && scoreValide(p.score_fiabilite)) parsed = p;
+    else console.log(`Réponse GPT inutilisable (tentative ${tentative})`);
   }
+  // Règle : jamais de rapport avec des valeurs inventées. Si l'analyse échoue, on s'arrête
+  // (le webhook envoie alors une alerte pour relancer ou rembourser le client).
+  if (!parsed) throw new Error('Analyse IA invalide après 2 tentatives — aucun rapport envoyé');
 
-  // FIX: si GPT n'a pas trouvé le CO2 mais qu'on l'a extrait côté scraping, on l'utilise
-  if ((!parsed.co2 || parsed.co2 === 0) && scrapedData.co2) {
-    parsed.co2 = scrapedData.co2;
-    console.log('CO2 injecté depuis scraping:', parsed.co2);
-  }
-
+  const textesNC = { fr: 'Non communiquée', de: 'Nicht angegeben', it: 'Non indicato', en: 'Not specified' };
+  const NC = textesNC[langue] || textesNC.fr;
   const arrondir = (val, multiple = 500) => Math.round(val / multiple) * multiple;
 
-  // FIX: Force scores entiers — si GPT retourne 0 c'est anormal, on met un minimum de 1
-  parsed.score_prix = Math.max(1, Math.round(parsed.score_prix || 5));
-  parsed.score_fiabilite = Math.max(1, Math.round(parsed.score_fiabilite || 5));
-  parsed.score_entretien = Math.max(1, Math.round(parsed.score_entretien || 5));
+  // ── Les données lues dans l'annonce priment sur ce que GPT a compris ──
+  if (infos.marque) parsed.marque = infos.marque;
+  if (!parsed.modele && modele) parsed.modele = modele;
+  if (infos.annee) parsed.annee = String(infos.annee);
+  if (km) parsed.kilometrage = km.toLocaleString('fr-CH');
+  if (prixRef) parsed.prix = prixRef.toLocaleString('fr-CH');
+  const co2Final = scrapedData.co2 || infos.co2 || parsed.co2 || null;
+  parsed.co2 = co2Final;
+  ['carburant', 'boite', 'transmission', 'couleur', 'puissance'].forEach(k => {
+    if (!parsed[k] || String(parsed[k]).trim() === '') parsed[k] = NC;
+  });
+  if (!parsed.description_vendeur) parsed.description_vendeur = NC;
 
-  // FIX: recalcul score_global côté Node.js = moyenne arrondie des 3 scores
-  parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
+  // ── NOTES ──
+  parsed.score_prix = Math.round(Number(parsed.score_prix));
+  parsed.score_fiabilite = Math.round(Number(parsed.score_fiabilite));
 
-  // Si culasse remplacée → score_fiabilite max 5, recalculer global
-  const culasseDetectee = (parsed.red_flags || []).some(r => r.toLowerCase().includes('culasse')) ||
-    (parsed.points_negatifs || []).some(p => p.toLowerCase().includes('culasse'));
-  if (culasseDetectee && parsed.score_fiabilite > 5) parsed.score_fiabilite = 5;
-  if (culasseDetectee) {
-    parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
-  }
-
-  // ─── CORRECTIONS PRIX AUTOMATIQUES ───────────────────
-  const prixDemande = parseInt(parsed.prix) || 0;
-  const prixMarche = tavilyContext?.prixMarche || null; // résultat du scraping AutoScout24
-
-  // Fourchette marché : priorité au scraping réel, fallback GPT, fallback formule
-  if (prixMarche && prixMarche.count >= 3) {
-    // Données réelles AutoScout24 CH — on écrase GPT
-    // Plafonner le max à médiane + 12% pour éviter les fourchettes trop larges
-    const maxPlafonné = Math.min(prixMarche.max, Math.round(prixMarche.mediane * 1.12 / 500) * 500);
-    parsed.fourchette_marche_min = arrondir(prixMarche.min);
-    parsed.fourchette_marche_max = arrondir(maxPlafonné);
-    console.log(`Fourchette marché TAVILY: ${parsed.fourchette_marche_min}–${parsed.fourchette_marche_max} CHF (médiane: ${prixMarche.mediane}, confiance: ${prixMarche.confiance || '?'})`);
-  } else if (!parsed.fourchette_marche_min || parsed.fourchette_marche_min === 0) {
-    parsed.fourchette_marche_min = arrondir(prixDemande * 0.88);
-    parsed.fourchette_marche_max = arrondir(prixDemande * 1.05);
-    console.log('Fourchette marché FALLBACK (formule)');
+  // Entretien : note calculée à partir du coût annuel estimé pour CE modèle (même barème pour toutes les voitures)
+  const scoreEntretienDepuisCout = (c) =>
+    c <= 350 ? 9 : c <= 600 ? 8 : c <= 900 ? 7 : c <= 1100 ? 6 : c <= 1600 ? 5 : c <= 2200 ? 4 : c <= 3000 ? 3 : 2;
+  const cout1 = parseInt(parsed.cout_entretien_annee1) || 0;
+  if (cout1 > 0) {
+    parsed.score_entretien = scoreEntretienDepuisCout(cout1);
+    if (!(parseInt(parsed.cout_total_3ans) > 0)) parsed.cout_total_3ans = cout1 * 3;
+  } else if (scoreValide(parsed.score_entretien)) {
+    parsed.score_entretien = Math.round(Number(parsed.score_entretien));
   } else {
-    parsed.fourchette_marche_min = arrondir(parsed.fourchette_marche_min);
-    parsed.fourchette_marche_max = arrondir(parsed.fourchette_marche_max);
-    console.log('Fourchette marché GPT utilisée');
+    throw new Error('Coût d\'entretien absent de l\'analyse — aucun rapport envoyé');
   }
-  const fourchMin = parseInt(parsed.fourchette_marche_min) || 0;
-  const fourchMax = parseInt(parsed.fourchette_marche_max) || 0;
 
-  // 1. Prix négocié — calcul DÉTERMINISTE basé sur médiane marché réelle si disponible
-  {
-    const medianeMarche = prixMarche?.mediane || 0;
-    const sp = parsed.score_prix;
-    let reduction;
-    if (sp <= 3)       reduction = 0.10;
-    else if (sp <= 5)  reduction = 0.07;
-    else if (sp === 6) reduction = 0.05;
-    else if (sp <= 8)  reduction = 0.03;
-    else               reduction = 0.01;
+  // Culasse remplacée → fiabilité plafonnée à 5 (fait signalé dans l'annonce)
+  const culasseDetectee = (parsed.red_flags || []).some(r => /culasse|zylinderkopf|testata|cylinder head/i.test(r)) ||
+    (parsed.points_negatifs || []).some(p => /culasse|zylinderkopf|testata|cylinder head/i.test(p));
+  if (culasseDetectee && parsed.score_fiabilite > 5) parsed.score_fiabilite = 5;
 
-    if (medianeMarche > 0) {
-      const prixBrut = arrondir(medianeMarche * (1 - reduction));
-      // Le prix négocié ne peut jamais dépasser le prix demandé
-      parsed.prix_negocie_suggere = Math.min(prixBrut, arrondir(prixDemande * 0.99));
-      console.log(`PRIX NEGOCIE (médiane réelle): ${medianeMarche} × ${(1-reduction)} = ${prixBrut} → final ${parsed.prix_negocie_suggere}`);
-    } else {
-      // Fallback : basé sur le prix demandé
-      parsed.prix_negocie_suggere = arrondir(prixDemande * (1 - reduction));
-      console.log(`PRIX NEGOCIE (fallback prix demandé): ${prixDemande} × ${(1-reduction)} = ${parsed.prix_negocie_suggere}`);
+  // ── PRIX & MARCHÉ : uniquement avec des données réelles ──
+  const prixDemande = prixRef || parseInt(String(parsed.prix || '').replace(/[^\d]/g, '')) || 0;
+  const pm = prixMarcheCtx;
+  if (pm && prixDemande > 0) {
+    parsed.fourchette_marche_min = arrondir(pm.min);
+    parsed.fourchette_marche_max = arrondir(pm.max);
+    const min = parsed.fourchette_marche_min, max = parsed.fourchette_marche_max;
+    const pos = (prixDemande - min) / Math.max(1, max - min);
+    let sp;
+    if (prixDemande < min) sp = prixDemande < min * 0.95 ? 10 : 9;
+    else if (pos <= 0.33) sp = 8;
+    else if (pos <= 0.66) sp = 7;
+    else if (pos <= 1) sp = 6;
+    else {
+      const d = prixDemande / max;
+      sp = d <= 1.10 ? 5 : d <= 1.15 ? 4 : d <= 1.20 ? 3 : d <= 1.30 ? 2 : 1;
     }
+    console.log(`SCORE PRIX calculé: ${sp} (prix ${prixDemande}, fourchette ${min}–${max}, GPT proposait ${parsed.score_prix})`);
+    parsed.score_prix = sp;
+  } else {
+    // Pas de données marché fiables : on n'affiche pas de fourchette inventée
+    parsed.fourchette_marche_min = 0;
+    parsed.fourchette_marche_max = 0;
+    console.log('Fourchette marché : données insuffisantes (pas de fourchette affichée)');
   }
+  const fourchMax = parseInt(parsed.fourchette_marche_max) || 0;
+  // Médiane utilisable seulement si on connaît aussi le prix demandé
+  const mediane = (pm && prixDemande > 0) ? pm.mediane : 0;
 
-  // 2. Économie recalculée par rapport au prix demandé réel
-  if (prixDemande > 0 && parsed.prix_negocie_suggere > 0) {
+  // Prix négocié : seulement s'il existe une médiane réelle
+  parsed.prix_negocie_suggere = 0;
+  parsed.economie_potentielle_min = 0;
+  parsed.economie_potentielle_max = 0;
+  if (mediane > 0 && prixDemande > 0) {
+    const sp = parsed.score_prix;
+    const reduction = sp <= 3 ? 0.10 : sp <= 5 ? 0.07 : sp === 6 ? 0.05 : sp <= 8 ? 0.03 : 0.01;
+    parsed.prix_negocie_suggere = Math.min(arrondir(mediane * (1 - reduction)), arrondir(prixDemande * 0.99));
     const economie = prixDemande - parsed.prix_negocie_suggere;
     if (economie > 0) {
-      parsed.economie_potentielle_min = Math.round(economie * 0.7);
-      parsed.economie_potentielle_max = Math.round(economie * 1.3);
+      parsed.economie_potentielle_min = arrondir(economie * 0.7, 100);
+      parsed.economie_potentielle_max = arrondir(economie * 1.3, 100);
     }
+    console.log(`PRIX NEGOCIE: médiane ${mediane} × ${(1 - reduction).toFixed(2)} → ${parsed.prix_negocie_suggere}`);
   }
 
-  // 3. Verdict DÉTERMINISTE basé sur comparaison prix demandé vs médiane marché
-  {
-    const mediane = prixMarche?.mediane || 0;
-    const ratio = mediane > 0 ? prixDemande / mediane : 1;
-
-    if (fourchMax > 0 && prixDemande > fourchMax * 1.15) {
-      // Prix très au-dessus du marché → ÉVITER
-      parsed.verdict = 'ÉVITER';
-      parsed.score_prix = Math.min(parsed.score_prix, 3);
-      parsed.resume_verdict = 'Prix demandé nettement au-dessus de la valeur marché.';
-      console.log('VERDICT ÉVITER — prix trop élevé vs fourchette');
-    } else if (mediane > 0 && ratio <= 1.00) {
-      // Prix demandé en dessous ou égal à la médiane → BON PRIX → ACHETER
-      parsed.verdict = 'ACHETER';
-      parsed.resume_verdict = `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString()} CHF) — bonne affaire pour ce millésime.`;
-      // Petite économie symbolique même sur une bonne affaire (~0.5-1% du prix)
-      parsed.economie_potentielle_min = Math.round(prixDemande * 0.005 / 500) * 500 || 200;
-      parsed.economie_potentielle_max = Math.round(prixDemande * 0.01 / 500) * 500 || 500;
-      console.log(`VERDICT ACHETER — prix ${prixDemande} en dessous de la médiane ${mediane}`);
-    } else if (mediane > 0 && ratio <= 1.05) {
-      // Prix dans la médiane ±5% → NÉGOCIER légèrement
-      parsed.verdict = 'NÉGOCIER';
-      if (!parsed.resume_verdict) parsed.resume_verdict = 'Prix dans la moyenne du marché — une légère négociation est possible.';
-      console.log(`VERDICT NÉGOCIER — prix ${prixDemande} proche médiane ${mediane}`);
-    } else if (mediane > 0 && ratio > 1.05) {
-      // Prix au-dessus de la médiane → NÉGOCIER fermement
-      parsed.verdict = 'NÉGOCIER';
-      if (!parsed.resume_verdict) parsed.resume_verdict = 'Prix légèrement au-dessus de la médiane du marché — négociation recommandée.';
-      console.log(`VERDICT NÉGOCIER — prix ${prixDemande} au-dessus médiane ${mediane}`);
-    }
-    // Si pas de médiane dispo, on garde le verdict GPT tel quel
-    parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
+  // ── VERDICT : prix ET fiabilité ET red flags ──
+  const redFlags = (parsed.red_flags || []).filter(r => r && String(r).trim());
+  const fiab = parsed.score_fiabilite;
+  const normVerdict = (v) => {
+    const x = String(v || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return x === 'ACHETER' ? 'ACHETER' : x === 'EVITER' ? 'ÉVITER' : 'NÉGOCIER';
+  };
+  const verdictGPT = normVerdict(parsed.verdict);
+  let verdict, raison;
+  if (fourchMax > 0 && prixDemande > fourchMax * 1.15) { verdict = 'ÉVITER'; raison = 'prix_trop_eleve'; }
+  else if (fiab <= 3 || (redFlags.length > 0 && fiab <= 4)) { verdict = 'ÉVITER'; raison = 'fiabilite'; }
+  else if (mediane > 0) {
+    if (prixDemande <= mediane && fiab >= 6 && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'bon_prix'; }
+    else if (prixDemande > mediane) { verdict = 'NÉGOCIER'; raison = 'prix_au_dessus'; }
+    else { verdict = 'NÉGOCIER'; raison = 'a_verifier'; }
+  } else {
+    verdict = verdictGPT;
+    if (verdict === 'ACHETER' && (fiab < 6 || redFlags.length > 0)) verdict = 'NÉGOCIER';
+    raison = verdict === verdictGPT ? null : 'a_verifier';
   }
-
-  // FIX: calcul taxe avec le CO2 réel (scraping prioritaire sur GPT)
-  // Fallback par modèle si CO2 absent du scraping ET de GPT
-  let co2Final = scrapedData.co2 || parsed.co2;
-  if (!co2Final && parsed.marque && parsed.modele) {
-    const modeleStr = (parsed.marque + ' ' + parsed.modele).toLowerCase();
-    if (modeleStr.includes('a 35 amg') || modeleStr.includes('a35 amg')) co2Final = 210;
-    else if (modeleStr.includes('a 45 amg') || modeleStr.includes('a45 amg')) co2Final = 220;
-    else if (modeleStr.includes('c 63 amg') || modeleStr.includes('c63')) co2Final = 250;
-    else if (modeleStr.includes('amg')) co2Final = 200;
-    console.log(`CO2 fallback modèle utilisé: ${co2Final} g/km`);
+  const resumes = {
+    fr: { prix_trop_eleve: 'Prix nettement au-dessus de la valeur du marché suisse.', fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('fr-CH')} CHF) et fiabilité solide.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('fr-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
+    de: { prix_trop_eleve: 'Preis deutlich über dem Schweizer Marktwert.', fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und solide Zuverlässigkeit.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
+    it: { prix_trop_eleve: 'Prezzo nettamente superiore al valore del mercato svizzero.', fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e affidabilità solida.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
+    en: { prix_trop_eleve: 'Price well above Swiss market value.', fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with solid reliability.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
+  };
+  if (raison && (verdict !== verdictGPT || !parsed.resume_verdict)) {
+    parsed.resume_verdict = (resumes[langue] || resumes.fr)[raison];
   }
+  console.log(`VERDICT: ${verdict} (GPT: ${verdictGPT}, raison: ${raison || 'IA'}, fiabilité ${fiab}, red flags ${redFlags.length}, prix ${prixDemande}, médiane ${mediane || '—'})`);
+  parsed.verdict = verdict;
+
+  parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
+
+  // Taxe (interne, non affichée dans le PDF) — uniquement avec le CO2 réel de l'annonce
   parsed.taxe_cantonale_ge = estimerTaxe(co2Final, parsed.carburant);
-  console.log(`TAXE calculée: CO2=${co2Final} → ${parsed.taxe_cantonale_ge} CHF`);
 
   // Configurer la langue pour la traduction des options
   setLangue(langue || 'fr');
@@ -1267,37 +1296,21 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
         !motsPrix.some(mot => p.toLowerCase().includes(mot))
       );
     }
-    // RÈGLE COHÉRENCE PRIX : si verdict ACHETER, ajouter point positif prix si pas déjà présent
-    if (parsed.verdict === 'ACHETER') {
-      const dejaPositifPrix = (parsed.points_positifs || []).some(p =>
-        p.toLowerCase().includes('prix') || p.toLowerCase().includes('marché') || p.toLowerCase().includes('affaire')
-      );
+    // Si verdict ACHETER grâce au prix, ajouter ce point positif réel (dans la langue du rapport)
+    if (parsed.verdict === 'ACHETER' && mediane > 0) {
+      const motsPrixPos = /prix|marché|affaire|preis|markt|prezzo|mercato|price|market/i;
+      const dejaPositifPrix = (parsed.points_positifs || []).some(p => motsPrixPos.test(p));
       if (!dejaPositifPrix) {
-        const mediane = prixMarche?.mediane || 0;
-        const pointPrix = mediane > 0
-          ? `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString()} CHF)`
-          : `Prix bien positionné par rapport au marché`;
-        parsed.points_positifs = [pointPrix, ...(parsed.points_positifs || [])].slice(0, 3);
+        const pointsPrix = {
+          fr: `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString('fr-CH')} CHF)`,
+          de: `Verlangter Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF)`,
+          it: `Prezzo richiesto inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF)`,
+          en: `Asking price below the market median (${mediane.toLocaleString('en-US')} CHF)`
+        };
+        parsed.points_positifs = [pointsPrix[langue] || pointsPrix.fr, ...(parsed.points_positifs || [])].slice(0, 3);
       }
     }
-    // Fallback si points supprimés — adapter selon le score prix
-    const scorePrix = parsed.score_prix || 0;
-    const pointsNegatifsFallback = (scorePrix >= 7 || parsed.verdict === 'ACHETER')
-      ? [
-          `Contrôle technique approfondi recommandé avant achat`,
-          `Vérifier l'historique d'entretien complet auprès du vendeur`,
-          `Surveiller l'état de la boîte et des éléments mécaniques spécifiques au modèle`
-        ]
-      : [
-          `Prix légèrement au-dessus de la fourchette du marché suisse`,
-          `Contrôle technique approfondi recommandé avant achat`,
-          `Vérifier l'historique d'entretien complet auprès du vendeur`
-        ];
-    while (parsed.points_negatifs.length < 3) {
-      const fallback = pointsNegatifsFallback[parsed.points_negatifs.length];
-      if (fallback) parsed.points_negatifs.push(fallback);
-      else break;
-    }
+    // (supprimé : ajout automatique de points négatifs génériques pour arriver à 3 — on n'affiche que des points réels)
   }
   // Nettoyer verdict_texte et conseil_achat
   // Traduction des données brutes selon la langue
@@ -1451,18 +1464,18 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     console.log('CONSEIL_ACHAT : mention prix élevé supprimée (score_prix=' + parsed.score_prix + ')');
     // Si verdict ACHETER, ajouter mention prix bien positionné si pas déjà présente
     if (parsed.verdict === 'ACHETER' && parsed.conseil_achat) {
-      const medianeCA = prixMarche?.mediane || 0;
+      const medianeCA = mediane;
       const dejaPositif = parsed.conseil_achat.toLowerCase().includes('inférieur') ||
         parsed.conseil_achat.toLowerCase().includes('bonne affaire') ||
         parsed.conseil_achat.toLowerCase().includes('bien positionné');
-      if (!dejaPositif && medianeCA > 0) {
+      if (!dejaPositif && medianeCA > 0 && langue === 'fr') {
         parsed.conseil_achat = `Prix demandé de ${prixDemande.toLocaleString()} CHF inférieur à la médiane du marché (${medianeCA.toLocaleString()} CHF) — bonne affaire. ` + parsed.conseil_achat;
       }
     }
   }
 
   // Supprimer problèmes vagues sur véhicules quasi neufs (<3 ans, <30000 km)
-  const kmVehicule = parseInt(parsed.kilometrage) || 0;
+  const kmVehicule = km || parseInt(String(parsed.kilometrage || '').replace(/[^\d]/g, '')) || 0;
   if (anneeVehicule >= 2023 && kmVehicule < 30000 && parsed.problemes_connus_modele) {
     const problemesVagues = ['capteurs de stationnement', 'usure normale', 'capteurs', 'stationnement'];
     parsed.problemes_connus_modele = parsed.problemes_connus_modele.filter(p =>
@@ -1510,6 +1523,8 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     en: { marque: 'MAKE & MODEL', score_global: 'OVERALL SCORE', rapport: 'Report', prix: 'PRICE', fiabilite: 'RELIABILITY', entretien: 'MAINTENANCE', annee: 'YEAR', km: 'MILEAGE', prix_dem: 'ASKING PRICE', puissance: 'POWER', carburant: 'FUEL', boite: 'GEARBOX', transmission: 'DRIVE', couleur: 'COLOUR', desc: 'SELLER DESCRIPTION', scores: 'SCORE DETAILS', points: 'KEY POINTS', options: 'EQUIPMENT & OPTIONS', couts: 'COSTS & MARKET', entretien1: 'MAINTENANCE YEAR 1', total3: 'TOTAL 3 YEARS', co2: 'CO2 & CANTONAL TAX', marche: 'MARKET RANGE', taxe: "Calculate on your canton's official website", red: 'RED FLAGS', alerte: 'ALERT', problemes: 'KNOWN MODEL ISSUES', checklist: 'VISIT CHECKLIST', questions: 'QUESTIONS FOR THE SELLER', conseil: 'BUYING ADVICE', verdict: 'FINAL VERDICT', disclaimer: 'This report is a decision-support tool. It does not replace a physical inspection by a professional.' }
   };
   const L = labels[langue] || labels.fr;
+  const insuffisant = { fr: 'Données marché insuffisantes', de: 'Unzureichende Marktdaten', it: 'Dati di mercato insufficienti', en: 'Insufficient market data' }[langue] || 'Données marché insuffisantes';
+  const montant = (v) => (Number(v) > 0 ? Number(v).toLocaleString('fr-CH') : '—');
   const verdictColor = {
     'ACHETER': '#28a745', 'NÉGOCIER': '#d4a00a', 'ÉVITER': '#dc3545',
     'VERHANDELN': '#d4a00a', 'KAUFEN': '#28a745', 'MEIDEN': '#dc3545',
@@ -1631,18 +1646,21 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
         <div class="score-item-num" style="color:${colour(analyse.score_prix)};">${analyse.score_prix}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_prix*10}%;background:${colour(analyse.score_prix)};"></div></div>
         <div class="score-item-tag" style="color:${colour(analyse.score_prix)};">${scoreTag(analyse.score_prix)}</div>
+        ${analyse.justification_prix ? `<div style="font-size:9.5px; color:#3a5a7a; line-height:1.4; margin-top:4px; padding:0 4px;">${analyse.justification_prix}</div>` : ''}
       </div>
       <div class="score-item">
         <div class="score-item-label">${L.fiabilite}</div>
         <div class="score-item-num" style="color:${colour(analyse.score_fiabilite)};">${analyse.score_fiabilite}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_fiabilite*10}%;background:${colour(analyse.score_fiabilite)};"></div></div>
         <div class="score-item-tag" style="color:${colour(analyse.score_fiabilite)};">${scoreTag(analyse.score_fiabilite)}</div>
+        ${analyse.justification_fiabilite ? `<div style="font-size:9.5px; color:#3a5a7a; line-height:1.4; margin-top:4px; padding:0 4px;">${analyse.justification_fiabilite}</div>` : ''}
       </div>
       <div class="score-item">
         <div class="score-item-label">${L.entretien}</div>
         <div class="score-item-num" style="color:${colour(analyse.score_entretien)};">${analyse.score_entretien}</div>
         <div class="score-bar-bg"><div class="score-bar-fill" style="width:${analyse.score_entretien*10}%;background:${colour(analyse.score_entretien)};"></div></div>
         <div class="score-item-tag" style="color:${colour(analyse.score_entretien)};">${scoreTag(analyse.score_entretien)}</div>
+        ${analyse.justification_entretien ? `<div style="font-size:9.5px; color:#3a5a7a; line-height:1.4; margin-top:4px; padding:0 4px;">${analyse.justification_entretien}</div>` : ''}
       </div>
     </div>
   </div>
@@ -1703,11 +1721,11 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
     <div class="costs-grid">
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
         <div class="cost-label">${L.entretien1}</div>
-        <div class="cost-value" style="color:#d4a00a;">~${analyse.cout_entretien_annee1?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#d4a00a;">~${montant(analyse.cout_entretien_annee1)} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #d4a00a;">
         <div class="cost-label">${L.total3}</div>
-        <div class="cost-value" style="color:#d4a00a;">~${analyse.cout_total_3ans?.toLocaleString()} CHF</div>
+        <div class="cost-value" style="color:#d4a00a;">~${montant(analyse.cout_total_3ans)} CHF</div>
       </div>
       <div class="cost-card" style="border-top:3px solid #1a3a6e;">
         <div class="cost-label">${L.co2}</div>
@@ -1720,7 +1738,9 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       </div>
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">${L.marche}</div>
-        <div class="cost-value" style="color:#5a7a9a;font-size:12px;">${analyse.fourchette_marche_min?.toLocaleString()} – ${analyse.fourchette_marche_max?.toLocaleString()} CHF</div>
+        ${analyse.fourchette_marche_max > 0
+          ? `<div class="cost-value" style="color:#5a7a9a;font-size:12px;">${montant(analyse.fourchette_marche_min)} – ${montant(analyse.fourchette_marche_max)} CHF</div>`
+          : `<div class="cost-value" style="color:#5a7a9a;font-size:13px;">—</div><div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${insuffisant}</div>`}
       </div>
     </div>
   </div>
@@ -1760,8 +1780,8 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       </div>
       <div style="text-align:right;">
         <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
-        <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere?.toLocaleString()} CHF</div>
-        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${analyse.verdict === 'ACHETER' ? (langue === "de" ? "✓ Preis im Markt" : langue === "it" ? "✓ Prezzo nel mercato" : langue === "en" ? "✓ Price within market" : "✓ Prix dans le marché") : `${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min?.toLocaleString()} – ${analyse.economie_potentielle_max?.toLocaleString()} CHF`}</div>
+        <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere > 0 ? montant(analyse.prix_negocie_suggere) + ' CHF' : '—'}</div>
+        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${!(analyse.prix_negocie_suggere > 0) ? insuffisant : analyse.verdict === 'ACHETER' ? (langue === "de" ? "✓ Preis im Markt" : langue === "it" ? "✓ Prezzo nel mercato" : langue === "en" ? "✓ Price within market" : "✓ Prix dans le marché") : `${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${montant(analyse.economie_potentielle_min)} – ${montant(analyse.economie_potentielle_max)} CHF`}</div>
       </div>
     </div>
 
@@ -1943,7 +1963,7 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'f
 // ─── ROUTES ──────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK ●' }));
 
-app.post('/test-rapport', async (req, res) => {
+app.post('/test-rapport', exigerCleAdmin, async (req, res) => {
   try {
     const { url, email, langue = 'fr' } = req.body;
     if (!url || !email) return res.status(400).json({ error: 'URL et email requis' });
@@ -1964,7 +1984,7 @@ app.post('/test-rapport', async (req, res) => {
   }
 });
 
-app.post('/analyse-gratuite', async (req, res) => {
+app.post('/analyse-gratuite', exigerCleAdmin, async (req, res) => {
   try {
     const { url, langue = 'fr' } = req.body;
     if (!url) return res.status(400).json({ error: 'URL manquante' });
@@ -2010,29 +2030,60 @@ app.post('/create-checkout', async (req, res) => {
   }
 });
 
-app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+// Sessions déjà traitées (évite d'envoyer 2 rapports si Stripe renvoie le même événement)
+const sessionsTraitees = new Set();
+
+async function traiterCommande(session) {
+  const { url, email, langue = 'fr' } = session.metadata || {};
+  try {
+    const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+    const scraped = await scrapeAnnonce(url, langue);
+    const analyse = await analyserAvecGPT(scraped, langue, url);
+    const pdf = await genererPDF(analyse, reportNumber, url, langue);
+    await envoyerEmail(email, pdf, analyse, reportNumber, langue);
+    console.log(`✅ Rapport #${reportNumber} envoyé à ${email}`);
+  } catch (err) {
+    console.error('❌ Erreur génération rapport payé:', err);
+    // Alerte : un client a payé mais n'a pas reçu son rapport
+    try {
+      await resend.emails.send({
+        from: 'EasyCarCheck <contact@easycarcheck.ch>',
+        to: process.env.ADMIN_EMAIL || 'contact@easycarcheck.ch',
+        subject: `⚠️ Rapport payé NON envoyé — ${email}`,
+        html: `<p>Un client a payé mais le rapport a échoué.</p>
+               <p><b>Client :</b> ${email}<br><b>Annonce :</b> ${url}<br><b>Langue :</b> ${langue}<br>
+               <b>Session Stripe :</b> ${session.id}<br><b>Erreur :</b> ${err.message}</p>
+               <p>À faire : relancer le rapport manuellement ou rembourser le client.</p>`
+      });
+    } catch (e) {
+      console.error('Alerte admin impossible:', e.message);
+    }
+  }
+}
+
+app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
+    console.error('Webhook signature invalide:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  // Répondre IMMÉDIATEMENT à Stripe : sinon il considère l'envoi comme raté
+  // (le rapport prend ~60 s) et renvoie l'événement → risque de doublons.
+  res.json({ received: true });
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const { url, email, langue } = session.metadata;
-    try {
-      const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
-      const scraped = await scrapeAnnonce(url, langue);
-      const analyse = await analyserAvecGPT(scraped, langue, url);
-      const pdf = await genererPDF(analyse, reportNumber, url, langue);
-      await envoyerEmail(email, pdf, analyse, reportNumber, langue);
-      console.log(`✅ Rapport #${reportNumber} envoyé à ${email}`);
-    } catch (err) {
-      console.error('Erreur génération rapport:', err);
+    if (sessionsTraitees.has(session.id)) {
+      console.log('Session déjà traitée, ignorée:', session.id);
+      return;
     }
+    sessionsTraitees.add(session.id);
+    traiterCommande(session); // tourne en arrière-plan
   }
-  res.json({ received: true });
 });
 
 const PORT = process.env.PORT || 3000;
