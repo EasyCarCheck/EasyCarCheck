@@ -1115,8 +1115,8 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       parsed.score_prix = Math.min(parsed.score_prix, 3);
       parsed.resume_verdict = 'Prix demandé nettement au-dessus de la valeur marché.';
       console.log('VERDICT ÉVITER — prix trop élevé vs fourchette');
-    } else if (mediane > 0 && ratio <= 0.97) {
-      // Prix demandé en dessous de la médiane → BON PRIX → ACHETER
+    } else if (mediane > 0 && ratio <= 1.00) {
+      // Prix demandé en dessous ou égal à la médiane → BON PRIX → ACHETER
       parsed.verdict = 'ACHETER';
       parsed.resume_verdict = `Prix demandé inférieur à la médiane du marché (${mediane.toLocaleString()} CHF) — bonne affaire pour ce millésime.`;
       // Petite économie symbolique même sur une bonne affaire (~0.5-1% du prix)
