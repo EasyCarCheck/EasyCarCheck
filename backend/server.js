@@ -17,6 +17,40 @@ app.use((req, res, next) => {
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// ─── MÉMOIRE (CACHE) : même modèle → mêmes résultats, plus rapide et moins cher ───
+// Fiabilité mémorisée 30 jours par modèle/moteur/année ; prix du marché 7 jours par modèle/année/tranche de km.
+// Le fichier est conservé tant que le serveur tourne. Pour le garder aussi après un redéploiement,
+// ajouter un volume Railway et la variable CACHE_DIR (ex : /data).
+const fs = require('fs');
+const path = require('path');
+const CACHE_FILE = path.join(process.env.CACHE_DIR || __dirname, 'ecc-cache.json');
+const CACHE_TTL = { fiabilite: 30 * 24 * 3600 * 1000, marche: 7 * 24 * 3600 * 1000 };
+let cache = { fiabilite: {}, marche: {} };
+try {
+  if (fs.existsSync(CACHE_FILE)) {
+    cache = { fiabilite: {}, marche: {}, ...JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8')) };
+    console.log(`CACHE chargé : ${Object.keys(cache.fiabilite).length} modèle(s) fiabilité, ${Object.keys(cache.marche).length} prix marché`);
+  }
+} catch (e) { console.log('CACHE illisible, on repart à zéro:', e.message); }
+let cacheTimer = null;
+function sauverCache() {
+  clearTimeout(cacheTimer);
+  cacheTimer = setTimeout(() => {
+    try { fs.writeFileSync(CACHE_FILE, JSON.stringify(cache)); } catch (e) { console.log('CACHE sauvegarde impossible:', e.message); }
+  }, 500);
+}
+function cacheLire(type, cle) {
+  const e = cache[type][cle];
+  if (!e) return null;
+  if (Date.now() - e.ts > CACHE_TTL[type]) { delete cache[type][cle]; sauverCache(); return null; }
+  return e.data;
+}
+function cacheEcrire(type, cle, data) {
+  cache[type][cle] = { ts: Date.now(), data };
+  sauverCache();
+}
+const cleNorm = (...parts) => parts.map(p => String(p || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]+/g, ' ').trim()).join('|');
+
 // Protection des routes de test : sans la bonne clé, personne ne peut générer de rapport gratuit à vos frais.
 function exigerCleAdmin(req, res, next) {
   if (!process.env.ADMIN_KEY || req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
@@ -818,6 +852,8 @@ Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|p
       prix: '',
       problemesDocumentes: problemesListe,
       pointsSolides,
+      nbSources: sources.length,
+      moteur,
       numerosRappel: []
     };
   } catch (e) {
@@ -1004,13 +1040,24 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   console.log('VÉHICULE IDENTIFIÉ :', marque, modele, annee || '?', km ? km + ' km' : 'km ?', prixRef ? prixRef + ' CHF' : 'prix ?');
 
   let tavilyContext = { prix: '', problemesDocumentes: [], numerosRappel: [], prixMarche: null };
+  // Clés de mémoire : moteur lu dans le titre de l'annonce, tranche de 20'000 km pour le prix
+  const titrePropreCle = (infos.titre || '').replace(/\*[^*]*\*/g, ' ');
+  const moteurCle = (titrePropreCle.match(/\b\d[.,]\d\s*[A-Za-z-]{0,10}\b/) || [''])[0];
+  const cleFiab = cleNorm(marque, modele, moteurCle, annee, langue);
+  const cleMarche = cleNorm(marque, modele, annee, Math.round(km / 20000));
+  let fiabMemo = null;
   try {
     if (marque && modele) {
+      fiabMemo = cacheLire('fiabilite', cleFiab);
+      const marcheMemo = cacheLire('marche', cleMarche);
+      if (fiabMemo) console.log('CACHE fiabilité utilisé :', cleFiab, `(note ${fiabMemo.score || '?'})`);
+      if (marcheMemo) console.log('CACHE prix marché utilisé :', cleMarche);
       const [tavilyResult, prixMarche] = await Promise.all([
-        rechercherInfosVehicule(marque, modele, annee, km, langue, infos.titre || ''),
-        rechercherPrixMarcheViaTavily(marque, modele, annee, km)
+        fiabMemo ? Promise.resolve(fiabMemo.recherche) : rechercherInfosVehicule(marque, modele, annee, km, langue, infos.titre || ''),
+        marcheMemo !== null ? Promise.resolve(marcheMemo) : rechercherPrixMarcheViaTavily(marque, modele, annee, km)
       ]);
       tavilyContext = { ...tavilyResult, prixMarche };
+      if (!marcheMemo && prixMarche) cacheEcrire('marche', cleMarche, prixMarche);
       if (prixMarche) console.log('Prix marché Tavily:', prixMarche);
     } else {
       console.log('Recherche web ignorée — marque/modèle non identifiés');
@@ -1053,6 +1100,9 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     }
   }
 
+  const fiabiliteImposee = fiabMemo && fiabMemo.score
+    ? `\nNOTE DE FIABILITÉ DÉJÀ ÉTABLIE POUR CE MODÈLE (pour que tous les rapports soient cohérents) : score_fiabilite = ${fiabMemo.score}/10. Utilise EXACTEMENT cette note (sauf red flag propre à CETTE annonce, ex : culasse, accident). Justification de référence : "${fiabMemo.justification || ''}"\n`
+    : '';
   const tavilyProblemesSynth = tavilyProblemes.length > 0
     ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS DANS DES SOURCES RÉELLES (base principale pour noter la fiabilité) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
     : `\nAUCUN PROBLÈME DOCUMENTÉ TROUVÉ DANS LES SOURCES pour ce modèle. Ne pénalise pas la fiabilité sans raison concrète ; si tu connais un défaut réel et largement documenté de CE modèle/génération/moteur, tu peux en tenir compte dans la justification.\n`;
@@ -1066,7 +1116,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     : `\nAUCUNE DONNÉE MARCHÉ FIABLE TROUVÉE. N'invente pas de fourchette : mets fourchette_marche_min et fourchette_marche_max à 0. Pour score_prix, donne ton estimation et indique clairement dans justification_prix qu'elle est faite sans annonces comparables.`;
 
   const tavilySection = `\n\nDONNÉES WEB SUR CE VÉHICULE :
-${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteNegociation}${contexteFreeService}
+${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${fiabiliteImposee}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteNegociation}${contexteFreeService}
 Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — ce champ est rempli par un autre système.\n`;
 
   // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
@@ -1291,6 +1341,22 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // ── NOTES ──
   parsed.score_prix = Math.round(Number(parsed.score_prix));
   parsed.score_fiabilite = Math.round(Number(parsed.score_fiabilite));
+  // Même modèle → même note de fiabilité (les red flags propres à l'annonce s'appliquent ensuite)
+  if (marque && modele) {
+    if (fiabMemo && fiabMemo.score) {
+      parsed.score_fiabilite = fiabMemo.score;
+      if (fiabMemo.justification) parsed.justification_fiabilite = fiabMemo.justification;
+    } else if (tavilyProblemes.length + (tavilyContext.pointsSolides || []).length > 0) {
+      cacheEcrire('fiabilite', cleFiab, {
+        score: parsed.score_fiabilite,
+        justification: parsed.justification_fiabilite || '',
+        recherche: { prix: '', problemesDocumentes: tavilyProblemes, pointsSolides: tavilyContext.pointsSolides || [], nbSources: tavilyContext.nbSources || 0, numerosRappel: [] }
+      });
+      console.log('CACHE fiabilité enregistré :', cleFiab, `(note ${parsed.score_fiabilite})`);
+    }
+  }
+  parsed.nb_sources_fiabilite = tavilyContext.nbSources || 0;
+  parsed.marche_confiance = prixMarcheCtx ? (prixMarcheCtx.confiance || 'moyenne') : null;
 
   // Entretien : coûts calculés par le serveur à partir des deux estimations annuelles de l'IA
   // et de la durée de free service restante (même barème pour toutes les voitures).
@@ -1677,6 +1743,14 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
   };
   const L = labels[langue] || labels.fr;
   const insuffisant = { fr: 'Données marché insuffisantes', de: 'Unzureichende Marktdaten', it: 'Dati di mercato insufficienti', en: 'Insufficient market data' }[langue] || 'Données marché insuffisantes';
+  const noteEstimation = { fr: 'Estimation · sources web', de: 'Schätzung · Webquellen', it: 'Stima · fonti web', en: 'Estimate · web sources' }[langue] || 'Estimation · sources web';
+  const nbSrc = analyse.nb_sources_fiabilite || 0;
+  const noteSources = nbSrc > 0 ? ({
+    fr: `Basé sur ${nbSrc} sources analysées pour ce modèle et ce moteur.`,
+    de: `Basierend auf ${nbSrc} ausgewerteten Quellen zu diesem Modell und Motor.`,
+    it: `Basato su ${nbSrc} fonti analizzate per questo modello e motore.`,
+    en: `Based on ${nbSrc} sources analysed for this model and engine.`
+  }[langue] || `Basé sur ${nbSrc} sources analysées pour ce modèle et ce moteur.`) : '';
   const montant = (v) => (Number(v) > 0 ? Number(v).toLocaleString('de-CH') : '—');
   const verdictColor = {
     'ACHETER': '#28a745', 'NÉGOCIER': '#d4a00a', 'ÉVITER': '#dc3545',
@@ -1892,7 +1966,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">${L.marche}</div>
         ${analyse.fourchette_marche_max > 0
-          ? `<div class="cost-value" style="color:#5a7a9a;font-size:12px;">${montant(analyse.fourchette_marche_min)} – ${montant(analyse.fourchette_marche_max)} CHF</div>`
+          ? `<div class="cost-value" style="color:#5a7a9a;font-size:12px;">${montant(analyse.fourchette_marche_min)} – ${montant(analyse.fourchette_marche_max)} CHF</div><div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${noteEstimation}</div>`
           : `<div class="cost-value" style="color:#5a7a9a;font-size:13px;">—</div><div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${insuffisant}</div>`}
       </div>
     </div>
@@ -1906,12 +1980,12 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
 
   ${analyse.problemes_connus_modele?.length > 0 ? `
   <div class="section section-white">
-    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.problemes}</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.problemes}</div></div>${noteSources ? `<div style="font-size:9.5px; color:#5a7a9a; margin:-3px 0 6px 12px;">${noteSources}</div>` : ''}
     ${analyse.problemes_connus_modele.map(p => `<div class="checklist-item-white" style="border-left:3px solid #d4a00a;"><span style="color:#d4a00a; font-weight:700; margin-right:6px;">!</span>${p}</div>`).join('')}
     ${analyse.numeros_rappel?.length > 0 ? `<div style="margin-top:8px; padding:8px 12px; background:#fff8e1; border-left:3px solid #d4a00a; border-radius:4px; font-size:11px; color:#7a5800;"><span style="font-weight:700;">⚠ Rappel(s) constructeur officiel(s) :</span> ${analyse.numeros_rappel.join(' · ')} — Vérifier auprès du concessionnaire si effectué.</div>` : ''}
   </div>` : `${analyse.numeros_rappel?.length > 0 ? `
   <div class="section section-white">
-    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.problemes}</div></div>
+    <div class="section-title"><div class="section-bar" style="background:#d4a00a;"></div><div class="section-label" style="color:#d4a00a;">${L.problemes}</div></div>${noteSources ? `<div style="font-size:9.5px; color:#5a7a9a; margin:-3px 0 6px 12px;">${noteSources}</div>` : ''}
     <div style="padding:8px 12px; background:#fff8e1; border-left:3px solid #d4a00a; border-radius:4px; font-size:11px; color:#7a5800;"><span style="font-weight:700;">⚠ Rappel(s) constructeur officiel(s) :</span> ${analyse.numeros_rappel.join(' · ')} — Vérifier auprès du concessionnaire si effectué.</div>
   </div>` : ''}`}
 
@@ -2115,6 +2189,19 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'f
 
 // ─── ROUTES ──────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK ●' }));
+
+// Vider la mémoire (tout, ou seulement les entrées qui contiennent un mot, ex : {"filtre":"rs3"})
+app.post('/admin/vider-cache', exigerCleAdmin, (req, res) => {
+  const filtre = String((req.body && req.body.filtre) || '').toLowerCase();
+  let n = 0;
+  for (const type of ['fiabilite', 'marche']) {
+    for (const cle of Object.keys(cache[type])) {
+      if (!filtre || cle.includes(filtre)) { delete cache[type][cle]; n++; }
+    }
+  }
+  sauverCache();
+  res.json({ supprimees: n });
+});
 
 app.post('/test-rapport', exigerCleAdmin, async (req, res) => {
   try {
