@@ -781,7 +781,11 @@ Règles strictes :
 - Chaque problème : 1 phrase factuelle (40 à 150 caractères) qui nomme le composant et précise s'il est mineur ou coûteux.
 - Aucun code ni numéro (ex : 22V123), aucun "je"/"nous".
 - Rédigé en ${langueNom}.
-Réponds avec un objet JSON : {"problemes": ["..."], "points_solides": ["..."]}`
+- Attention : la transmission, la boîte, le moteur ou l'électronique changent souvent d'une génération à l'autre. Pour chaque problème, indique dans "concerne" :
+  "oui" = la source parle explicitement de cette génération / ces années / ce moteur ;
+  "probable" = même moteur ou même boîte, génération non précisée mais composant identique ;
+  "incertain" = la source peut concerner une autre génération ou un composant qui a changé.
+Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|probable|incertain"}], "points_solides": ["..."]}`
           }, {
             role: 'user',
             content: toutLeContenu
@@ -794,7 +798,13 @@ Réponds avec un objet JSON : {"problemes": ["..."], "points_solides": ["..."]}`
         const raw = gptResp.data.choices[0].message.content.trim();
         const obj = JSON.parse(raw.replace(/```json|```/g, '').trim());
         const propre = (arr, n) => (Array.isArray(arr) ? arr : []).filter(p => typeof p === 'string' && p.trim().length > 15).map(p => p.trim()).slice(0, n);
-        problemesListe = propre(obj.problemes, 4);
+        // On ne garde que les problèmes qui concernent vraiment CE véhicule
+        const bruts = Array.isArray(obj.problemes) ? obj.problemes : [];
+        const retenus = bruts.filter(p => typeof p === 'string' || (p && p.concerne !== 'incertain'))
+                             .map(p => (typeof p === 'string' ? p : p.texte));
+        const ecartes = bruts.filter(p => p && typeof p === 'object' && p.concerne === 'incertain').map(p => p.texte);
+        if (ecartes.length) console.log('Problèmes écartés (génération incertaine):', ecartes.join(' | '));
+        problemesListe = propre(retenus, 4);
         pointsSolides = propre(obj.points_solides, 3);
         console.log(`Fiabilité — problèmes: ${problemesListe.length}, points solides: ${pointsSolides.length}`);
       } catch (e) {
@@ -918,6 +928,31 @@ Règles :
   }
 }
 
+// ─── CALCUL MARCHÉ (note prix + prix négocié) — mêmes chiffres pour l'IA et pour le PDF ───
+function calculerMarche(prixDemande, pm) {
+  const arr = (v, m = 500) => Math.round(v / m) * m;
+  if (!pm || !(prixDemande > 0) || !(pm.mediane > 0)) return null;
+  const min = arr(pm.min), max = arr(pm.max), mediane = pm.mediane;
+  const pos = (prixDemande - min) / Math.max(1, max - min);
+  let sp;
+  if (prixDemande < min) sp = prixDemande < min * 0.95 ? 10 : 9;
+  else if (pos <= 0.33) sp = 8;
+  else if (pos <= 0.66) sp = 7;
+  else if (pos <= 1) sp = 6;
+  else {
+    const d = prixDemande / max;
+    sp = d <= 1.10 ? 5 : d <= 1.15 ? 4 : d <= 1.20 ? 3 : d <= 1.30 ? 2 : 1;
+  }
+  const reduction = sp <= 3 ? 0.10 : sp <= 5 ? 0.07 : sp === 6 ? 0.05 : sp <= 8 ? 0.03 : 0.01;
+  const prixNegocie = Math.min(arr(mediane * (1 - reduction)), arr(prixDemande * 0.99));
+  const economie = prixDemande - prixNegocie;
+  return {
+    min, max, mediane, scorePrix: sp, reduction, prixNegocie,
+    ecoMin: economie > 0 ? arr(economie * 0.7, 100) : 0,
+    ecoMax: economie > 0 ? arr(economie * 1.3, 100) : 0
+  };
+}
+
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
@@ -1022,12 +1057,16 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     ? `\nPROBLÈMES DOCUMENTÉS TROUVÉS DANS DES SOURCES RÉELLES (base principale pour noter la fiabilité) :\n${tavilyProblemes.map((p,i) => `${i+1}. ${p}`).join('\n')}\n`
     : `\nAUCUN PROBLÈME DOCUMENTÉ TROUVÉ DANS LES SOURCES pour ce modèle. Ne pénalise pas la fiabilité sans raison concrète ; si tu connais un défaut réel et largement documenté de CE modèle/génération/moteur, tu peux en tenir compte dans la justification.\n`;
 
+  const marcheAvant = calculerMarche(prixRef, prixMarcheCtx);
+  const contexteNegociation = marcheAvant
+    ? `\nCHIFFRES CALCULÉS PAR LE SYSTÈME (à utiliser tels quels, ne pas en inventer d'autres) : score_prix = ${marcheAvant.scorePrix}/10 ; prix négocié suggéré = ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF ; économie possible ≈ ${marcheAvant.ecoMin.toLocaleString('de-CH')}–${marcheAvant.ecoMax.toLocaleString('de-CH')} CHF. Dans conseil_achat, si tu donnes un objectif de négociation, cite EXACTEMENT ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF. Ne cite aucun montant d'entretien (il est calculé ailleurs).`
+    : `\nDans conseil_achat, ne cite aucun prix de négociation chiffré ni montant d'entretien (pas de données marché fiables).`;
   const contexteMarche = prixMarcheCtx
     ? `\nDONNÉE MARCHÉ SUISSE (sources web) : pour ${marque} ${modele} ${annee || ''}, médiane ${prixMarcheCtx.mediane.toLocaleString('de-CH')} CHF, fourchette ${prixMarcheCtx.min.toLocaleString('fr-CH')} – ${prixMarcheCtx.max.toLocaleString('fr-CH')} CHF. Prix demandé dans l'annonce : ${prixRef ? prixRef.toLocaleString('fr-CH') + ' CHF' : 'voir données structurées'}.`
     : `\nAUCUNE DONNÉE MARCHÉ FIABLE TROUVÉE. N'invente pas de fourchette : mets fourchette_marche_min et fourchette_marche_max à 0. Pour score_prix, donne ton estimation et indique clairement dans justification_prix qu'elle est faite sans annonces comparables.`;
 
   const tavilySection = `\n\nDONNÉES WEB SUR CE VÉHICULE :
-${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteFreeService}
+${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteNegociation}${contexteFreeService}
 Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — ce champ est rempli par un autre système.\n`;
 
   // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
@@ -1278,25 +1317,21 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     (parsed.points_negatifs || []).some(p => /culasse|zylinderkopf|testata|cylinder head/i.test(p));
   if (culasseDetectee && parsed.score_fiabilite > 5) parsed.score_fiabilite = 5;
 
-  // ── PRIX & MARCHÉ : uniquement avec des données réelles ──
+  // ── PRIX & MARCHÉ : uniquement avec des données réelles (même calcul que celui donné à l'IA) ──
   const prixDemande = prixRef || parseInt(String(parsed.prix || '').replace(/[^\d]/g, '')) || 0;
-  const pm = prixMarcheCtx;
-  if (pm && prixDemande > 0) {
-    parsed.fourchette_marche_min = arrondir(pm.min);
-    parsed.fourchette_marche_max = arrondir(pm.max);
-    const min = parsed.fourchette_marche_min, max = parsed.fourchette_marche_max;
-    const pos = (prixDemande - min) / Math.max(1, max - min);
-    let sp;
-    if (prixDemande < min) sp = prixDemande < min * 0.95 ? 10 : 9;
-    else if (pos <= 0.33) sp = 8;
-    else if (pos <= 0.66) sp = 7;
-    else if (pos <= 1) sp = 6;
-    else {
-      const d = prixDemande / max;
-      sp = d <= 1.10 ? 5 : d <= 1.15 ? 4 : d <= 1.20 ? 3 : d <= 1.30 ? 2 : 1;
-    }
-    console.log(`SCORE PRIX calculé: ${sp} (prix ${prixDemande}, fourchette ${min}–${max}, GPT proposait ${parsed.score_prix})`);
-    parsed.score_prix = sp;
+  const marche = calculerMarche(prixDemande, prixMarcheCtx);
+  parsed.prix_negocie_suggere = 0;
+  parsed.economie_potentielle_min = 0;
+  parsed.economie_potentielle_max = 0;
+  if (marche) {
+    parsed.fourchette_marche_min = marche.min;
+    parsed.fourchette_marche_max = marche.max;
+    console.log(`SCORE PRIX calculé: ${marche.scorePrix} (prix ${prixDemande}, fourchette ${marche.min}–${marche.max}, GPT proposait ${parsed.score_prix})`);
+    parsed.score_prix = marche.scorePrix;
+    parsed.prix_negocie_suggere = marche.prixNegocie;
+    parsed.economie_potentielle_min = marche.ecoMin;
+    parsed.economie_potentielle_max = marche.ecoMax;
+    console.log(`PRIX NEGOCIE: médiane ${marche.mediane} × ${(1 - marche.reduction).toFixed(2)} → ${marche.prixNegocie}`);
   } else {
     // Pas de données marché fiables : on n'affiche pas de fourchette inventée
     parsed.fourchette_marche_min = 0;
@@ -1304,24 +1339,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     console.log('Fourchette marché : données insuffisantes (pas de fourchette affichée)');
   }
   const fourchMax = parseInt(parsed.fourchette_marche_max) || 0;
-  // Médiane utilisable seulement si on connaît aussi le prix demandé
-  const mediane = (pm && prixDemande > 0) ? pm.mediane : 0;
-
-  // Prix négocié : seulement s'il existe une médiane réelle
-  parsed.prix_negocie_suggere = 0;
-  parsed.economie_potentielle_min = 0;
-  parsed.economie_potentielle_max = 0;
-  if (mediane > 0 && prixDemande > 0) {
-    const sp = parsed.score_prix;
-    const reduction = sp <= 3 ? 0.10 : sp <= 5 ? 0.07 : sp === 6 ? 0.05 : sp <= 8 ? 0.03 : 0.01;
-    parsed.prix_negocie_suggere = Math.min(arrondir(mediane * (1 - reduction)), arrondir(prixDemande * 0.99));
-    const economie = prixDemande - parsed.prix_negocie_suggere;
-    if (economie > 0) {
-      parsed.economie_potentielle_min = arrondir(economie * 0.7, 100);
-      parsed.economie_potentielle_max = arrondir(economie * 1.3, 100);
-    }
-    console.log(`PRIX NEGOCIE: médiane ${mediane} × ${(1 - reduction).toFixed(2)} → ${parsed.prix_negocie_suggere}`);
-  }
+  const mediane = marche ? marche.mediane : 0;
 
   // ── VERDICT : prix ET fiabilité ET red flags ──
   const redFlags = (parsed.red_flags || []).filter(r => r && String(r).trim());
