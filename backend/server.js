@@ -935,7 +935,20 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
       cartes.push(`${lien} | ${texte.slice(0, 300)}`);
     }
     let matiere = cartes.join('\n');
-    if (cartes.length < 5) {
+    // Les détails (km, année) des annonces sont souvent dans les données JSON de la page plutôt que dans le HTML visible :
+    // on récupère des extraits autour de chaque "mileage" (format JSON normal ou échappé)
+    const extraitsJson = [];
+    let dernier = -2000;
+    for (const m of html.matchAll(/\\?"mileage\\?"\s*:\s*\d+/g)) {
+      if (m.index - dernier < 900) continue;
+      dernier = m.index;
+      extraitsJson.push(html.substring(Math.max(0, m.index - 700), m.index + 700).replace(/\\"/g, '"').replace(/\s+/g, ' '));
+      if (extraitsJson.length >= 25) break;
+    }
+    console.log(`Comparables — ${extraitsJson.length} blocs de données JSON trouvés`);
+    if (cartes.length < 5 && extraitsJson.length >= 5) {
+      matiere = extraitsJson.map((e, i) => `ANNONCE ${i + 1}: ${e}`).join('\n');
+    } else if (cartes.length < 5) {
       // Repli : texte complet de la page
       matiere = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<svg[\s\S]*?<\/svg>/gi, ' ')
         .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
@@ -950,7 +963,7 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
       response_format: { type: 'json_object' },
       messages: [{
         role: 'system',
-        content: `Extrais les annonces de voitures de ce texte de page de résultats AutoScout24. Pour chaque annonce : "titre", "prix" (CHF, nombre entier), "km" (nombre entier), "annee" (année de 1re immatriculation, 4 chiffres), "lien" (chemin /fr/d/... s'il est donné). Ne recopie QUE ce qui est écrit ; si une valeur manque, mets null. Ignore les publicités et les annonces sans prix. Réponds en JSON : {"annonces": [...]}`
+        content: `Extrais les annonces de voitures de ce contenu de page de résultats AutoScout24 (texte de cartes, ou extraits de données JSON — un bloc par annonce ; dans le JSON, le kilométrage est souvent "mileage", le prix "price", l'année dans "firstRegistrationDate"/"firstRegistrationYear", et l'identifiant "id"). Pour chaque annonce : "titre", "prix" (CHF, nombre entier), "km" (nombre entier), "annee" (année de 1re immatriculation, 4 chiffres), "lien" (chemin /fr/d/... s'il est donné), "id" (identifiant numérique de l'annonce s'il est donné). Ne recopie QUE ce qui est écrit ; si une valeur manque, mets null. Ignore les publicités et les annonces sans prix. Réponds en JSON : {"annonces": [...]}`
       }, { role: 'user', content: matiere }]
     }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 60000 });
 
@@ -960,7 +973,8 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
       prix: parseInt(String(a.prix || '').replace(/[^\d]/g, '')) || 0,
       km: parseInt(String(a.km ?? '').replace(/[^\d]/g, '')) || null,
       annee: parseInt(a.annee) || null,
-      lien: a.lien && /^\/(fr|de|it|en)\/d\//.test(a.lien) ? 'https://www.autoscout24.ch' + a.lien : null
+      lien: a.lien && /^\/(fr|de|it|en)\/d\//.test(a.lien) ? 'https://www.autoscout24.ch' + a.lien
+          : (a.id && /^\d{6,}$/.test(String(a.id)) ? `https://www.autoscout24.ch/fr/d/${a.id}` : null)
     })).filter(a => a.prix > 1000 && a.km != null && a.annee && Math.abs(a.annee - annee) <= 1)
       .filter(a => !(infos.idAnnonce && a.lien && a.lien.includes(infos.idAnnonce)));
     console.log(`Comparables — ${toutes.length} annonces lisibles (année ${annee - 1}–${annee + 1})`);
@@ -2347,6 +2361,27 @@ async function envoyerEmail(email, pdfBuffer, analyse, reportNumber, langue = 'f
 // ─── ROUTES ──────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'EasyCarCheck Backend OK ●' }));
 
+// Diagnostic : renvoie des extraits de la page de résultats AutoScout24 pour vérifier où se trouvent km/prix/année
+app.post('/admin/debug-recherche', exigerCleAdmin, async (req, res) => {
+  try {
+    const url = (req.body && req.body.url) || 'https://www.autoscout24.ch/fr/s/mo-rs3/mk-audi?firstRegistrationYearFrom=2022&firstRegistrationYearTo=2024';
+    const r = await axios.get('https://api.zenrows.com/v1/', {
+      params: { apikey: process.env.ZENROWS_API_KEY, url, js_render: 'true', premium_proxy: 'true', wait: '6000' }, timeout: 120000
+    });
+    const html = typeof r.data === 'string' ? r.data : JSON.stringify(r.data);
+    const autour = (re, n = 2, l = 500) => [...html.matchAll(re)].slice(0, n).map(m => html.substring(Math.max(0, m.index - l), m.index + l).replace(/\s+/g, ' '));
+    res.json({
+      taille: html.length,
+      liensAnnonces: (html.match(/\/(?:fr|de|it|en)\/d\/[a-z0-9-]+-\d{6,}/gi) || []).length,
+      mileage: (html.match(/mileage/g) || []).length,
+      nextData: html.includes('__NEXT_DATA__'),
+      nextF: html.includes('self.__next_f'),
+      extraitsMileage: autour(/mileage/g),
+      extraitsLien: autour(/\/fr\/d\/[a-z0-9-]+-\d{6,}/gi, 1, 800)
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Vider la mémoire (tout, ou seulement les entrées qui contiennent un mot, ex : {"filtre":"rs3"})
 app.post('/admin/vider-cache', exigerCleAdmin, (req, res) => {
   const filtre = String((req.body && req.body.filtre) || '').toLowerCase();
@@ -2366,9 +2401,8 @@ app.post('/test-rapport', exigerCleAdmin, async (req, res) => {
     if (!url || !email) return res.status(400).json({ error: 'URL et email requis' });
     console.log('1. Démarrage analyse...');
     const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
-    const scraped = await scrapeAnnonce(url, langue);
-    console.log('2. Scraping OK');
-    const analyse = await analyserAvecGPT(scraped, langue, url);
+    const analyse = await obtenirAnalyse(url, langue, { forcer: true });
+    console.log('2. Analyse OK');
     console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global, '| CO2:', analyse.co2, '| Taxe:', analyse.taxe_cantonale_ge);
     const pdf = await genererPDF(analyse, reportNumber, url, langue);
     console.log('4. PDF OK');
@@ -2381,19 +2415,59 @@ app.post('/test-rapport', exigerCleAdmin, async (req, res) => {
   }
 });
 
-app.post('/analyse-gratuite', exigerCleAdmin, async (req, res) => {
+// ─── ANALYSES RÉCENTES : l'aperçu gratuit et le rapport payé donnent EXACTEMENT le même résultat ───
+// (le client voit le même score/verdict avant et après paiement, et on ne paie pas deux fois l'analyse)
+const analysesRecentes = new Map();
+const DUREE_ANALYSE = 24 * 3600 * 1000;
+async function obtenirAnalyse(url, langue, { forcer = false } = {}) {
+  const cle = `${url.split('?')[0]}|${langue}`;
+  const memo = analysesRecentes.get(cle);
+  if (!forcer && memo && Date.now() - memo.ts < DUREE_ANALYSE) {
+    console.log('ANALYSE réutilisée (moins de 24 h) :', cle);
+    return memo.analyse;
+  }
+  const scraped = await scrapeAnnonce(url, langue);
+  const analyse = await analyserAvecGPT(scraped, langue, url);
+  analysesRecentes.set(cle, { ts: Date.now(), analyse });
+  if (analysesRecentes.size > 500) analysesRecentes.delete(analysesRecentes.keys().next().value);
+  return analyse;
+}
+
+// ─── APERÇU GRATUIT (utilisé par le site) : ouvert au public mais limité pour protéger le budget ───
+const LIMITE_GRATUIT_IP = parseInt(process.env.FREE_PER_IP_PER_DAY) || 3;   // par visiteur et par jour
+const LIMITE_GRATUIT_JOUR = parseInt(process.env.FREE_PER_DAY) || 150;      // pour tout le site et par jour
+const compteurGratuit = { jour: '', total: 0, parIp: new Map() };
+function verifierLimiteGratuit(req) {
+  if (process.env.ADMIN_KEY && req.headers['x-admin-key'] === process.env.ADMIN_KEY) return null;
+  const jour = new Date().toISOString().slice(0, 10);
+  if (compteurGratuit.jour !== jour) { compteurGratuit.jour = jour; compteurGratuit.total = 0; compteurGratuit.parIp.clear(); }
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const n = compteurGratuit.parIp.get(ip) || 0;
+  if (n >= LIMITE_GRATUIT_IP) return 'Limite d\'analyses gratuites atteinte pour aujourd\'hui. Réessayez demain ou commandez le rapport complet.';
+  if (compteurGratuit.total >= LIMITE_GRATUIT_JOUR) return 'Le service d\'aperçu gratuit est très demandé aujourd\'hui. Réessayez plus tard ou commandez le rapport complet.';
+  compteurGratuit.parIp.set(ip, n + 1);
+  compteurGratuit.total++;
+  return null;
+}
+// Sites d'annonces acceptés (ceux annoncés sur easycarcheck.ch)
+const urlAnnonceValide = (u) => /^https?:\/\/([a-z0-9-]+\.)*(autoscout24\.ch|ricardo\.ch|tutti\.ch|anibis\.ch)\/\S+$/i.test(String(u || '').trim());
+
+app.post('/analyse-gratuite', async (req, res) => {
   try {
-    const { url, langue = 'fr' } = req.body;
+    const { url, langue = 'fr' } = req.body || {};
+    console.log('APERÇU GRATUIT demandé :', url, '| langue :', langue);
     if (!url) return res.status(400).json({ error: 'URL manquante' });
-    const scraped = await scrapeAnnonce(url, langue);
-    const analyse = await analyserAvecGPT(scraped, langue, url);
+    if (!urlAnnonceValide(url)) { console.log('APERÇU GRATUIT refusé : lien non reconnu'); return res.status(400).json({ error: 'Merci de coller le lien d\'une annonce AutoScout24, Ricardo, Tutti ou Anibis.' }); }
+    const refus = verifierLimiteGratuit(req);
+    if (refus) { console.log('APERÇU GRATUIT refusé : limite atteinte'); return res.status(429).json({ error: refus }); }
+    const analyse = await obtenirAnalyse(url.trim(), langue);
     res.json({
       marque: analyse.marque, modele: analyse.modele, annee: analyse.annee,
       prix: analyse.prix, score_global: analyse.score_global, verdict: analyse.verdict, teaser: true
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error('APERÇU GRATUIT erreur :', err.message);
+    res.status(500).json({ error: 'Analyse impossible pour cette annonce. Vérifiez le lien et réessayez.' });
   }
 });
 
@@ -2434,8 +2508,7 @@ async function traiterCommande(session) {
   const { url, email, langue = 'fr' } = session.metadata || {};
   try {
     const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
-    const scraped = await scrapeAnnonce(url, langue);
-    const analyse = await analyserAvecGPT(scraped, langue, url);
+    const analyse = await obtenirAnalyse(url, langue);
     const pdf = await genererPDF(analyse, reportNumber, url, langue);
     await envoyerEmail(email, pdf, analyse, reportNumber, langue);
     console.log(`✅ Rapport #${reportNumber} envoyé à ${email}`);
