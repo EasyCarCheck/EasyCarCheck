@@ -59,6 +59,32 @@ function exigerCleAdmin(req, res, next) {
   next();
 }
 
+// ─── APPEL OPENAI ROBUSTE ───────────────────────────────
+// En cas de limite de débit (429) ou de panne passagère (5xx), on attend puis on réessaie (jusqu'à 5 fois).
+// Indispensable quand plusieurs clients commandent en même temps.
+const attendre = (ms) => new Promise(r => setTimeout(r, ms));
+async function appelOpenAI(body, config = {}) {
+  const url = 'https://api.openai.com/v1/chat/completions';
+  const essais = 5;
+  for (let i = 1; i <= essais; i++) {
+    try {
+      return await axios.post(url, body, config);
+    } catch (e) {
+      const st = e.response && e.response.status;
+      const code = e.response && e.response.data && e.response.data.error && (e.response.data.error.code || e.response.data.error.type);
+      if (code === 'insufficient_quota') {
+        console.log('OPENAI : crédit épuisé (insufficient_quota) — rechargez le compte OpenAI');
+        throw e;
+      }
+      if (!(st === 429 || (st >= 500 && st < 600)) || i === essais) throw e;
+      const h = (e.response && e.response.headers) || {};
+      const ms = parseFloat(h['retry-after-ms']) || (parseFloat(h['retry-after']) * 1000) || Math.min(30000, 2000 * 2 ** (i - 1));
+      console.log(`OPENAI ${st}${code ? ' (' + code + ')' : ''} — nouvelle tentative ${i + 1}/${essais} dans ${Math.round(ms / 1000)} s`);
+      await attendre(ms + Math.random() * 500);
+    }
+  }
+}
+
 // ─── MARQUES CONNUES (multi-mots en premier pour éviter "alfa" seul) ─────
 const MARQUES = [
   'Alfa Romeo', 'Aston Martin', 'Land Rover', 'Range Rover', 'Rolls-Royce', 'Mercedes-Benz', 'Lynk & Co',
@@ -802,7 +828,7 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
     let justificationFiabilite = '';
     if (toutLeContenu.length > 100) {
       try {
-        const gptResp = await axios.post('https://api.openai.com/v1/chat/completions', {
+        const gptResp = await appelOpenAI({
           model: 'gpt-4o',
           // 3 analyses indépendantes des mêmes sources : on garde la note médiane (évite une note "accidentelle")
           temperature: 0.4,
@@ -823,7 +849,7 @@ Règles strictes :
 - Si les sources ne documentent aucun problème concret pour CE véhicule, "problemes" = [] — n'invente JAMAIS pour remplir.
 - Chaque problème : 1 phrase factuelle (40 à 150 caractères) qui nomme le composant et précise s'il est mineur ou coûteux.
 - Aucun code ni numéro (ex : 22V123), aucun "je"/"nous".
-- Rédigé en ${langueNom}.
+- Rédigé ENTIÈREMENT en ${langueNom} : chaque mot (y compris les termes techniques comme turbo, filtre à particules, boîte) doit être dans cette langue. Aucun mot français si la langue n'est pas le français.
 - Attention : la transmission, la boîte, le moteur ou l'électronique changent souvent d'une génération à l'autre. Pour chaque problème, indique dans "concerne" :
   "oui" = la source parle explicitement de cette génération / ces années / ce moteur ;
   "probable" = même moteur ou même boîte, génération non précisée mais composant identique ;
@@ -832,6 +858,7 @@ Règles strictes :
   9-10 très fiable, aucun problème notable documenté ; 7-8 bonne fiabilité, défauts mineurs ou peu coûteux ;
   5-6 problèmes connus et coûteux mais gérables avec un bon entretien ; 3-4 problèmes sérieux et fréquents ; 1-2 très problématique.
   Pèse la GRAVITÉ et la FRÉQUENCE réelles : un défaut rare ou lié à un usage extrême (circuit) compte peu ; un moteur ou une boîte réputés robustes comptent beaucoup.
+  Les sources web listent souvent des défauts ponctuels (rappels, témoignages isolés) : leur simple présence ne doit pas faire baisser la note. Tiens compte de la réputation de fiabilité MESURÉE sur de grands volumes pour ce modèle (statistiques de pannes ADAC, TÜV-Report, enquêtes de fiabilité européennes) telle que tu la connais : un modèle systématiquement classé parmi les plus fiables mérite 8-9 même si les sources citent quelques défauts mineurs.
 4. "justification" : 1 phrase (max 160 caractères) qui cite ce qui est solide ET ce qui est fragile.
 Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|probable|incertain"}], "points_solides": ["..."], "note_fiabilite": 7, "justification": "..."}`
           }, {
@@ -1021,7 +1048,7 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
     matiere = matiere.slice(0, 16000);
     console.log(`Comparables — ${cartes.length} cartes d'annonces trouvées dans la page`);
 
-    const gpt = await axios.post('https://api.openai.com/v1/chat/completions', {
+    const gpt = await appelOpenAI({
       model: 'gpt-4o-mini',
       temperature: 0,
       max_tokens: 2500,
@@ -1155,7 +1182,7 @@ async function rechercherPrixMarcheViaTavily(marque, modele, annee, km) {
     }
 
     // GPT-4o extrait les prix CHF du texte de manière intelligente
-    const gptResp = await axios.post('https://api.openai.com/v1/chat/completions', {
+    const gptResp = await appelOpenAI({
       model: 'gpt-4o',
       temperature: 0,
       max_tokens: 200,
@@ -1218,13 +1245,17 @@ function calculerMarche(prixDemande, pm) {
   const min = arr(pm.min), max = arr(pm.max), mediane = pm.mediane;
   // Note prix = écart entre le prix demandé et la médiane du marché (même logique que le verdict)
   const r = prixDemande / mediane;
-  const sp = r <= 0.90 ? 10 : r <= 0.95 ? 9 : r <= 0.98 ? 8 : r <= 1.02 ? 7 : r <= 1.05 ? 6
+  let sp = r <= 0.90 ? 10 : r <= 0.95 ? 9 : r <= 0.98 ? 8 : r <= 1.02 ? 7 : r <= 1.05 ? 6
            : r <= 1.10 ? 5 : r <= 1.15 ? 4 : r <= 1.25 ? 3 : r <= 1.35 ? 2 : 1;
-  const tropCher = r > 1.25;
+  // Verdict "trop cher" seulement si la médiane vient de vraies annonces comparables (pas d'une estimation web)
+  const reel = pm.source === 'as24';
+  const tropCher = reel && r > 1.25;
   // Objectif de négociation réaliste (marges habituelles du marché suisse de l'occasion) :
   // - prix ≤ médiane : petite remise de ~2 %
   // - prix > médiane : viser juste sous la médiane, sans dépasser ~8 % de rabais sur le prix demandé
   // - prix > 25 % au-dessus de la médiane : achat déconseillé à ce prix ; on indique la valeur du marché
+  // Estimation web (moins fiable) : note prix jamais sous 4, objectif plafonné à ~8 % de rabais
+  if (!reel && sp < 4) sp = 4;
   let cible = prixDemande <= mediane ? prixDemande * 0.98
             : tropCher ? mediane
             : Math.max(mediane * 0.98, prixDemande * 0.92);
@@ -1373,7 +1404,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
 
   const tavilySection = `\n\nDONNÉES WEB SUR CE VÉHICULE :
 ${tavilyPrix ? 'Résumé prix trouvé : ' + tavilyPrix + '\n' : ''}${fiabiliteImposee}${tavilyProblemesSynth}${pointsSolidesSynth}${contexteMarche}${contexteComparables}${contexteNegociation}${contexteFreeService}
-Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — ce champ est rempli par un autre système.\n`;
+Pour "problemes_connus_modele" : retourne OBLIGATOIREMENT un tableau VIDE [] — ce champ est rempli par un autre système.\n${(scrapedData.options && scrapedData.options.length > 0) ? 'PRIORITÉ ABSOLUE : la liste des options est déjà extraite par le système — retourne "options": [] (ne recopie pas les options).\n' : ''}`;
 
   // Nettoyer le contenu pour éviter les faux refus GPT (mots techniques mal interprétés)
   const htmlNettoye = (scrapedData.html || '')
@@ -1538,14 +1569,14 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // ── APPEL GPT-4o en mode JSON (élimine presque tous les JSON invalides) ──
   const systemMsg = 'Tu es un expert en analyse de véhicules d\'occasion sur le marché suisse. Tu analyses des annonces automobiles et génères des rapports JSON structurés. Tu réponds TOUJOURS avec un objet JSON valide, sans aucun texte autour. Tu n\'inventes jamais de données.';
   const appelerGPT = async (temperature) => {
-    const r = await axios.post('https://api.openai.com/v1/chat/completions', {
+    const r = await appelOpenAI({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemMsg },
         { role: 'user', content: prompt }
       ],
       temperature,
-      max_tokens: 8000,
+      max_tokens: 4000,
       response_format: { type: 'json_object' }
     }, {
       headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
