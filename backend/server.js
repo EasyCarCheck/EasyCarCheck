@@ -796,7 +796,8 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
     //  ramenait que des rappels américains — économie de 2 recherches par rapport)
     const queries = [
       `${vehicule} fiabilité problèmes connus moteur boîte électronique`,
-      `${vehicule} reliability common problems engine gearbox owners`
+      `${vehicule} reliability common problems engine gearbox owners`,
+      `${vehicule} Schwachstellen Probleme Motor Getriebe Erfahrungen`
     ];
     console.log('Recherche fiabilité pour :', vehicule);
 
@@ -847,6 +848,9 @@ Règles strictes :
 - Exclure l'usure normale (freins, pneus, embrayage, amortisseurs) sauf si les sources la décrivent comme anormale pour CE modèle.
 - Pas de doublon : un même composant = un seul point.
 - Si les sources ne documentent aucun problème concret pour CE véhicule, "problemes" = [] — n'invente JAMAIS pour remplir.
+- Exception : si tu connais un défaut LARGEMENT documenté de CE moteur ou de CETTE boîte (ex. surconsommation d'huile reconnue d'un moteur précis) absent des sources, ajoute-le avec "concerne": "probable". Jamais de défaut vague ou incertain.
+- N'utilise pas de décomptes de plaintes américaines (« 316 complaints », NHTSA) : décris le défaut sans chiffres de plaintes, et précise s'il est rare.
+- Vérifie le moteur selon l'année (ex. un même modèle peut changer de moteur d'une année à l'autre) et ne cite jamais un autre carburant que celui du véhicule.
 - Chaque problème : 1 phrase factuelle (40 à 150 caractères) qui nomme le composant et précise s'il est mineur ou coûteux.
 - Aucun code ni numéro (ex : 22V123), aucun "je"/"nous".
 - Rédigé ENTIÈREMENT en ${langueNom} : chaque mot (y compris les termes techniques comme turbo, filtre à particules, boîte) doit être dans cette langue. Aucun mot français si la langue n'est pas le français.
@@ -858,7 +862,8 @@ Règles strictes :
   9-10 très fiable, aucun problème notable documenté ; 7-8 bonne fiabilité, défauts mineurs ou peu coûteux ;
   5-6 problèmes connus et coûteux mais gérables avec un bon entretien ; 3-4 problèmes sérieux et fréquents ; 1-2 très problématique.
   Pèse la GRAVITÉ et la FRÉQUENCE réelles : un défaut rare ou lié à un usage extrême (circuit) compte peu ; un moteur ou une boîte réputés robustes comptent beaucoup.
-  Les sources web listent souvent des défauts ponctuels (rappels, témoignages isolés) : leur simple présence ne doit pas faire baisser la note. Tiens compte de la réputation de fiabilité MESURÉE sur de grands volumes pour ce modèle (statistiques de pannes ADAC, TÜV-Report, enquêtes de fiabilité européennes) telle que tu la connais : un modèle systématiquement classé parmi les plus fiables mérite 8-9 même si les sources citent quelques défauts mineurs.
+  Les sources web listent souvent des défauts ponctuels (rappels, témoignages isolés) : un défaut isolé ou rare ne doit pas faire baisser fortement la note. Tiens compte de la réputation de fiabilité MESURÉE sur de grands volumes (statistiques de pannes ADAC, TÜV-Report) telle que tu la connais.
+  Règles de cohérence : 9-10 est réservé aux véhicules SANS défaut moteur ou boîte coûteux connu. Un défaut moteur ou boîte coûteux et reconnu (ex. surconsommation d'huile, casse de courroie humide) plafonne la note à 7.
 4. "justification" : 1 phrase (max 160 caractères) qui cite ce qui est solide ET ce qui est fragile.
 Réponds avec un objet JSON : {"problemes": [{"texte": "...", "concerne": "oui|probable|incertain"}], "points_solides": ["..."], "note_fiabilite": 7, "justification": "..."}`
           }, {
@@ -1644,6 +1649,12 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       console.log('CACHE fiabilité enregistré :', cleFiab, `(note ${parsed.score_fiabilite})`);
     }
   }
+  // Cohérence : pas de 9-10 si un problème coûteux est listé
+  const problemeCouteux = tavilyProblemes.some(p => /co[uû]teu|casse|majeur|teuer|kostspielig|schwer|costos|grave|costly|expensive|major|serious/i.test(p));
+  if (problemeCouteux && parsed.score_fiabilite > 8) {
+    console.log(`FIABILITÉ plafonnée à 8 (problème coûteux listé, note proposée ${parsed.score_fiabilite})`);
+    parsed.score_fiabilite = 8;
+  }
   parsed.nb_sources_fiabilite = tavilyContext.nbSources || 0;
   parsed.marche_confiance = prixMarcheCtx ? (prixMarcheCtx.confiance || 'moyenne') : null;
   parsed.marche_source = prixMarcheCtx ? (prixMarcheCtx.source || 'web') : null;
@@ -2032,24 +2043,32 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
 
 // Repasse tous les textes du rapport dans la langue demandée (un seul appel, modèle économique).
 // Les chiffres et les noms propres sont conservés tels quels.
+// Mots typiquement français (absents de l'allemand, de l'italien et de l'anglais)
+const MOTS_FRANCAIS = /\b(mais|avec|pour|sont|être|boîtier|boîte|turbocompresseur|courroie|problèmes?|coûteu[xse]+|entretien|vérifi\w*|défaillances?|dysfonctionnements?|électroni\w*|moteur|freins?|réputé|fiabilité|sujet|à-coups|soupapes?|recommandé\w*)\b/i;
+
 async function uniformiserLangue(parsed, langue) {
   const noms = { de: 'allemand (Suisse, sans ß)', it: 'italien', en: 'anglais' };
   const champsTexte = ['resume_verdict', 'conseil_achat', 'justification_prix', 'justification_fiabilite', 'justification_entretien',
     'couleur', 'carburant', 'boite', 'transmission', 'description_vendeur'];
   const champsListes = ['problemes_connus_modele', 'points_positifs', 'points_negatifs', 'red_flags', 'checklist_visite', 'questions_vendeur'];
-  const aTraduire = {};
-  for (const k of champsTexte) if (typeof parsed[k] === 'string' && parsed[k].trim()) aTraduire[k] = parsed[k];
-  for (const k of champsListes) if (Array.isArray(parsed[k]) && parsed[k].length) aTraduire[k] = parsed[k];
-  if (!Object.keys(aTraduire).length) return;
-  try {
+  const collecter = () => {
+    const o = {};
+    for (const k of champsTexte) if (typeof parsed[k] === 'string' && parsed[k].trim()) o[k] = parsed[k];
+    for (const k of champsListes) if (Array.isArray(parsed[k]) && parsed[k].length) o[k] = parsed[k];
+    return o;
+  };
+  const resteFrancais = () => Object.values(collecter()).flat().some(t => MOTS_FRANCAIS.test(t));
+  const passe = async (modele) => {
+    const aTraduire = collecter();
+    if (!Object.keys(aTraduire).length) return 0;
     const r = await appelOpenAI({
-      model: 'gpt-4o-mini',
+      model: modele,
       temperature: 0,
       max_tokens: 2500,
       response_format: { type: 'json_object' },
       messages: [{
         role: 'system',
-        content: `Tu reçois un objet JSON de textes d'un rapport automobile. Réécris CHAQUE valeur entièrement en ${noms[langue] || langue}. Si un texte est déjà dans cette langue, laisse-le identique. Garde exactement les mêmes clés, le même nombre d'éléments dans les listes, tous les chiffres, montants (CHF), noms de modèles, codes moteur et noms propres. Ne rajoute rien, ne supprime rien. Réponds uniquement avec l'objet JSON.`
+        content: `Tu reçois un objet JSON de textes d'un rapport automobile. Réécris CHAQUE valeur entièrement en ${noms[langue] || langue}. ATTENTION : certains textes mélangent les langues (ex. une phrase allemande contenant des mots français comme « Turbocompresseur », « Boîtier électronique », « mais ») — traduis TOUS ces mots. Le résultat ne doit contenir AUCUN mot français. Garde exactement les mêmes clés, le même nombre d'éléments dans les listes, tous les chiffres, montants (CHF), noms de modèles, codes moteur et noms propres. Ne rajoute rien, ne supprime rien. Réponds uniquement avec l'objet JSON.`
       }, { role: 'user', content: JSON.stringify(aTraduire) }]
     }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 60000 });
     const out = JSON.parse(r.data.choices[0].message.content);
@@ -2059,7 +2078,16 @@ async function uniformiserLangue(parsed, langue) {
       if (typeof aTraduire[k] === 'string' && typeof v === 'string' && v.trim()) { parsed[k] = v.trim(); n++; }
       else if (Array.isArray(aTraduire[k]) && Array.isArray(v) && v.length === aTraduire[k].length && v.every(x => typeof x === 'string')) { parsed[k] = v; n++; }
     }
+    return n;
+  };
+  try {
+    const n = await passe('gpt-4o-mini');
     console.log(`LANGUE : ${n} champ(s) uniformisé(s) en ${langue}`);
+    if (resteFrancais()) {
+      console.log('LANGUE : des mots français subsistent — 2e passage');
+      await passe('gpt-4o');
+      if (resteFrancais()) console.log('LANGUE : attention, des mots français subsistent encore');
+    }
   } catch (e) {
     console.log('LANGUE : uniformisation impossible (textes laissés tels quels):', e.message);
   }
