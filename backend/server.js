@@ -905,6 +905,19 @@ const quantile = (arr, q) => {
 };
 // Lit la liste officielle des annonces (schema.org "OfferCatalog") de la page de résultats AutoScout24.
 // Chaque annonce : nom, lien, description ("Essence, Automatique, 400 PS, 31'000 km") et prix.
+// Type de carburant normalisé (pour ne comparer qu'avec le même type de moteur)
+function typeCarburant(t) {
+  const x = String(t || '').toLowerCase();
+  if (!x) return null;
+  if (/hybrid|hybride|ibrid/.test(x)) return 'hybride';
+  if (/diesel|gasoil|tdi\b|jtd|dci\b|hdi\b|crdi/.test(x)) return 'diesel';
+  if (/[ée]lectri|elektr|electric|\bev\b|batter/.test(x)) return 'electrique';
+  if (/essence|benzin|benzina|petrol|gasoline|super/.test(x)) return 'essence';
+  if (/gaz|gas\b|cng|lpg|erdgas|metano/.test(x)) return 'gaz';
+  return null;
+}
+const estDecapotable = (t) => /cabrio|cabriolet|roadster|spider|spyder|convertible/i.test(String(t || ''));
+
 function lireCatalogueResultats(html) {
   const annonces = [];
   const vus = new Set();
@@ -924,6 +937,7 @@ function lireCatalogueResultats(html) {
       km: kmM ? parseInt(kmM[1].replace(/[^\d]/g, '')) : null,
       annee: anM ? parseInt(anM) : null,
       puissance: psM ? parseInt(psM[1]) : null,
+      carburant: typeCarburant(desc.split(',').slice(1).join(',')),
       lien: lien.startsWith('http') ? lien : 'https://www.autoscout24.ch' + lien,
       id
     });
@@ -1029,6 +1043,20 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
     })).filter(a => a.prix > 1000 && a.km != null && a.annee && a.annee >= anneeMin && a.annee <= anneeMax)
       .filter(a => !(infos.idAnnonce && a.lien && a.lien.includes(infos.idAnnonce)));
     } // fin méthode 2
+
+    // MÊME VERSION : même carburant, puissance proche (±15 %), même type de carrosserie (décapotable ou non).
+    // Évite de comparer une Giulia 280 ch à une Quadrifoglio 510 ch ou à un diesel.
+    const avant = toutes.length;
+    const carbRef = typeCarburant(infos.carburant);
+    const psRef = parseInt(String(infos.puissance || '').replace(/[^\d]/g, '')) || 0;
+    const decapRef = estDecapotable(infos.titre);
+    toutes = toutes.filter(a => {
+      if (carbRef && a.carburant && a.carburant !== carbRef) return false;
+      if (psRef && a.puissance && Math.abs(a.puissance - psRef) > Math.max(20, psRef * 0.15)) return false;
+      if (estDecapotable(a.titre) !== decapRef) return false;
+      return true;
+    });
+    console.log(`Comparables — même version (${carbRef || 'carburant ?'}, ${psRef || '?'} PS, ${decapRef ? 'décapotable' : 'non décapotable'}) : ${toutes.length}/${avant} gardées`);
     console.log(`Comparables — ${toutes.length} annonces lisibles (année ${anneeMin}–${anneeMax})`);
 
     // Annonces proches en km (±40 %, au moins ±20'000 km), élargi à ±70 % si trop peu
@@ -1188,26 +1216,24 @@ function calculerMarche(prixDemande, pm) {
   const arr = (v, m = 500) => Math.round(v / m) * m;
   if (!pm || !(prixDemande > 0) || !(pm.mediane > 0)) return null;
   const min = arr(pm.min), max = arr(pm.max), mediane = pm.mediane;
-  const pos = (prixDemande - min) / Math.max(1, max - min);
-  let sp;
-  if (prixDemande < min) sp = prixDemande < min * 0.95 ? 10 : 9;
-  else if (pos <= 0.33) sp = 8;
-  else if (pos <= 0.66) sp = 7;
-  else if (pos <= 1) sp = 6;
-  else {
-    const d = prixDemande / max;
-    sp = d <= 1.10 ? 5 : d <= 1.15 ? 4 : d <= 1.20 ? 3 : d <= 1.30 ? 2 : 1;
-  }
+  // Note prix = écart entre le prix demandé et la médiane du marché (même logique que le verdict)
+  const r = prixDemande / mediane;
+  const sp = r <= 0.90 ? 10 : r <= 0.95 ? 9 : r <= 0.98 ? 8 : r <= 1.02 ? 7 : r <= 1.05 ? 6
+           : r <= 1.10 ? 5 : r <= 1.15 ? 4 : r <= 1.25 ? 3 : r <= 1.35 ? 2 : 1;
+  const tropCher = r > 1.25;
   // Objectif de négociation réaliste (marges habituelles du marché suisse de l'occasion) :
   // - prix ≤ médiane : petite remise de ~2 %
   // - prix > médiane : viser juste sous la médiane, sans dépasser ~8 % de rabais sur le prix demandé
-  let cible = prixDemande <= mediane ? prixDemande * 0.98 : Math.max(mediane * 0.98, prixDemande * 0.92);
+  // - prix > 25 % au-dessus de la médiane : achat déconseillé à ce prix ; on indique la valeur du marché
+  let cible = prixDemande <= mediane ? prixDemande * 0.98
+            : tropCher ? mediane
+            : Math.max(mediane * 0.98, prixDemande * 0.92);
   let prixNegocie = arr(cible);
   if (prixNegocie >= prixDemande) prixNegocie = Math.floor(prixDemande * 0.99 / 100) * 100;
   const reduction = 1 - prixNegocie / prixDemande;
   const economie = prixDemande - prixNegocie;
   return {
-    min, max, mediane, scorePrix: sp, reduction, prixNegocie,
+    min, max, mediane, scorePrix: sp, reduction, prixNegocie, tropCher,
     ecoMin: economie > 0 ? arr(economie, 100) : 0,
     ecoMax: economie > 0 ? arr(economie, 100) : 0
   };
@@ -1267,7 +1293,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
   // Clés de mémoire : moteur lu dans le titre de l'annonce, tranche de 20'000 km pour le prix
   const titrePropreCle = (infos.titre || '').replace(/\*[^*]*\*/g, ' ');
   const moteurCle = (titrePropreCle.match(/\b\d[.,]\d\s*[A-Za-z-]{0,10}\b/) || [''])[0];
-  const cleFiab = cleNorm(marque, modele, moteurCle, annee, langue);
+  const cleFiab = cleNorm(marque, modele, moteurCle, String(infos.puissance || '').replace(/[^\d]/g, ''), typeCarburant(infos.carburant) || '', annee, langue);
   const cleMarche = cleNorm(marque, modele, annee, Math.round(km / 20000));
   let fiabMemo = null;
   try {
@@ -1336,7 +1362,7 @@ async function analyserAvecGPT(scrapedData, langue, url) {
 
   const marcheAvant = calculerMarche(prixRef, prixMarcheCtx);
   const contexteNegociation = marcheAvant
-    ? `\nCHIFFRES CALCULÉS PAR LE SYSTÈME (à utiliser tels quels, ne pas en inventer d'autres) : score_prix = ${marcheAvant.scorePrix}/10 ; prix négocié suggéré = ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF ; économie possible ≈ ${marcheAvant.ecoMin.toLocaleString('de-CH')} CHF. Dans conseil_achat, si tu donnes un objectif de négociation, cite EXACTEMENT ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF. Ne cite aucun montant d'entretien (il est calculé ailleurs).`
+    ? `\nCHIFFRES CALCULÉS PAR LE SYSTÈME (à utiliser tels quels, ne pas en inventer d'autres) : score_prix = ${marcheAvant.scorePrix}/10 ; prix négocié suggéré = ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF ; économie possible ≈ ${marcheAvant.ecoMin.toLocaleString('de-CH')} CHF. Dans conseil_achat, si tu donnes un objectif de négociation, cite EXACTEMENT ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF.${marcheAvant.tropCher ? ` ATTENTION : le prix demandé est plus de 25 % au-dessus de la médiane du marché. Dans conseil_achat, dis clairement qu'à ce prix l'achat est déconseillé et que la voiture ne serait intéressante qu'autour de ${marcheAvant.prixNegocie.toLocaleString('de-CH')} CHF (valeur du marché), sauf si le vendeur justifie le surcoût (état exceptionnel, équipements rares, historique complet).` : ''} N'écris AUCUN montant d'entretien ni de « coût total de possession » (calculés ailleurs).`
     : `\nDans conseil_achat, ne cite aucun prix de négociation chiffré ni montant d'entretien (pas de données marché fiables).`;
   const contexteComparables = (prixMarcheCtx && prixMarcheCtx.source === 'as24')
     ? `\nANNONCES COMPARABLES RÉELLES (AutoScout24, aujourd'hui${prixMarcheCtx.ajusteKm ? `, prix ramenés au kilométrage de cette voiture : environ ${prixMarcheCtx.decoteParMilleKm} CHF de décote par 1'000 km mesurés sur ces annonces` : ''}) : ${prixMarcheCtx.count} annonces de ${prixMarcheCtx.anneeMin === prixMarcheCtx.anneeMax ? prixMarcheCtx.anneeMin : prixMarcheCtx.anneeMin + ' à ' + prixMarcheCtx.anneeMax} avec un kilométrage proche ; kilométrage moyen ${prixMarcheCtx.kmMoyen.toLocaleString('de-CH')} km (cette voiture : ${km ? km.toLocaleString('de-CH') : '?'} km). Exemples : ${prixMarcheCtx.comparables.map(c => `${c.annee ? c.annee + ', ' : ''}${c.km.toLocaleString('de-CH')} km, ${c.prix.toLocaleString('de-CH')} CHF`).join(' ; ')}. Dans conseil_achat, utilise ces faits comme ARGUMENTS DE NÉGOCIATION concrets (écart à la médiane, kilométrage par rapport à la moyenne).`
@@ -1410,6 +1436,7 @@ Estime pour CE modèle précis, en CHF par an, prix des garages suisses (entreti
 Le serveur calcule lui-même cout_entretien_annee1, cout_total_3ans et score_entretien à partir de ces deux valeurs et de la durée de free service restante (mets 0 à ces trois champs).
 FREE SERVICE (BMW, Audi, Mercedes, Volvo) : 10 ans OU 100 000 km depuis la 1re mise en circulation. Utilise le calcul FREE SERVICE fourni plus haut s'il existe. Sous free service, ne compter que ce qui n'est pas couvert (pneus, plaquettes, disques, liquides). Si l'annonce mentionne une importation parallèle/directe, ne suppose PAS le free service et signale-le.
 Pneus et freins : compte leur coût RÉEL pour CE véhicule (une sportive puissante use pneus et freins bien plus vite qu'une citadine, et ses pièces coûtent plus cher).
+VOITURE ÉLECTRIQUE : pas de vidange, de bougies ni d'embrayage ; compter surtout pneus (usure plus rapide, couple élevé), liquide de frein, filtre d'habitacle et contrôles. Ordre de grandeur ~300 à 600 CHF/an selon le modèle.
 Ordres de grandeur de référence (à ADAPTER au modèle réel, pas à recopier) :
 - Hors free service : citadine ~500 CHF/an, berline/break ~800, SUV ~1000, sportive premium ~1200, hypersportive ~2000
 - Sous free service : citadine ~250 CHF/an, berline/SUV ~400, sportive premium ~700, hypersportive ~1200
@@ -1651,7 +1678,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   };
   const verdictGPT = normVerdict(parsed.verdict);
   let verdict, raison;
-  if (fourchMax > 0 && prixDemande > fourchMax * 1.15) { verdict = 'ÉVITER'; raison = 'prix_trop_eleve'; }
+  if (marche && marche.tropCher) { verdict = 'ÉVITER'; raison = 'prix_trop_eleve'; }
   else if (fiab <= 3 || (redFlags.length > 0 && fiab <= 4)) { verdict = 'ÉVITER'; raison = 'fiabilite'; }
   else if (mediane > 0) {
     // ACHETER = vraie bonne affaire : plus la fiabilité est haute, moins l'écart sous la médiane doit être grand
@@ -1673,10 +1700,10 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     en: fiab >= 8 ? 'very good reliability' : fiab >= 7 ? 'good reliability' : 'decent reliability'
   };
   const resumes = {
-    fr: { prix_trop_eleve: 'Prix nettement au-dessus de la valeur du marché suisse.', fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr}.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
-    de: { prix_trop_eleve: 'Preis deutlich über dem Schweizer Marktwert.', fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de}.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
-    it: { prix_trop_eleve: 'Prezzo nettamente superiore al valore del mercato svizzero.', fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it}.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
-    en: { prix_trop_eleve: 'Price well above Swiss market value.', fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en}.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
+    fr: { prix_trop_eleve: `Prix plus de 25 % au-dessus du marché suisse (médiane ${mediane.toLocaleString('de-CH')} CHF) — déconseillé à ce prix.`, fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr}.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
+    de: { prix_trop_eleve: `Preis über 25 % über dem Schweizer Markt (Median ${mediane.toLocaleString('de-CH')} CHF) — zu diesem Preis nicht empfohlen.`, fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de}.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
+    it: { prix_trop_eleve: `Prezzo oltre il 25 % sopra il mercato svizzero (mediana ${mediane.toLocaleString('it-CH')} CHF) — sconsigliato a questo prezzo.`, fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it}.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
+    en: { prix_trop_eleve: `Price more than 25 % above the Swiss market (median ${mediane.toLocaleString('en-US')} CHF) — not recommended at this price.`, fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en}.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
   };
   if (raison && (verdict !== verdictGPT || !parsed.resume_verdict)) {
     parsed.resume_verdict = (resumes[langue] || resumes.fr)[raison];
@@ -1886,6 +1913,16 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     }
   }
   if (parsed.verdict_texte) parsed.verdict_texte = nettoyerTexte(parsed.verdict_texte);
+
+  // Retirer les phrases sur le « coût total sur 3 ans » (chiffres affichés ailleurs, souvent inventés par l'IA)
+  if (parsed.conseil_achat) {
+    const avantCA = parsed.conseil_achat;
+    parsed.conseil_achat = parsed.conseil_achat
+      .split(/(?<=[.!?])\s+/)
+      .filter(ph => !/(co[uû]t total|total de possession|sur 3 ans|3 ans|gesamtbesitz|gesamtkosten|3 jahre|costo totale|3 anni|possesso|total cost|ownership|3 years)/i.test(ph))
+      .join(' ').trim();
+    if (avantCA !== parsed.conseil_achat) console.log('CONSEIL_ACHAT : phrase sur le coût total retirée');
+  }
 
   // Supprimer mention Phase 2 si véhicule récent (<4 ans)
   const anneeVehicule = parseInt(parsed.annee) || 0;
