@@ -1106,7 +1106,7 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
     const sxy = retenues.reduce((t, a) => t + (a.km - mx) * (a.prix - my), 0);
     const pente = sxx > 0 ? sxy / sxx : 0; // CHF par km (négatif attendu)
     const decoteMax = Math.max(0.05, my / 100000); // au plus ~1 % du prix par 1'000 km
-    if (n >= 6 && pente < 0 && Math.abs(pente) <= decoteMax) {
+    if (n >= 5 && pente < 0 && Math.abs(pente) <= decoteMax) {
       decoteKm = pente;
       p = retenues.map(a => a.prix + pente * (km - a.km));
       ajuste = true;
@@ -1249,7 +1249,7 @@ function calculerMarche(prixDemande, pm) {
            : r <= 1.10 ? 5 : r <= 1.15 ? 4 : r <= 1.25 ? 3 : r <= 1.35 ? 2 : 1;
   // Verdict "trop cher" seulement si la médiane vient de vraies annonces comparables (pas d'une estimation web)
   const reel = pm.source === 'as24';
-  const tropCher = reel && r > 1.25;
+  const tropCher = reel && r > 1.25 && (pm.ajusteKm || pm.count >= 8);
   // Objectif de négociation réaliste (marges habituelles du marché suisse de l'occasion) :
   // - prix ≤ médiane : petite remise de ~2 %
   // - prix > médiane : viser juste sous la médiane, sans dépasser ~8 % de rabais sur le prix demandé
@@ -1951,6 +1951,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.conseil_achat = parsed.conseil_achat
       .split(/(?<=[.!?])\s+/)
       .filter(ph => !/(co[uû]t total|total de possession|sur 3 ans|3 ans|gesamtbesitz|gesamtkosten|3 jahre|costo totale|3 anni|possesso|total cost|ownership|3 years)/i.test(ph))
+      .filter(ph => !(/(entretien|wartung|unterhalt|manutenzione|maintenance)/i.test(ph) && /\d[\d'’ ]*\s*CHF/i.test(ph)))
       .join(' ').trim();
     if (avantCA !== parsed.conseil_achat) console.log('CONSEIL_ACHAT : phrase sur le coût total retirée');
   }
@@ -2023,7 +2024,45 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   parsed.numeros_rappel = tavilyRappels;
   if (tavilyRappels.length > 0) console.log('RAPPELS injectés:', tavilyRappels.join(', '));
 
+  // ── GARDE-FOU LANGUE : tous les textes affichés dans la langue du rapport ──
+  if (langue !== 'fr') await uniformiserLangue(parsed, langue);
+
   return parsed;
+}
+
+// Repasse tous les textes du rapport dans la langue demandée (un seul appel, modèle économique).
+// Les chiffres et les noms propres sont conservés tels quels.
+async function uniformiserLangue(parsed, langue) {
+  const noms = { de: 'allemand (Suisse, sans ß)', it: 'italien', en: 'anglais' };
+  const champsTexte = ['resume_verdict', 'conseil_achat', 'justification_prix', 'justification_fiabilite', 'justification_entretien',
+    'couleur', 'carburant', 'boite', 'transmission', 'description_vendeur'];
+  const champsListes = ['problemes_connus_modele', 'points_positifs', 'points_negatifs', 'red_flags', 'checklist_visite', 'questions_vendeur'];
+  const aTraduire = {};
+  for (const k of champsTexte) if (typeof parsed[k] === 'string' && parsed[k].trim()) aTraduire[k] = parsed[k];
+  for (const k of champsListes) if (Array.isArray(parsed[k]) && parsed[k].length) aTraduire[k] = parsed[k];
+  if (!Object.keys(aTraduire).length) return;
+  try {
+    const r = await appelOpenAI({
+      model: 'gpt-4o-mini',
+      temperature: 0,
+      max_tokens: 2500,
+      response_format: { type: 'json_object' },
+      messages: [{
+        role: 'system',
+        content: `Tu reçois un objet JSON de textes d'un rapport automobile. Réécris CHAQUE valeur entièrement en ${noms[langue] || langue}. Si un texte est déjà dans cette langue, laisse-le identique. Garde exactement les mêmes clés, le même nombre d'éléments dans les listes, tous les chiffres, montants (CHF), noms de modèles, codes moteur et noms propres. Ne rajoute rien, ne supprime rien. Réponds uniquement avec l'objet JSON.`
+      }, { role: 'user', content: JSON.stringify(aTraduire) }]
+    }, { headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, timeout: 60000 });
+    const out = JSON.parse(r.data.choices[0].message.content);
+    let n = 0;
+    for (const k of Object.keys(aTraduire)) {
+      const v = out[k];
+      if (typeof aTraduire[k] === 'string' && typeof v === 'string' && v.trim()) { parsed[k] = v.trim(); n++; }
+      else if (Array.isArray(aTraduire[k]) && Array.isArray(v) && v.length === aTraduire[k].length && v.every(x => typeof x === 'string')) { parsed[k] = v; n++; }
+    }
+    console.log(`LANGUE : ${n} champ(s) uniformisé(s) en ${langue}`);
+  } catch (e) {
+    console.log('LANGUE : uniformisation impossible (textes laissés tels quels):', e.message);
+  }
 }
 
 // ─── GÉNÉRATION PDF ──────────────────────────────────────
@@ -2276,7 +2315,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
       <div class="cost-card" style="border-top:3px solid #5a7a9a;">
         <div class="cost-label">${L.marche}</div>
         ${analyse.fourchette_marche_max > 0
-          ? `<div class="cost-value" style="color:#5a7a9a;font-size:12px;">${montant(analyse.fourchette_marche_min)} – ${montant(analyse.fourchette_marche_max)} CHF</div><div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${noteEstimation}</div>`
+          ? `<div class="cost-value" style="color:#5a7a9a;font-size:12px;">${analyse.fourchette_marche_min === analyse.fourchette_marche_max ? '~' + montant(analyse.fourchette_marche_max) : montant(analyse.fourchette_marche_min) + ' – ' + montant(analyse.fourchette_marche_max)} CHF</div><div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${noteEstimation}</div>`
           : `<div class="cost-value" style="color:#5a7a9a;font-size:13px;">—</div><div class="cost-note" style="font-size:9px; color:#5a7a9a; margin-top:3px;">${insuffisant}</div>`}
       </div>
     </div>
