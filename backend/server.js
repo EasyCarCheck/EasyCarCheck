@@ -1017,7 +1017,7 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
   return rechercherComparablesPlage(infos, marque, modele, annee, km, annee - 1, annee + 1);
 }
 
-async function rechercherComparablesPlage(infos, marque, modele, annee, km, anneeMin, anneeMax) {
+async function rechercherComparablesPlage(infos, marque, modele, annee, km, anneeMin, anneeMax, avecFiltres = true) {
   try {
     if (!annee || !km) { console.log('Comparables : année ou km inconnu — ignoré'); return null; }
     let chemin = infos.lienRecherche;
@@ -1026,7 +1026,17 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
       if (!marque || !motModele) return null;
       chemin = `/fr/s/mo-${slugAs24(motModele)}/mk-${slugAs24(marque)}`;
     }
-    const urlRecherche = `https://www.autoscout24.ch${chemin.replace(/^\/(de|it|en)\//, '/fr/')}?firstRegistrationYearFrom=${anneeMin}&firstRegistrationYearTo=${anneeMax}`;
+    // On demande directement à AutoScout24 la MÊME version (puissance ±12 %, diesel si diesel) :
+    // la page ne montre qu'une vingtaine d'annonces, toutes versions confondues sinon.
+    let cheminFr = chemin.replace(/^\/(de|it|en)\//, '/fr/').replace(/\/+$/, '');
+    let filtres = '';
+    if (avecFiltres) {
+      const ps = parseInt(String(infos.puissance || '').replace(/[^\d]/g, '')) || 0;
+      if (ps >= 40 && ps <= 1500) filtres += `&horsePowerFrom=${Math.floor(ps * 0.88)}&horsePowerTo=${Math.ceil(ps * 1.12)}`;
+      if (/diesel/i.test(infos.carburant || '') && !/\/ft-/.test(cheminFr)) cheminFr += '/ft-diesel';
+    }
+    const urlRecherche = `https://www.autoscout24.ch${cheminFr}?firstRegistrationYearFrom=${anneeMin}&firstRegistrationYearTo=${anneeMax}${filtres}`;
+    const filtresAppliques = urlRecherche.includes('horsePower') || urlRecherche.includes('/ft-');
     console.log('Comparables — recherche :', urlRecherche);
 
     const resp = await axios.get('https://api.zenrows.com/v1/', {
@@ -1040,6 +1050,11 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
     // L'année de chaque annonce est déjà garantie par le filtre de la recherche (année ±1).
     const catalogue = lireCatalogueResultats(html).filter(a => a.id !== infos.idAnnonce);
     console.log(`Comparables — catalogue de la page : ${catalogue.length} annonces (${catalogue.filter(a => a.km != null).length} avec km)`);
+    // Sécurité : si la recherche filtrée ne renvoie rien du tout (filtre refusé par le site), on refait la recherche sans filtre
+    if (catalogue.length === 0 && filtresAppliques && !/mileage|OfferCatalog/.test(html)) {
+      console.log('Comparables — recherche filtrée vide, nouvel essai sans filtre de version');
+      return rechercherComparablesPlage(infos, marque, modele, annee, km, anneeMin, anneeMax, false);
+    }
     let toutes = null;
     if (catalogue.filter(a => a.km != null && a.prix > 1000).length >= 5) {
       toutes = catalogue.filter(a => a.km != null && a.prix > 1000)
@@ -1921,6 +1936,12 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
           it: `Prezzo richiesto inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF)`,
           en: `Asking price below the market median (${mediane.toLocaleString('en-US')} CHF)`
         };
+        if (prixDemande > mediane) Object.assign(pointsPrix, {   // prix juste : dans la médiane, pas en dessous
+          fr: `Prix dans la médiane du marché (${mediane.toLocaleString('de-CH')} CHF)`,
+          de: `Preis im Marktmedian (${mediane.toLocaleString('de-CH')} CHF)`,
+          it: `Prezzo in linea con la mediana di mercato (${mediane.toLocaleString('it-CH')} CHF)`,
+          en: `Price in line with the market median (${mediane.toLocaleString('en-US')} CHF)`
+        });
         parsed.points_positifs = [pointsPrix[langue] || pointsPrix.fr, ...(parsed.points_positifs || [])].slice(0, 3);
       }
     }
@@ -2029,7 +2050,10 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
       .replace(/CHF&nbsp;[\d''.–]+/g, '') // prix dupliqués
       .replace(/\s{2,}/g, ' ')
       .trim();
-    if (parsed.description_vendeur.length < 20) parsed.description_vendeur = 'Non communiquée';
+    // L'avertissement d'AutoScout24 (« l'équipement réel peut différer… ») n'est pas une description du vendeur
+    const resteSansAvertissement = parsed.description_vendeur.split(/(?<=[.!?])\s+/).filter(ph => !TEXTES_NON_EQUIPEMENT.test(ph) && !/angaben ohne gewähr|sous réserve de modifications/i.test(ph)).join(' ').trim();
+    parsed.description_vendeur = resteSansAvertissement;
+    if (parsed.description_vendeur.length < 20) parsed.description_vendeur = NC;
   }
 
   if (parsed.conseil_achat) {
@@ -2499,7 +2523,7 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
           }
           const ligne = !(analyse.prix_negocie_suggere > 0) ? insuffisant
             : analyse.verdict === 'ACHETER'
-              ? (analyse.economie_potentielle_min > 0 ? `✓ ${T('Prix juste · marge de négociation', 'Fairer Preis · Verhandlungsspielraum', 'Prezzo giusto · margine di trattativa', 'Fair price · room to negotiate')} ${eco} CHF` : `✓ ${T('Prix dans le marché', 'Preis im Markt', 'Prezzo nel mercato', 'Price within market')}`)
+              ? (analyse.economie_potentielle_min > 0 ? `✓ ${analyse.raison_verdict === 'prix_juste' ? T('Prix juste', 'Fairer Preis', 'Prezzo giusto', 'Fair price') : T('Bon prix', 'Guter Preis', 'Buon prezzo', 'Good price')} · ${T('marge de négociation', 'Verhandlungsspielraum', 'margine di trattativa', 'room to negotiate')} ${eco} CHF` : `✓ ${T('Prix dans le marché', 'Preis im Markt', 'Prezzo nel mercato', 'Price within market')}`)
               : `${T('↓ Économie :', '↓ Ersparnis :', '↓ Risparmio :', '↓ Savings :')} ${eco} CHF`;
           return `<div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${T('PRIX SUGGÉRÉ', 'EMPF. PREIS', 'PREZZO SUGGERITO', 'SUGGESTED PRICE')}</div>
         <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere > 0 ? montant(analyse.prix_negocie_suggere) + ' CHF' : '—'}</div>
