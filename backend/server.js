@@ -812,6 +812,38 @@ function traduireOption(opt) {
 }
 
 // ─── RECHERCHE TAVILY ────────────────────────────────────
+// Ouvre une page source (forum, site auto) et garde les passages qui parlent du véhicule (≈ ce que fait Tavily)
+async function lirePageSource(url, motsCles) {
+  const extraire = (html) => {
+    const texte = String(html || '')
+      .replace(/<(script|style|noscript|svg|nav|footer|header)[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&rsquo;/g, "'").replace(/&quot;/g, '"')
+      .replace(/\s+/g, ' ').trim();
+    if (texte.length < 300) return null;
+    const bas = texte.toLowerCase();
+    const fenetres = [];
+    for (const mot of motsCles) {
+      let i = bas.indexOf(mot);
+      while (i !== -1 && fenetres.length < 12) { fenetres.push([Math.max(0, i - 350), Math.min(texte.length, i + 650)]); i = bas.indexOf(mot, i + 600); }
+    }
+    if (!fenetres.length) return null;
+    fenetres.sort((a, b) => a[0] - b[0]);
+    const fusion = [];
+    for (const f of fenetres) { const d = fusion[fusion.length - 1]; if (d && f[0] <= d[1]) d[1] = Math.max(d[1], f[1]); else fusion.push([...f]); }
+    return fusion.map(([a, b]) => texte.slice(a, b)).join(' … ').slice(0, 1800);
+  };
+  try {
+    const r = await axios.get(url, { timeout: 8000, maxContentLength: 3000000, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept-Language': 'fr-CH,fr;q=0.9,de;q=0.8,en;q=0.7' } });
+    const t = extraire(r.data);
+    if (t) return t;
+  } catch (e) { /* page bloquée : essai via ZenRows en mode simple ci-dessous */ }
+  if (!process.env.ZENROWS_API_KEY) return null;
+  try {
+    const r = await axios.get('https://api.zenrows.com/v1/', { params: { apikey: process.env.ZENROWS_API_KEY, url }, timeout: 20000 });
+    return extraire(r.data);
+  } catch (e) { return null; }
+}
+
 async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 'fr', titre = '') {
   try {
     const languesNoms = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
@@ -846,17 +878,27 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
       })
     ));
 
-    // Secours gratuit si Tavily ne renvoie rien (quota épuisé) : recherche Google via Serper (extraits des pages)
+    // Secours si Tavily ne renvoie rien (quota épuisé) : Serper trouve les pages (Google), puis le serveur
+    // les ouvre lui-même et garde les passages qui parlent du véhicule — comme le fait Tavily.
     if (results.every(x => !(x.data.results || []).length) && process.env.SERPER_API_KEY) {
-      const gl = { fr: 'fr', de: 'de', it: 'it', en: 'en' };
-      const res2 = await Promise.all(queries.map((q, i) =>
-        axios.post('https://google.serper.dev/search', { q, num: 10, gl: 'ch', hl: ['fr', 'en', 'de'][i] || gl[langue] || 'fr' }, {
+      const organiques = (await Promise.all(queries.map((q, i) =>
+        axios.post('https://google.serper.dev/search', { q, num: 10, gl: 'ch', hl: ['fr', 'en', 'de'][i] || 'fr' }, {
           headers: { 'X-API-KEY': process.env.SERPER_API_KEY, 'Content-Type': 'application/json' }, timeout: 15000
-        }).then(r => ({ data: { results: (r.data.organic || []).map(o => ({ url: o.link, content: `${o.title || ''}. ${o.snippet || ''}${(o.sitelinks || []).map(l => ' ' + (l.title || '')).join('')}` })) } }))
-          .catch(err => { console.log(`SERPER ERREUR ${(err.response && err.response.status) || ''} : ${err.message}`); return { data: { results: [] } }; })
-      ));
-      console.log(`Recherche fiabilité : Tavily vide → secours Serper (${res2.reduce((n, x) => n + x.data.results.length, 0)} résultats)`);
-      results.push(...res2);
+        }).then(r => r.data.organic || [])
+          .catch(err => { console.log(`SERPER ERREUR ${(err.response && err.response.status) || ''} : ${err.message}`); return []; })
+      ))).flat();
+      const motsCles = [modele, ...String(vehicule).split(/\s+/)].map(m => String(m || '').toLowerCase()).filter(m => m.length >= 3 && !/^\d{4}$/.test(m));
+      const pages = [];
+      const vuesS = new Set();
+      for (const o of organiques) {
+        if (!o.link || vuesS.has(o.link) || /youtube\.com|facebook\.com|instagram\.com|tiktok\.com|\.pdf($|\?)/i.test(o.link)) continue;
+        vuesS.add(o.link); pages.push(o);
+      }
+      const aOuvrir = pages.slice(0, 6);
+      const lues = await Promise.all(aOuvrir.map(o => lirePageSource(o.link, motsCles)));
+      const enrichis = pages.map((o, i) => ({ url: o.link, content: (i < aOuvrir.length && lues[i]) || `${o.title || ''}. ${o.snippet || ''}` }));
+      console.log(`Recherche fiabilité : Tavily vide → secours Serper (${pages.length} pages, ${lues.filter(Boolean).length} lues en entier)`);
+      results.push({ data: { results: enrichis } });
     }
 
     // Chaque source avec son adresse, pour que l'IA puisse juger de quoi elle parle
