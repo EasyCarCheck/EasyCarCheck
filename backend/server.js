@@ -836,7 +836,7 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
       axios.post('https://api.tavily.com/search', {
         api_key: process.env.TAVILY_API_KEY,
         query: q,
-        search_depth: 'advanced',
+        search_depth: process.env.TAVILY_DEPTH || 'basic', // basic = 1 crédit par recherche (advanced = 2)
         max_results: 6,
         include_answer: false
       }, { timeout: 15000 }).catch((err) => {
@@ -845,6 +845,19 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
         return { data: { results: [] } };
       })
     ));
+
+    // Secours gratuit si Tavily ne renvoie rien (quota épuisé) : recherche Google via Serper (extraits des pages)
+    if (results.every(x => !(x.data.results || []).length) && process.env.SERPER_API_KEY) {
+      const gl = { fr: 'fr', de: 'de', it: 'it', en: 'en' };
+      const res2 = await Promise.all(queries.map((q, i) =>
+        axios.post('https://google.serper.dev/search', { q, num: 10, gl: 'ch', hl: ['fr', 'en', 'de'][i] || gl[langue] || 'fr' }, {
+          headers: { 'X-API-KEY': process.env.SERPER_API_KEY, 'Content-Type': 'application/json' }, timeout: 15000
+        }).then(r => ({ data: { results: (r.data.organic || []).map(o => ({ url: o.link, content: `${o.title || ''}. ${o.snippet || ''}${(o.sitelinks || []).map(l => ' ' + (l.title || '')).join('')}` })) } }))
+          .catch(err => { console.log(`SERPER ERREUR ${(err.response && err.response.status) || ''} : ${err.message}`); return { data: { results: [] } }; })
+      ));
+      console.log(`Recherche fiabilité : Tavily vide → secours Serper (${res2.reduce((n, x) => n + x.data.results.length, 0)} résultats)`);
+      results.push(...res2);
+    }
 
     // Chaque source avec son adresse, pour que l'IA puisse juger de quoi elle parle
     const vues = new Set();
@@ -1212,7 +1225,7 @@ async function rechercherPrixMarcheViaTavily(marque, modele, annee, km) {
       axios.post('https://api.tavily.com/search', {
         api_key: process.env.TAVILY_API_KEY,
         query: q,
-        search_depth: 'advanced',
+        search_depth: process.env.TAVILY_DEPTH || 'basic', // basic = 1 crédit par recherche (advanced = 2)
         max_results: 8,
         include_answer: true,
         include_raw_content: false
