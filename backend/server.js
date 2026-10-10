@@ -1017,7 +1017,7 @@ async function rechercherComparablesAS24(infos, marque, modele, annee, km) {
   return rechercherComparablesPlage(infos, marque, modele, annee, km, annee - 1, annee + 1);
 }
 
-async function rechercherComparablesPlage(infos, marque, modele, annee, km, anneeMin, anneeMax) {
+async function rechercherComparablesPlage(infos, marque, modele, annee, km, anneeMin, anneeMax, avecFiltres = true) {
   try {
     if (!annee || !km) { console.log('Comparables : année ou km inconnu — ignoré'); return null; }
     let chemin = infos.lienRecherche;
@@ -1026,7 +1026,17 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
       if (!marque || !motModele) return null;
       chemin = `/fr/s/mo-${slugAs24(motModele)}/mk-${slugAs24(marque)}`;
     }
-    const urlRecherche = `https://www.autoscout24.ch${chemin.replace(/^\/(de|it|en)\//, '/fr/')}?firstRegistrationYearFrom=${anneeMin}&firstRegistrationYearTo=${anneeMax}`;
+    // On demande directement à AutoScout24 la MÊME version (puissance ±12 %, diesel si diesel) :
+    // la page ne montre qu'une vingtaine d'annonces, toutes versions confondues sinon.
+    let cheminFr = chemin.replace(/^\/(de|it|en)\//, '/fr/').replace(/\/+$/, '');
+    let filtres = '';
+    if (avecFiltres) {
+      const ps = parseInt(String(infos.puissance || '').replace(/[^\d]/g, '')) || 0;
+      if (ps >= 40 && ps <= 1500) filtres += `&horsePowerFrom=${Math.floor(ps * 0.88)}&horsePowerTo=${Math.ceil(ps * 1.12)}`;
+      if (/diesel/i.test(infos.carburant || '') && !/\/ft-/.test(cheminFr)) cheminFr += '/ft-diesel';
+    }
+    const urlRecherche = `https://www.autoscout24.ch${cheminFr}?firstRegistrationYearFrom=${anneeMin}&firstRegistrationYearTo=${anneeMax}${filtres}`;
+    const filtresAppliques = urlRecherche.includes('horsePower') || urlRecherche.includes('/ft-');
     console.log('Comparables — recherche :', urlRecherche);
 
     const resp = await axios.get('https://api.zenrows.com/v1/', {
@@ -1040,6 +1050,11 @@ async function rechercherComparablesPlage(infos, marque, modele, annee, km, anne
     // L'année de chaque annonce est déjà garantie par le filtre de la recherche (année ±1).
     const catalogue = lireCatalogueResultats(html).filter(a => a.id !== infos.idAnnonce);
     console.log(`Comparables — catalogue de la page : ${catalogue.length} annonces (${catalogue.filter(a => a.km != null).length} avec km)`);
+    // Sécurité : si la recherche filtrée ne renvoie rien du tout (filtre refusé par le site), on refait la recherche sans filtre
+    if (catalogue.length === 0 && filtresAppliques && !/mileage|OfferCatalog/.test(html)) {
+      console.log('Comparables — recherche filtrée vide, nouvel essai sans filtre de version');
+      return rechercherComparablesPlage(infos, marque, modele, annee, km, anneeMin, anneeMax, false);
+    }
     let toutes = null;
     if (catalogue.filter(a => a.km != null && a.prix > 1000).length >= 5) {
       toutes = catalogue.filter(a => a.km != null && a.prix > 1000)
