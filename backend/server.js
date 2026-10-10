@@ -198,16 +198,38 @@ function extraireChampsSchema(html) {
   return r;
 }
 
+// Renvoie le HTML d'un élément complet (de sa balise ouvrante à sa balise fermante correspondante)
+function elementComplet(html, marqueur) {
+  const i = html.indexOf(marqueur);
+  if (i === -1) return null;
+  const debut = html.lastIndexOf('<', i);
+  const tag = (html.substring(debut + 1).match(/^([a-zA-Z0-9]+)/) || [])[1];
+  if (!tag) return null;
+  const re = new RegExp(`<(/?)${tag}\\b[^>]*?(/?)>`, 'gi');
+  re.lastIndex = debut;
+  let profondeur = 0, m;
+  while ((m = re.exec(html))) {
+    if (m[2] === '/') continue;            // balise auto-fermante
+    profondeur += m[1] ? -1 : 1;
+    if (profondeur === 0) return html.substring(debut, re.lastIndex);
+    if (re.lastIndex - debut > 300000) break; // sécurité
+  }
+  return null;
+}
+
+// Textes d'AutoScout24 qui ne sont pas des équipements (avertissements, menus)
+const TEXTES_NON_EQUIPEMENT = /peut différer|peuvent différer|may not match|not currently available|translate feature|abweichen|nicht verfügbar|può differire|potrebbe differire|non (?:sono|è) disponibil|Recherche avancée|Advanced search|Erweiterte Suche|Ricerca avanzata/i;
+
 // Lit dans la page déjà récupérée ce que le 2e appel ZenRows (css_extractor) allait chercher
 function extraireCssLocal(html) {
   const texte = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
   const out = { equipments: [], couleur_ext: null, description_vendeur: null };
-  const i = html.indexOf('id="expandable-equipment"');
-  if (i !== -1) {
-    const bloc = html.substring(i, i + 60000);
+  // Uniquement à l'intérieur du bloc équipements (sinon on attrape les liens du menu et du pied de page du site)
+  const bloc = elementComplet(html, 'id="expandable-equipment"');
+  if (bloc) {
     for (const m of bloc.matchAll(/<li[^>]*class="[^"]*chakra-list__item[^"]*"[^>]*>([\s\S]*?)<\/li>/g)) {
       const t = texte(m[1]);
-      if (t && t.length < 200) out.equipments.push(t);
+      if (t && t.length < 200 && !TEXTES_NON_EQUIPEMENT.test(t)) out.equipments.push(t);
       if (out.equipments.length >= 150) break;
     }
   }
@@ -1285,6 +1307,48 @@ function calculerMarche(prixDemande, pm) {
 }
 
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
+// Numéro de rapport unique : date + secondes du jour + chiffre aléatoire (ex. 261010-412305)
+function numeroRapport() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Zurich' }));
+  const p = (n, l = 2) => String(n).padStart(l, '0');
+  const secondes = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+  return `${p(d.getFullYear() % 100)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(secondes, 5)}${Math.floor(Math.random() * 10)}`;
+}
+
+// Phrase de justification du score prix, calculée à partir des vrais chiffres (jamais un pourcentage approximatif)
+function justificationPrixReelle(prix, mediane, n, langue = 'fr') {
+  const pct = Math.round((prix / mediane - 1) * 100);
+  const loc = langue === 'en' ? 'en-US' : langue === 'it' ? 'it-CH' : 'de-CH';
+  const med = mediane.toLocaleString(loc);
+  const T = {
+    fr: { haut: `Prix demandé ${pct} % au-dessus de la médiane de ${n} annonces similaires (${med} CHF).`, bas: `Prix demandé ${-pct} % en dessous de la médiane de ${n} annonces similaires (${med} CHF).`, egal: `Prix dans la médiane de ${n} annonces similaires (${med} CHF).` },
+    de: { haut: `Verlangter Preis ${pct} % über dem Median von ${n} ähnlichen Inseraten (${med} CHF).`, bas: `Verlangter Preis ${-pct} % unter dem Median von ${n} ähnlichen Inseraten (${med} CHF).`, egal: `Preis im Median von ${n} ähnlichen Inseraten (${med} CHF).` },
+    it: { haut: `Prezzo richiesto ${pct} % sopra la mediana di ${n} annunci simili (${med} CHF).`, bas: `Prezzo richiesto ${-pct} % sotto la mediana di ${n} annunci simili (${med} CHF).`, egal: `Prezzo in linea con la mediana di ${n} annunci simili (${med} CHF).` },
+    en: { haut: `Asking price ${pct} % above the median of ${n} similar listings (${med} CHF).`, bas: `Asking price ${-pct} % below the median of ${n} similar listings (${med} CHF).`, egal: `Price in line with the median of ${n} similar listings (${med} CHF).` }
+  }[langue] || null;
+  const t = T || { haut: '', bas: '', egal: '' };
+  return pct > 2 ? t.haut : pct < -2 ? t.bas : t.egal;
+}
+
+// Un problème qui concerne une autre motorisation ou une autre boîte que celle de la voiture n'a rien à faire dans le rapport
+function problemeIncompatible(texte, carburant, boite) {
+  const t = String(texte || ''), c = String(carburant || '').toLowerCase(), b = String(boite || '').toLowerCase();
+  const estDiesel = /diesel/.test(c), estEssence = /essence|benzin|benzina|petrol|gasoline/.test(c) && !/hybrid|électr|elektr|elettr/.test(c);
+  const estElec = /électrique|electric|elektro|elettrica/.test(c);
+  const mentionDiesel = /\bdiesel\b|\bJTDm?\b|\bTDI\b|\bdCi\b|\bCDI\b|\bB?HDi\b|\bCRDi\b|\bEcoBlue\b|\bMultijet\b|\bTDCi\b|\bD-4D\b|\bBlueHDi\b|\bd\b(?= ?\d)|filtre à particules|Partikelfilter|\bFAP\b|\bDPF\b|AdBlue/i.test(t);
+  const mentionEssence = /\bessence\b|\bBenzin(?:er)?\b|\bbenzina\b|\bpetrol\b|\bTSI\b|\bTFSI\b|\bTCe\b|\bPureTech\b|\bEcoBoost\b|\bMultiAir\b|\bT-Jet\b|bougies? d'allumage|Zündkerze|candel[ae]|spark plug/i.test(t);
+  const auto = /auto|dsg|dct|cvt|steptronic|tiptronic|s tronic|edc|robotis|variation/.test(b);
+  const manuelle = /manuel|schalt|manuale|manual/.test(b) && !auto;
+  const mentionManuelle = /boîte manuelle|bv manuelle|Schaltgetriebe|cambio manuale|manual gearbox|manual transmission/i.test(t);
+  const mentionAuto = /boîte automatique|Automatikgetriebe|cambio automatico|automatic gearbox|automatic transmission|\bDSG\b|\bEDC\b|\bDCT\b/i.test(t);
+  if (estEssence && mentionDiesel && !mentionEssence) return 'concerne un moteur diesel';
+  if (estDiesel && mentionEssence && !mentionDiesel) return 'concerne un moteur essence';
+  if (estElec && (mentionDiesel || mentionEssence)) return 'concerne un moteur thermique';
+  if (auto && mentionManuelle && !mentionAuto) return 'concerne la boîte manuelle';
+  if (manuelle && mentionAuto && !mentionManuelle) return 'concerne la boîte automatique';
+  return null;
+}
+
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
@@ -1715,6 +1779,9 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.fourchette_marche_max = marche.max;
     console.log(`SCORE PRIX calculé: ${marche.scorePrix} (prix ${prixDemande}, fourchette ${marche.min}–${marche.max}, GPT proposait ${parsed.score_prix})`);
     parsed.score_prix = marche.scorePrix;
+    if (prixMarcheCtx && prixMarcheCtx.source === 'as24' && marche.mediane > 0) {
+      parsed.justification_prix = justificationPrixReelle(prixDemande, marche.mediane, prixMarcheCtx.count || 0, langue);
+    }
     parsed.prix_negocie_suggere = marche.prixNegocie;
     parsed.economie_potentielle_min = marche.ecoMin;
     parsed.economie_potentielle_max = marche.ecoMax;
@@ -1811,6 +1878,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     const seen = new Set();
     parsed.options = parsed.options.filter(o => {
       if (!o) return false;
+      if (TEXTES_NON_EQUIPEMENT.test(o)) return false; // avertissements / menus du site, pas des équipements
       const key = o.toLowerCase().trim();
       if (seen.has(key)) return false;
       seen.add(key);
@@ -2042,7 +2110,14 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // ── INJECTION DIRECTE TAVILY : problèmes connus sans passer par GPT ──
   // GPT retourne toujours [] pour ce champ — on injecte ici les données réelles Tavily
   if (Array.isArray(tavilyProblemes) && tavilyProblemes.length > 0) {
-    parsed.problemes_connus_modele = tavilyProblemes.slice(0, 4);
+    const carbu = String((scrapedData.infos && scrapedData.infos.carburant) || parsed.carburant || '');
+    const boiteV = String((scrapedData.infos && scrapedData.infos.boite) || parsed.boite || '');
+    const gardes = tavilyProblemes.filter(p => {
+      const raison = problemeIncompatible(p, carbu, boiteV);
+      if (raison) console.log(`PROBLÈME écarté (${raison}) : ${p}`);
+      return !raison;
+    });
+    parsed.problemes_connus_modele = gardes.slice(0, 4);
     console.log('PROBLÈMES injectés depuis Tavily (bypass GPT):', parsed.problemes_connus_modele.length);
   } else {
     parsed.problemes_connus_modele = [];
@@ -2630,7 +2705,7 @@ app.post('/test-rapport', exigerCleAdmin, async (req, res) => {
     const { url, email, langue = 'fr' } = req.body;
     if (!url || !email) return res.status(400).json({ error: 'URL et email requis' });
     console.log('1. Démarrage analyse...');
-    const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+    const reportNumber = numeroRapport();
     const analyse = await obtenirAnalyse(url, langue, { forcer: true });
     console.log('2. Analyse OK');
     console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global, '| CO2:', analyse.co2, '| Taxe:', analyse.taxe_cantonale_ge);
@@ -2762,7 +2837,7 @@ const sessionsTraitees = new Set();
 async function traiterCommande(session) {
   const { url, email, langue = 'fr' } = session.metadata || {};
   try {
-    const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+    const reportNumber = numeroRapport();
     const analyse = await obtenirAnalyse(url, langue);
     const pdf = await genererPDF(analyse, reportNumber, url, langue);
     await envoyerEmail(email, pdf, analyse, reportNumber, langue);
