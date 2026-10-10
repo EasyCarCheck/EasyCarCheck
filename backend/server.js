@@ -1570,7 +1570,7 @@ Adapter aux problèmes réels documentés de CE modèle. NE PAS poser des questi
 Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur documenté : compression, consommation huile, traces d'huile. Pour les sportives : freins, pneus, boîte. Pour les diesel : DPF, EGR, turbo.
 
 ━━━ VERDICT ━━━
-- ACHETER : aucun red flag ET [ (fiabilité ≥ 8 ET prix ≤ médiane) OU (fiabilité ≥ 7 ET prix ≥ 3 % sous la médiane) OU (fiabilité ≥ 6 ET prix ≥ 5 % sous la médiane) ]
+- ACHETER : aucun red flag ET [ (fiabilité ≥ 8 ET prix ≤ médiane) OU (fiabilité ≥ 7 ET prix ≤ médiane + 2 %) OU (fiabilité ≥ 6 ET prix ≥ 5 % sous la médiane) ]
 - Un prix simplement égal à la médiane est un prix « correct », pas une bonne affaire.
 - NÉGOCIER : prix au-dessus de la médiane, OU points importants à vérifier, OU fiabilité moyenne
 - ÉVITER : red flag grave (ex : culasse, accident lourd) avec fiabilité faible, OU fiabilité ≤ 3, OU prix > 15 % au-dessus du max
@@ -1811,7 +1811,10 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     const bonPrix = (fiab >= 8 && prixDemande <= mediane) ||
                     (fiab >= 7 && prixDemande <= mediane * 0.97) ||
                     (fiab >= 6 && prixDemande <= mediane * 0.95);
+    // Prix juste : dans la médiane de vraies annonces similaires (jusqu'à +2 %), bonne fiabilité, aucun signal d'alerte
+    const prixJuste = !bonPrix && fiab >= 7 && prixMarcheCtx && prixMarcheCtx.source === 'as24' && prixDemande <= mediane * 1.02;
     if (bonPrix && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'bon_prix'; }
+    else if (prixJuste && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'prix_juste'; }
     else if (prixDemande > mediane) { verdict = 'NÉGOCIER'; raison = 'prix_au_dessus'; }
     else { verdict = 'NÉGOCIER'; raison = 'a_verifier'; }
   } else {
@@ -1826,16 +1829,19 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     en: fiab >= 8 ? 'very good reliability' : fiab >= 7 ? 'good reliability' : 'decent reliability'
   };
   const resumes = {
-    fr: { prix_trop_eleve: `Prix plus de 25 % au-dessus du marché suisse (médiane ${mediane.toLocaleString('de-CH')} CHF) — déconseillé à ce prix.`, fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr}.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
-    de: { prix_trop_eleve: `Preis über 25 % über dem Schweizer Markt (Median ${mediane.toLocaleString('de-CH')} CHF) — zu diesem Preis nicht empfohlen.`, fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de}.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
-    it: { prix_trop_eleve: `Prezzo oltre il 25 % sopra il mercato svizzero (mediana ${mediane.toLocaleString('it-CH')} CHF) — sconsigliato a questo prezzo.`, fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it}.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
-    en: { prix_trop_eleve: `Price more than 25 % above the Swiss market (median ${mediane.toLocaleString('en-US')} CHF) — not recommended at this price.`, fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en}.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
+    fr: { prix_juste: `Prix dans la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr} — prix juste.`, prix_trop_eleve: `Prix plus de 25 % au-dessus du marché suisse (médiane ${mediane.toLocaleString('de-CH')} CHF) — déconseillé à ce prix.`, fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr}.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
+    de: { prix_juste: `Preis im Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de} — fairer Preis.`, prix_trop_eleve: `Preis über 25 % über dem Schweizer Markt (Median ${mediane.toLocaleString('de-CH')} CHF) — zu diesem Preis nicht empfohlen.`, fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de}.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
+    it: { prix_juste: `Prezzo in linea con la mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it} — prezzo giusto.`, prix_trop_eleve: `Prezzo oltre il 25 % sopra il mercato svizzero (mediana ${mediane.toLocaleString('it-CH')} CHF) — sconsigliato a questo prezzo.`, fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it}.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
+    en: { prix_juste: `Price in line with the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en} — fair price.`, prix_trop_eleve: `Price more than 25 % above the Swiss market (median ${mediane.toLocaleString('en-US')} CHF) — not recommended at this price.`, fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en}.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
   };
   if (raison && (verdict !== verdictGPT || !parsed.resume_verdict)) {
     parsed.resume_verdict = (resumes[langue] || resumes.fr)[raison];
   }
   console.log(`VERDICT: ${verdict} (GPT: ${verdictGPT}, raison: ${raison || 'IA'}, fiabilité ${fiab}, red flags ${redFlags.length}, prix ${prixDemande}, médiane ${mediane || '—'})`);
   parsed.verdict = verdict;
+  parsed.raison_verdict = raison || null;
+  parsed.ecart_mediane_pct = mediane > 0 ? Math.round((prixDemande / mediane - 1) * 100) : null;
+  parsed.valeur_marche = mediane > 0 ? mediane : 0;
 
   parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
 
@@ -2482,9 +2488,23 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
         ${analyse.resume_verdict ? `<div class="verdict-desc">${analyse.resume_verdict}</div>` : ''}
       </div>
       <div style="text-align:right;">
-        <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
+        ${(() => {
+          const T = (fr, de, it, en) => langue === 'de' ? de : langue === 'it' ? it : langue === 'en' ? en : fr;
+          const eco = analyse.economie_potentielle_min === analyse.economie_potentielle_max ? '~' + montant(analyse.economie_potentielle_min) : montant(analyse.economie_potentielle_min) + ' – ' + montant(analyse.economie_potentielle_max);
+          // Prix nettement trop élevé : on montre la valeur du marché et l'écart, pas une « économie » irréaliste
+          if (analyse.raison_verdict === 'prix_trop_eleve' && analyse.valeur_marche > 0) {
+            return `<div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${T('VALEUR DU MARCHÉ', 'MARKTWERT', 'VALORE DI MERCATO', 'MARKET VALUE')}</div>
+        <div style="font-size:38px;font-weight:900;color:#fff;">~${montant(analyse.valeur_marche)} CHF</div>
+        <div style="font-size:10px;color:#ff8a8a;margin-top:4px;">${T('Prix demandé', 'Verlangter Preis', 'Prezzo richiesto', 'Asking price')} +${analyse.ecart_mediane_pct} %</div>`;
+          }
+          const ligne = !(analyse.prix_negocie_suggere > 0) ? insuffisant
+            : analyse.verdict === 'ACHETER'
+              ? (analyse.economie_potentielle_min > 0 ? `✓ ${T('Prix juste · marge de négociation', 'Fairer Preis · Verhandlungsspielraum', 'Prezzo giusto · margine di trattativa', 'Fair price · room to negotiate')} ${eco} CHF` : `✓ ${T('Prix dans le marché', 'Preis im Markt', 'Prezzo nel mercato', 'Price within market')}`)
+              : `${T('↓ Économie :', '↓ Ersparnis :', '↓ Risparmio :', '↓ Savings :')} ${eco} CHF`;
+          return `<div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${T('PRIX SUGGÉRÉ', 'EMPF. PREIS', 'PREZZO SUGGERITO', 'SUGGESTED PRICE')}</div>
         <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere > 0 ? montant(analyse.prix_negocie_suggere) + ' CHF' : '—'}</div>
-        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${!(analyse.prix_negocie_suggere > 0) ? insuffisant : analyse.verdict === 'ACHETER' ? (langue === "de" ? "✓ Preis im Markt" : langue === "it" ? "✓ Prezzo nel mercato" : langue === "en" ? "✓ Price within market" : "✓ Prix dans le marché") : `${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min === analyse.economie_potentielle_max ? '~' + montant(analyse.economie_potentielle_min) : montant(analyse.economie_potentielle_min) + ' – ' + montant(analyse.economie_potentielle_max)} CHF`}</div>
+        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${ligne}</div>`;
+        })()}
       </div>
     </div>
 
