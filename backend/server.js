@@ -839,7 +839,11 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
         search_depth: 'advanced',
         max_results: 6,
         include_answer: false
-      }, { timeout: 15000 }).catch(() => ({ data: { results: [] } }))
+      }, { timeout: 15000 }).catch((err) => {
+        const st = err.response && err.response.status;
+        console.log(`TAVILY ERREUR ${st || ''} : ${st === 432 || st === 433 ? 'quota Tavily épuisé (abonnement à recharger)' : st === 429 ? 'trop de requêtes' : (err.response && JSON.stringify(err.response.data || '').slice(0, 150)) || err.message}`);
+        return { data: { results: [] } };
+      })
     ));
 
     // Chaque source avec son adresse, pour que l'IA puisse juger de quoi elle parle
@@ -1447,6 +1451,11 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     }
   } catch(e) {
     console.log('Recherche web erreur (non bloquant):', e.message);
+  }
+  // RÈGLE : pas de note de fiabilité sans sources réelles (sinon l'IA donnerait une note « de mémoire », souvent trop haute)
+  const fiabiliteSourcee = !!(fiabMemo && fiabMemo.score) || ((tavilyContext && tavilyContext.nbSources) || 0) > 0;
+  if (!fiabiliteSourcee) {
+    throw new Error(`Fiabilité impossible à vérifier (${(tavilyContext && tavilyContext.nbSources) || 0} source trouvée — recherche web indisponible ou quota Tavily épuisé) — aucun rapport envoyé`);
   }
 
   const tavilyPrix = tavilyContext.prix || '';
