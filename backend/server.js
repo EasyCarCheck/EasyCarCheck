@@ -198,6 +198,26 @@ function extraireChampsSchema(html) {
   return r;
 }
 
+// Lit dans la page déjà récupérée ce que le 2e appel ZenRows (css_extractor) allait chercher
+function extraireCssLocal(html) {
+  const texte = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  const out = { equipments: [], couleur_ext: null, description_vendeur: null };
+  const i = html.indexOf('id="expandable-equipment"');
+  if (i !== -1) {
+    const bloc = html.substring(i, i + 60000);
+    for (const m of bloc.matchAll(/<li[^>]*class="[^"]*chakra-list__item[^"]*"[^>]*>([\s\S]*?)<\/li>/g)) {
+      const t = texte(m[1]);
+      if (t && t.length < 200) out.equipments.push(t);
+      if (out.equipments.length >= 150) break;
+    }
+  }
+  const c = html.match(/data-testid="(?:color-exterior|exterior-color)"[^>]*>([\s\S]{0,300}?)<\/(?:div|span|p|dd)>/);
+  if (c) out.couleur_ext = texte(c[1]) || null;
+  const d = html.match(/data-testid="(?:description-content|seller-comment|clp-description)"[^>]*>([\s\S]{0,6000}?)<\/div>/);
+  if (d) out.description_vendeur = texte(d[1]) || null;
+  return out;
+}
+
 // ─── SCRAPING ───────────────────────────────────────────
 async function scrapeAnnonce(url, langue = 'fr') {
   // Forcer la langue dans l'URL AutoScout24
@@ -228,22 +248,9 @@ async function scrapeAnnonce(url, langue = 'fr') {
     let cssCouleur = null;
     let cssDescVendeur = null;
     try {
-      const cssResponse = await axios.get('https://api.zenrows.com/v1/', {
-        params: {
-          apikey: process.env.ZENROWS_API_KEY,
-          url: url,
-          js_render: 'true',
-          premium_proxy: 'true',
-          wait: '8000',
-          css_extractor: JSON.stringify({
-            equipments: '#expandable-equipment li.chakra-list__item',
-            couleur_ext: '[data-testid="color-exterior"] span, [data-testid="color-exterior"], [data-testid="exterior-color"] span, [data-testid="exterior-color"]',
-            description_vendeur: '[data-testid="description-content"], [data-testid="seller-comment"], [data-testid="clp-description"], [class*="description-content"]'
-          })
-        },
-        timeout: 120000
-      });
-      const cssData = cssResponse.data;
+      // (avant : 2e appel ZenRows complet juste pour ces éléments — on les lit maintenant dans la page déjà récupérée,
+      //  ce qui divise par deux la consommation ZenRows par annonce)
+      const cssData = extraireCssLocal(html);
       if (cssData && cssData.equipments && Array.isArray(cssData.equipments)) {
         setLangue(langue || 'fr');
         cssEquipments = cssData.equipments.filter(e => e && e.trim().length > 2);
@@ -606,7 +613,9 @@ async function scrapeAnnonce(url, langue = 'fr') {
     return { html: finalContent, url: url, equipmentData: equipmentData, co2: co2Value, options: optionsList, infos };
   } catch (err) {
     console.log('ZENROWS ERROR:', err.response?.data || err.message);
-    return { html: `URL: ${url}`, url: url, equipmentData: '', co2: null, options: [], infos: {}, erreurScraping: true };
+    const st = err.response && err.response.status;
+    const raison = st === 402 ? 'quota ZenRows épuisé (abonnement à renouveler)' : st === 429 ? 'trop de requêtes ZenRows' : `erreur ZenRows ${st || err.message}`;
+    return { html: `URL: ${url}`, url: url, equipmentData: '', co2: null, options: [], infos: {}, erreurScraping: true, raisonErreur: raison };
   }
 }
 
@@ -1324,6 +1333,14 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     annee = anneeMatch ? parseInt(anneeMatch[0]) : 0;
   }
   console.log('VÉHICULE IDENTIFIÉ :', marque, modele, annee || '?', km ? km + ' km' : 'km ?', prixRef ? prixRef + ' CHF' : 'prix ?');
+
+  // RÈGLE ABSOLUE : jamais de rapport si l'annonce n'a pas pu être lue (sinon l'IA inventerait km, prix, année…)
+  if (scrapedData.erreurScraping) {
+    throw new Error(`Annonce illisible : ${scrapedData.raisonErreur || 'page non récupérée'} — aucun rapport envoyé`);
+  }
+  if (!prixRef || !km) {
+    throw new Error(`Données essentielles absentes de l'annonce (${!prixRef ? 'prix' : ''}${!prixRef && !km ? ' et ' : ''}${!km ? 'kilométrage' : ''}) — aucun rapport envoyé`);
+  }
 
   let tavilyContext = { prix: '', problemesDocumentes: [], numerosRappel: [], prixMarche: null };
   // Clés de mémoire : moteur lu dans le titre de l'annonce, tranche de 20'000 km pour le prix
@@ -2647,19 +2664,40 @@ async function obtenirAnalyse(url, langue, { forcer = false } = {}) {
 }
 
 // ─── APERÇU GRATUIT (utilisé par le site) : ouvert au public mais limité pour protéger le budget ───
-const LIMITE_GRATUIT_IP = parseInt(process.env.FREE_PER_IP_PER_DAY) || 3;   // par visiteur et par jour
-const LIMITE_GRATUIT_JOUR = parseInt(process.env.FREE_PER_DAY) || 150;      // pour tout le site et par jour
-const compteurGratuit = { jour: '', total: 0, parIp: new Map() };
-function verifierLimiteGratuit(req) {
+// Limites (modifiables dans Railway → Variables) — réglées pour ne jamais épuiser le quota ZenRows
+const LIMITE_GRATUIT_IP = parseInt(process.env.FREE_PER_IP_PER_DAY) || 2;      // par visiteur et par jour
+const LIMITE_GRATUIT_IP_SEMAINE = parseInt(process.env.FREE_PER_IP_PER_WEEK) || 4; // par visiteur sur 7 jours
+const LIMITE_GRATUIT_JOUR = parseInt(process.env.FREE_PER_DAY) || 20;          // pour tout le site et par jour
+const LIMITE_GRATUIT_MOIS = parseInt(process.env.FREE_PER_MONTH) || 500;       // pour tout le site et par mois
+const compteurGratuit = { mois: '', totalMois: 0, jour: '', total: 0, parIp: new Map() }; // parIp : ip → [horodatages]
+const MSG_LIMITE = {
+  ip: { fr: 'Vous avez atteint la limite d\'aperçus gratuits. Commandez le rapport complet ou réessayez plus tard.', de: 'Sie haben das Limit an Gratis-Vorschauen erreicht. Bestellen Sie den vollständigen Bericht oder versuchen Sie es später erneut.', it: 'Hai raggiunto il limite di anteprime gratuite. Ordina il rapporto completo o riprova più tardi.', en: 'You have reached the free preview limit. Order the full report or try again later.' },
+  site: { fr: 'L\'aperçu gratuit est très demandé en ce moment. Réessayez plus tard ou commandez directement le rapport complet.', de: 'Die Gratis-Vorschau ist im Moment sehr gefragt. Versuchen Sie es später erneut oder bestellen Sie direkt den vollständigen Bericht.', it: 'L\'anteprima gratuita è molto richiesta in questo momento. Riprova più tardi o ordina direttamente il rapporto completo.', en: 'The free preview is in high demand right now. Try again later or order the full report directly.' }
+};
+function verifierLimiteGratuit(req, langue = 'fr', url = '') {
   if (process.env.ADMIN_KEY && req.headers['x-admin-key'] === process.env.ADMIN_KEY) return null;
-  const jour = new Date().toISOString().slice(0, 10);
-  if (compteurGratuit.jour !== jour) { compteurGratuit.jour = jour; compteurGratuit.total = 0; compteurGratuit.parIp.clear(); }
+  // Une annonce déjà analysée dans les 24 h ne coûte rien : elle ne compte pas dans les limites
+  if (url && analysesRecentes.has(`${url.split('?')[0]}|${langue}`)) return null;
+  const maintenant = Date.now();
+  const jour = new Date().toISOString().slice(0, 10), mois = jour.slice(0, 7);
+  if (compteurGratuit.jour !== jour) { compteurGratuit.jour = jour; compteurGratuit.total = 0; }
+  if (compteurGratuit.mois !== mois) { compteurGratuit.mois = mois; compteurGratuit.totalMois = 0; }
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
-  const n = compteurGratuit.parIp.get(ip) || 0;
-  if (n >= LIMITE_GRATUIT_IP) return 'Limite d\'analyses gratuites atteinte pour aujourd\'hui. Réessayez demain ou commandez le rapport complet.';
-  if (compteurGratuit.total >= LIMITE_GRATUIT_JOUR) return 'Le service d\'aperçu gratuit est très demandé aujourd\'hui. Réessayez plus tard ou commandez le rapport complet.';
-  compteurGratuit.parIp.set(ip, n + 1);
-  compteurGratuit.total++;
+  const histo = (compteurGratuit.parIp.get(ip) || []).filter(t => maintenant - t < 7 * 24 * 3600 * 1000);
+  const aujourdhui = histo.filter(t => maintenant - t < 24 * 3600 * 1000).length;
+  const L = (k) => (MSG_LIMITE[k][langue] || MSG_LIMITE[k].fr);
+  if (aujourdhui >= LIMITE_GRATUIT_IP || histo.length >= LIMITE_GRATUIT_IP_SEMAINE) {
+    console.log(`APERÇU GRATUIT : limite visiteur atteinte (${aujourdhui} aujourd'hui, ${histo.length} sur 7 jours)`);
+    return L('ip');
+  }
+  if (compteurGratuit.total >= LIMITE_GRATUIT_JOUR || compteurGratuit.totalMois >= LIMITE_GRATUIT_MOIS) {
+    console.log(`APERÇU GRATUIT : limite du site atteinte (${compteurGratuit.total} aujourd'hui, ${compteurGratuit.totalMois} ce mois)`);
+    return L('site');
+  }
+  histo.push(maintenant);
+  compteurGratuit.parIp.set(ip, histo);
+  compteurGratuit.total++; compteurGratuit.totalMois++;
+  if (compteurGratuit.parIp.size > 5000) compteurGratuit.parIp.delete(compteurGratuit.parIp.keys().next().value);
   return null;
 }
 // Sites d'annonces acceptés (ceux annoncés sur easycarcheck.ch)
@@ -2671,7 +2709,7 @@ app.post('/analyse-gratuite', async (req, res) => {
     console.log('APERÇU GRATUIT demandé :', url, '| langue :', langue);
     if (!url) return res.status(400).json({ error: 'URL manquante' });
     if (!urlAnnonceValide(url)) { console.log('APERÇU GRATUIT refusé : lien non reconnu'); return res.status(400).json({ error: 'Merci de coller le lien d\'une annonce AutoScout24, Ricardo, Tutti ou Anibis.' }); }
-    const refus = verifierLimiteGratuit(req);
+    const refus = verifierLimiteGratuit(req, langue, url.trim());
     if (refus) { console.log('APERÇU GRATUIT refusé : limite atteinte'); return res.status(429).json({ error: refus }); }
     const analyse = await obtenirAnalyse(url.trim(), langue);
     res.json({
