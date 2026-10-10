@@ -812,6 +812,38 @@ function traduireOption(opt) {
 }
 
 // ─── RECHERCHE TAVILY ────────────────────────────────────
+// Ouvre une page source (forum, site auto) et garde les passages qui parlent du véhicule (≈ ce que fait Tavily)
+async function lirePageSource(url, motsCles) {
+  const extraire = (html) => {
+    const texte = String(html || '')
+      .replace(/<(script|style|noscript|svg|nav|footer|header)[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&rsquo;/g, "'").replace(/&quot;/g, '"')
+      .replace(/\s+/g, ' ').trim();
+    if (texte.length < 300) return null;
+    const bas = texte.toLowerCase();
+    const fenetres = [];
+    for (const mot of motsCles) {
+      let i = bas.indexOf(mot);
+      while (i !== -1 && fenetres.length < 12) { fenetres.push([Math.max(0, i - 350), Math.min(texte.length, i + 650)]); i = bas.indexOf(mot, i + 600); }
+    }
+    if (!fenetres.length) return null;
+    fenetres.sort((a, b) => a[0] - b[0]);
+    const fusion = [];
+    for (const f of fenetres) { const d = fusion[fusion.length - 1]; if (d && f[0] <= d[1]) d[1] = Math.max(d[1], f[1]); else fusion.push([...f]); }
+    return fusion.map(([a, b]) => texte.slice(a, b)).join(' … ').slice(0, 1800);
+  };
+  try {
+    const r = await axios.get(url, { timeout: 8000, maxContentLength: 3000000, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept-Language': 'fr-CH,fr;q=0.9,de;q=0.8,en;q=0.7' } });
+    const t = extraire(r.data);
+    if (t) return t;
+  } catch (e) { /* page bloquée : essai via ZenRows en mode simple ci-dessous */ }
+  if (!process.env.ZENROWS_API_KEY) return null;
+  try {
+    const r = await axios.get('https://api.zenrows.com/v1/', { params: { apikey: process.env.ZENROWS_API_KEY, url }, timeout: 20000 });
+    return extraire(r.data);
+  } catch (e) { return null; }
+}
+
 async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 'fr', titre = '') {
   try {
     const languesNoms = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
@@ -836,11 +868,38 @@ async function rechercherInfosVehicule(marque, modele, annee, km = '', langue = 
       axios.post('https://api.tavily.com/search', {
         api_key: process.env.TAVILY_API_KEY,
         query: q,
-        search_depth: 'advanced',
+        search_depth: process.env.TAVILY_DEPTH || 'basic', // basic = 1 crédit par recherche (advanced = 2)
         max_results: 6,
         include_answer: false
-      }, { timeout: 15000 }).catch(() => ({ data: { results: [] } }))
+      }, { timeout: 15000 }).catch((err) => {
+        const st = err.response && err.response.status;
+        console.log(`TAVILY ERREUR ${st || ''} : ${st === 432 || st === 433 ? 'quota Tavily épuisé (abonnement à recharger)' : st === 429 ? 'trop de requêtes' : (err.response && JSON.stringify(err.response.data || '').slice(0, 150)) || err.message}`);
+        return { data: { results: [] } };
+      })
     ));
+
+    // Secours si Tavily ne renvoie rien (quota épuisé) : Serper trouve les pages (Google), puis le serveur
+    // les ouvre lui-même et garde les passages qui parlent du véhicule — comme le fait Tavily.
+    if (results.every(x => !(x.data.results || []).length) && process.env.SERPER_API_KEY) {
+      const organiques = (await Promise.all(queries.map((q, i) =>
+        axios.post('https://google.serper.dev/search', { q, num: 10, gl: 'ch', hl: ['fr', 'en', 'de'][i] || 'fr' }, {
+          headers: { 'X-API-KEY': process.env.SERPER_API_KEY, 'Content-Type': 'application/json' }, timeout: 15000
+        }).then(r => r.data.organic || [])
+          .catch(err => { console.log(`SERPER ERREUR ${(err.response && err.response.status) || ''} : ${err.message}`); return []; })
+      ))).flat();
+      const motsCles = [modele, ...String(vehicule).split(/\s+/)].map(m => String(m || '').toLowerCase()).filter(m => m.length >= 3 && !/^\d{4}$/.test(m));
+      const pages = [];
+      const vuesS = new Set();
+      for (const o of organiques) {
+        if (!o.link || vuesS.has(o.link) || /youtube\.com|facebook\.com|instagram\.com|tiktok\.com|\.pdf($|\?)/i.test(o.link)) continue;
+        vuesS.add(o.link); pages.push(o);
+      }
+      const aOuvrir = pages.slice(0, 6);
+      const lues = await Promise.all(aOuvrir.map(o => lirePageSource(o.link, motsCles)));
+      const enrichis = pages.map((o, i) => ({ url: o.link, content: (i < aOuvrir.length && lues[i]) || `${o.title || ''}. ${o.snippet || ''}` }));
+      console.log(`Recherche fiabilité : Tavily vide → secours Serper (${pages.length} pages, ${lues.filter(Boolean).length} lues en entier)`);
+      results.push({ data: { results: enrichis } });
+    }
 
     // Chaque source avec son adresse, pour que l'IA puisse juger de quoi elle parle
     const vues = new Set();
@@ -1208,7 +1267,7 @@ async function rechercherPrixMarcheViaTavily(marque, modele, annee, km) {
       axios.post('https://api.tavily.com/search', {
         api_key: process.env.TAVILY_API_KEY,
         query: q,
-        search_depth: 'advanced',
+        search_depth: process.env.TAVILY_DEPTH || 'basic', // basic = 1 crédit par recherche (advanced = 2)
         max_results: 8,
         include_answer: true,
         include_raw_content: false
@@ -1447,6 +1506,11 @@ async function analyserAvecGPT(scrapedData, langue, url) {
     }
   } catch(e) {
     console.log('Recherche web erreur (non bloquant):', e.message);
+  }
+  // RÈGLE : pas de note de fiabilité sans sources réelles (sinon l'IA donnerait une note « de mémoire », souvent trop haute)
+  const fiabiliteSourcee = !!(fiabMemo && fiabMemo.score) || ((tavilyContext && tavilyContext.nbSources) || 0) > 0;
+  if (!fiabiliteSourcee) {
+    throw new Error(`Fiabilité impossible à vérifier (${(tavilyContext && tavilyContext.nbSources) || 0} source trouvée — recherche web indisponible ou quota Tavily épuisé) — aucun rapport envoyé`);
   }
 
   const tavilyPrix = tavilyContext.prix || '';
@@ -2788,12 +2852,12 @@ const LIMITE_GRATUIT_IP = parseInt(process.env.FREE_PER_IP_PER_DAY) || 2;      /
 const LIMITE_GRATUIT_IP_SEMAINE = parseInt(process.env.FREE_PER_IP_PER_WEEK) || 4; // par visiteur sur 7 jours
 const LIMITE_GRATUIT_JOUR = parseInt(process.env.FREE_PER_DAY) || 20;          // pour tout le site et par jour
 const LIMITE_GRATUIT_MOIS = parseInt(process.env.FREE_PER_MONTH) || 500;       // pour tout le site et par mois
-const compteurGratuit = { mois: '', totalMois: 0, jour: '', total: 0, parIp: new Map() }; // parIp : ip → [horodatages]
+const compteurGratuit = { mois: '', totalMois: 0, jour: '', total: 0, parIp: new Map(), parEmail: new Map() }; // ip / email → [horodatages]
 const MSG_LIMITE = {
   ip: { fr: 'Vous avez atteint la limite d\'aperçus gratuits. Commandez le rapport complet ou réessayez plus tard.', de: 'Sie haben das Limit an Gratis-Vorschauen erreicht. Bestellen Sie den vollständigen Bericht oder versuchen Sie es später erneut.', it: 'Hai raggiunto il limite di anteprime gratuite. Ordina il rapporto completo o riprova più tardi.', en: 'You have reached the free preview limit. Order the full report or try again later.' },
   site: { fr: 'L\'aperçu gratuit est très demandé en ce moment. Réessayez plus tard ou commandez directement le rapport complet.', de: 'Die Gratis-Vorschau ist im Moment sehr gefragt. Versuchen Sie es später erneut oder bestellen Sie direkt den vollständigen Bericht.', it: 'L\'anteprima gratuita è molto richiesta in questo momento. Riprova più tardi o ordina direttamente il rapporto completo.', en: 'The free preview is in high demand right now. Try again later or order the full report directly.' }
 };
-function verifierLimiteGratuit(req, langue = 'fr', url = '') {
+function verifierLimiteGratuit(req, langue = 'fr', url = '', email = '') {
   if (process.env.ADMIN_KEY && req.headers['x-admin-key'] === process.env.ADMIN_KEY) return null;
   // Une annonce déjà analysée dans les 24 h ne coûte rien : elle ne compte pas dans les limites
   if (url && analysesRecentes.has(`${url.split('?')[0]}|${langue}`)) return null;
@@ -2805,6 +2869,14 @@ function verifierLimiteGratuit(req, langue = 'fr', url = '') {
   const histo = (compteurGratuit.parIp.get(ip) || []).filter(t => maintenant - t < 7 * 24 * 3600 * 1000);
   const aujourdhui = histo.filter(t => maintenant - t < 24 * 3600 * 1000).length;
   const L = (k) => (MSG_LIMITE[k][langue] || MSG_LIMITE[k].fr);
+  // Même limite par adresse email (empêche de contourner la limite en changeant de réseau)
+  const cleEmail = String(email || '').trim().toLowerCase();
+  const histoE = cleEmail ? (compteurGratuit.parEmail.get(cleEmail) || []).filter(t => maintenant - t < 7 * 24 * 3600 * 1000) : [];
+  const aujourdhuiE = histoE.filter(t => maintenant - t < 24 * 3600 * 1000).length;
+  if (cleEmail && (aujourdhuiE >= LIMITE_GRATUIT_IP || histoE.length >= LIMITE_GRATUIT_IP_SEMAINE)) {
+    console.log(`APERÇU GRATUIT : limite email atteinte (${aujourdhuiE} aujourd'hui, ${histoE.length} sur 7 jours)`);
+    return L('ip');
+  }
   if (aujourdhui >= LIMITE_GRATUIT_IP || histo.length >= LIMITE_GRATUIT_IP_SEMAINE) {
     console.log(`APERÇU GRATUIT : limite visiteur atteinte (${aujourdhui} aujourd'hui, ${histo.length} sur 7 jours)`);
     return L('ip');
@@ -2815,63 +2887,172 @@ function verifierLimiteGratuit(req, langue = 'fr', url = '') {
   }
   histo.push(maintenant);
   compteurGratuit.parIp.set(ip, histo);
+  if (cleEmail) { histoE.push(maintenant); compteurGratuit.parEmail.set(cleEmail, histoE); if (compteurGratuit.parEmail.size > 5000) compteurGratuit.parEmail.delete(compteurGratuit.parEmail.keys().next().value); }
   compteurGratuit.total++; compteurGratuit.totalMois++;
   if (compteurGratuit.parIp.size > 5000) compteurGratuit.parIp.delete(compteurGratuit.parIp.keys().next().value);
   return null;
 }
 // Sites d'annonces acceptés (ceux annoncés sur easycarcheck.ch)
-const urlAnnonceValide = (u) => /^https?:\/\/([a-z0-9-]+\.)*(autoscout24\.ch|ricardo\.ch|tutti\.ch|anibis\.ch)\/\S+$/i.test(String(u || '').trim());
+// Au lancement : uniquement AutoScout24 (les seuls liens testés de bout en bout). Ricardo/Tutti/Anibis : plus tard.
+const urlAnnonceValide = (u) => /^https?:\/\/([a-z0-9-]+\.)*autoscout24\.ch\/(fr|de|it|en)\/d\/\S+$/i.test(String(u || '').trim());
+const emailValide = (e) => /^[^\s@<>"']{1,64}@[^\s@<>"']+\.[a-z]{2,}$/i.test(String(e || '').trim()) && String(e).length <= 200;
+
+const MSG = {
+  url: { fr: 'Merci de coller le lien d\'une annonce AutoScout24.ch (ex. https://www.autoscout24.ch/fr/d/...).', de: 'Bitte fügen Sie den Link eines AutoScout24.ch-Inserats ein (z. B. https://www.autoscout24.ch/de/d/...).', it: 'Incolla il link di un annuncio AutoScout24.ch (es. https://www.autoscout24.ch/it/d/...).', en: 'Please paste the link of an AutoScout24.ch listing (e.g. https://www.autoscout24.ch/en/d/...).' },
+  email: { fr: 'Merci d\'indiquer une adresse email valide : l\'aperçu détaillé y est envoyé.', de: 'Bitte geben Sie eine gültige E-Mail-Adresse an: Die detaillierte Vorschau wird dorthin gesendet.', it: 'Inserisci un indirizzo email valido: l\'anteprima dettagliata viene inviata lì.', en: 'Please enter a valid email address: the detailed preview is sent there.' },
+  consent: { fr: 'Merci d\'accepter la politique de confidentialité pour recevoir l\'aperçu.', de: 'Bitte akzeptieren Sie die Datenschutzerklärung, um die Vorschau zu erhalten.', it: 'Accetta l\'informativa sulla privacy per ricevere l\'anteprima.', en: 'Please accept the privacy policy to receive the preview.' },
+  analyse: { fr: 'Nous n\'avons pas pu analyser cette annonce (annonce retirée, illisible ou données manquantes). Vérifiez le lien ou essayez une autre annonce — rien ne vous a été facturé.', de: 'Wir konnten dieses Inserat nicht analysieren (entfernt, unlesbar oder Daten fehlen). Prüfen Sie den Link oder versuchen Sie ein anderes Inserat — es wurde nichts verrechnet.', it: 'Non siamo riusciti ad analizzare questo annuncio (rimosso, illeggibile o dati mancanti). Controlla il link o prova un altro annuncio — non ti è stato addebitato nulla.', en: 'We could not analyse this listing (removed, unreadable or missing data). Check the link or try another listing — you have not been charged.' },
+  pack: { fr: 'Les packs de plusieurs rapports arrivent bientôt. Pour l\'instant, commandez le rapport à l\'unité.', de: 'Pakete mit mehreren Berichten folgen in Kürze. Bestellen Sie vorerst den Einzelbericht.', it: 'I pacchetti di più rapporti arriveranno presto. Per ora ordina il rapporto singolo.', en: 'Multi-report packs are coming soon. For now, please order a single report.' },
+  paiement: { fr: 'Le paiement n\'a pas pu être préparé. Réessayez dans un instant.', de: 'Die Zahlung konnte nicht vorbereitet werden. Bitte versuchen Sie es gleich nochmals.', it: 'Non è stato possibile preparare il pagamento. Riprova tra un attimo.', en: 'The payment could not be prepared. Please try again in a moment.' },
+  tropDeCommandes: { fr: 'Trop de tentatives de paiement depuis votre connexion. Réessayez dans une heure.', de: 'Zu viele Zahlungsversuche von Ihrer Verbindung. Bitte in einer Stunde erneut versuchen.', it: 'Troppi tentativi di pagamento dalla tua connessione. Riprova tra un\'ora.', en: 'Too many payment attempts from your connection. Please try again in an hour.' }
+};
+const msg = (k, langue) => (MSG[k][langue] || MSG[k].fr);
+const langueValide = (l) => (['fr', 'de', 'it', 'en'].includes(l) ? l : 'fr');
+
+// Emails de l'aperçu : copie locale (dossier du cache) + contacts Resend si RESEND_AUDIENCE_ID est défini
+async function enregistrerEmail(email, { langue, newsletter, url }) {
+  try {
+    const fichier = path.join(process.env.CACHE_DIR || __dirname, 'ecc-emails.jsonl');
+    fs.appendFileSync(fichier, JSON.stringify({ email, langue, newsletter: !!newsletter, url, date: new Date().toISOString() }) + '\n');
+  } catch (e) { console.log('EMAIL : copie locale impossible :', e.message); }
+  if (process.env.RESEND_AUDIENCE_ID) {
+    try {
+      await resend.contacts.create({ email, audienceId: process.env.RESEND_AUDIENCE_ID, unsubscribed: !newsletter });
+    } catch (e) { console.log('EMAIL : ajout aux contacts Resend impossible :', e.message); }
+  }
+}
+
+// Aperçu détaillé envoyé par email : vrais éléments du rapport, mais verdict, économie et détails gardés pour le rapport payant
+function contenuApercu(analyse, langue) {
+  const T = (fr, de, it, en) => (langue === 'de' ? de : langue === 'it' ? it : langue === 'en' ? en : fr);
+  const pb = (analyse.problemes_connus_modele || []).filter(Boolean);
+  const n = analyse.marche_nb_annonces || 0;
+  let marche;
+  if (analyse.marche_source === 'as24' && n > 0 && analyse.ecart_mediane_pct != null) {
+    const e = analyse.ecart_mediane_pct;
+    const pos = e > 2 ? T('au-dessus du marché', 'über dem Markt', 'sopra il mercato', 'above the market')
+      : e < -2 ? T('en dessous du marché', 'unter dem Markt', 'sotto il mercato', 'below the market')
+      : T('conforme au marché', 'marktgerecht', 'in linea con il mercato', 'in line with the market');
+    marche = T(`Comparé à ${n} annonces similaires en Suisse : prix ${pos}.`, `Verglichen mit ${n} ähnlichen Inseraten in der Schweiz: Preis ${pos}.`, `Confrontato con ${n} annunci simili in Svizzera: prezzo ${pos}.`, `Compared with ${n} similar listings in Switzerland: price ${pos}.`);
+  } else if (analyse.fourchette_marche_max > 0) {
+    marche = T('Prix comparé à une estimation du marché suisse (sources web).', 'Preis mit einer Schätzung des Schweizer Marktes verglichen (Webquellen).', 'Prezzo confrontato con una stima del mercato svizzero (fonti web).', 'Price compared with a Swiss market estimate (web sources).');
+  } else {
+    marche = T('Données de marché insuffisantes pour cette annonce.', 'Ungenügende Marktdaten für dieses Inserat.', 'Dati di mercato insufficienti per questo annuncio.', 'Not enough market data for this listing.');
+  }
+  return { T, pb, marche };
+}
+
+function construireApercuEmail(email, analyse, url, langue) {
+  const { T, pb, marche } = contenuApercu(analyse, langue);
+  const esc = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const voiture = `${analyse.marque || ''} ${analyse.modele || ''} ${analyse.annee || ''}`.replace(/\s+/g, ' ').trim();
+  const lienPaiement = `https://easycarcheck.ch/?url=${encodeURIComponent(url)}&email=${encodeURIComponent(email)}&langue=${langue}&payer=1`;
+  const note = (lab, v) => `<td style="width:33%;text-align:center;padding:10px;background:#f2f6fb;border-radius:10px;"><div style="font-size:11px;color:#5a7a9a;font-weight:700;">${lab}</div><div style="font-size:26px;font-weight:900;color:#1a3a6e;">${esc(v)}<span style="font-size:13px;color:#8aa0b8;">/10</span></div></td>`;
+  const lignesPb = pb.length
+    ? `<p style="margin:0 0 6px;font-weight:700;color:#0d1b35;">${T(`${pb.length} problème${pb.length > 1 ? 's' : ''} connu${pb.length > 1 ? 's' : ''} détecté${pb.length > 1 ? 's' : ''} sur ce modèle`, `${pb.length} bekannte${pb.length > 1 ? '' : 's'} Problem${pb.length > 1 ? 'e' : ''} bei diesem Modell`, `${pb.length} problem${pb.length > 1 ? 'i noti rilevati' : 'a noto rilevato'} su questo modello`, `${pb.length} known issue${pb.length > 1 ? 's' : ''} found for this model`)}</p>
+       <p style="margin:0 0 4px;color:#0d1b35;">⚠️ ${esc(pb[0])}</p>
+       ${pb.slice(1).map(() => `<p style="margin:0 0 4px;color:#9aaabb;">🔒 ${T('Visible dans le rapport complet', 'Im vollständigen Bericht sichtbar', 'Visibile nel rapporto completo', 'Shown in the full report')}</p>`).join('')}`
+    : `<p style="margin:0;color:#0d1b35;">${T('Aucun problème majeur documenté pour ce modèle dans nos sources.', 'Keine grösseren dokumentierten Probleme für dieses Modell in unseren Quellen.', 'Nessun problema importante documentato per questo modello nelle nostre fonti.', 'No major documented issue for this model in our sources.')}</p>`;
+  const verrou = (lab) => `<tr><td style="padding:6px 0;color:#3a5a7a;">${lab}</td><td style="padding:6px 0;text-align:right;font-weight:900;color:#1a3a6e;">🔒</td></tr>`;
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#0d1b35;">
+  <div style="background:#0c2042;color:#fff;padding:18px 22px;border-radius:12px 12px 0 0;"><b style="font-size:18px;">EASY<span style="color:#00B4D8;">CAR</span>CHECK</b><div style="font-size:12px;color:#b8d0f0;margin-top:4px;">${T('Votre aperçu gratuit', 'Ihre Gratis-Vorschau', 'La tua anteprima gratuita', 'Your free preview')}</div></div>
+  <div style="border:1px solid #dde6f0;border-top:none;border-radius:0 0 12px 12px;padding:22px;">
+    <div style="font-size:20px;font-weight:900;">${esc(voiture)}</div>
+    <div style="color:#3a5a7a;margin:4px 0 16px;">${esc(analyse.kilometrage ? Number(analyse.kilometrage).toLocaleString('de-CH') + ' km · ' : '')}${esc(analyse.prix ? Number(String(analyse.prix).replace(/[^\d]/g, '')).toLocaleString('de-CH') + ' CHF' : '')}</div>
+    <table style="width:100%;table-layout:fixed;border-spacing:8px 0;margin:0 -8px 18px;"><tr>${note(T('PRIX', 'PREIS', 'PREZZO', 'PRICE'), analyse.score_prix)}${note(T('FIABILITÉ', 'ZUVERLÄSSIGKEIT', 'AFFIDABILITÀ', 'RELIABILITY'), analyse.score_fiabilite)}${note(T('ENTRETIEN', 'WARTUNG', 'MANUTENZIONE', 'MAINTENANCE'), analyse.score_entretien)}</tr></table>
+    <p style="margin:0 0 16px;color:#0d1b35;">📊 ${esc(marche)}</p>
+    <div style="margin:0 0 16px;">${lignesPb}</div>
+    <table style="width:100%;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7;margin:0 0 20px;">
+      ${verrou(T('Verdict : acheter, négocier ou éviter', 'Urteil: kaufen, verhandeln oder meiden', 'Verdetto: acquistare, trattare o evitare', 'Verdict: buy, negotiate or avoid'))}
+      ${verrou(T('Prix de négociation et économie possible', 'Verhandlungspreis und mögliche Ersparnis', 'Prezzo di trattativa e risparmio possibile', 'Negotiation price and possible savings'))}
+      ${verrou(T('Annonces similaires avec liens, coûts d\'entretien sur 3 ans', 'Ähnliche Inserate mit Links, Wartungskosten über 3 Jahre', 'Annunci simili con link, costi di manutenzione su 3 anni', 'Similar listings with links, 3-year maintenance costs'))}
+      ${verrou(T('Checklist de visite et questions au vendeur', 'Besichtigungs-Checkliste und Fragen an den Verkäufer', 'Checklist di visita e domande al venditore', 'Viewing checklist and questions for the seller'))}
+    </table>
+    <div style="text-align:center;"><a href="${lienPaiement}" style="display:inline-block;background:#00B4D8;color:#fff;text-decoration:none;font-weight:900;padding:14px 26px;border-radius:10px;">${T('Débloquer le rapport complet — 9 CHF', 'Vollständigen Bericht freischalten — 9 CHF', 'Sblocca il rapporto completo — 9 CHF', 'Unlock the full report — 9 CHF')}</a>
+    <div style="font-size:11px;color:#8aa0b8;margin-top:8px;">${T('PDF envoyé par email en environ 1 minute · Paiement sécurisé Stripe', 'PDF per E-Mail in etwa 1 Minute · Sichere Zahlung über Stripe', 'PDF via email in circa 1 minuto · Pagamento sicuro Stripe', 'PDF by email in about 1 minute · Secure Stripe payment')}</div></div>
+    <p style="font-size:11px;color:#8aa0b8;margin:22px 0 0;">${T('Annonce analysée', 'Analysiertes Inserat', 'Annuncio analizzato', 'Analysed listing')} : <a href="${esc(url)}" style="color:#5a7a9a;">${esc(url.slice(0, 80))}</a><br>${T('Outil d\'aide à la décision — ne remplace pas une inspection par un professionnel.', 'Entscheidungshilfe — ersetzt keine Prüfung durch eine Fachperson.', 'Strumento di supporto alla decisione — non sostituisce un\'ispezione professionale.', 'Decision-support tool — does not replace an inspection by a professional.')} · <a href="https://easycarcheck.ch/confidentialite.html" style="color:#5a7a9a;">${T('Confidentialité', 'Datenschutz', 'Privacy', 'Privacy')}</a></p>
+  </div></div>`;
+  return { subject: `${T('Votre aperçu EasyCarCheck', 'Ihre EasyCarCheck-Vorschau', 'La tua anteprima EasyCarCheck', 'Your EasyCarCheck preview')} — ${voiture}`, html };
+}
+async function envoyerApercuEmail(email, analyse, url, langue) {
+  const { subject, html } = construireApercuEmail(email, analyse, url, langue);
+  return resend.emails.send({ from: 'EasyCarCheck <contact@easycarcheck.ch>', to: email, subject, html });
+}
 
 app.post('/analyse-gratuite', async (req, res) => {
+  const langue = langueValide((req.body || {}).langue);
   try {
-    const { url, langue = 'fr' } = req.body || {};
+    const { url, email, consentement, newsletter } = req.body || {};
+    const emailPropre = String(email || '').trim().toLowerCase();
     console.log('APERÇU GRATUIT demandé :', url, '| langue :', langue);
-    if (!url) return res.status(400).json({ error: 'URL manquante' });
-    if (!urlAnnonceValide(url)) { console.log('APERÇU GRATUIT refusé : lien non reconnu'); return res.status(400).json({ error: 'Merci de coller le lien d\'une annonce AutoScout24, Ricardo, Tutti ou Anibis.' }); }
-    const refus = verifierLimiteGratuit(req, langue, url.trim());
-    if (refus) { console.log('APERÇU GRATUIT refusé : limite atteinte'); return res.status(429).json({ error: refus }); }
+    if (!url || !urlAnnonceValide(url)) { console.log('APERÇU GRATUIT refusé : lien non reconnu'); return res.status(400).json({ error: msg('url', langue), code: 'url' }); }
+    if (!emailValide(emailPropre)) return res.status(400).json({ error: msg('email', langue), code: 'email' });
+    if (consentement !== true) return res.status(400).json({ error: msg('consent', langue), code: 'consent' });
+    const refus = verifierLimiteGratuit(req, langue, url.trim(), emailPropre);
+    if (refus) { console.log('APERÇU GRATUIT refusé : limite atteinte'); return res.status(429).json({ error: refus, code: 'limite' }); }
     const analyse = await obtenirAnalyse(url.trim(), langue);
+    enregistrerEmail(emailPropre, { langue, newsletter, url: url.trim() });
+    let emailEnvoye = false;
+    try { const r = await envoyerApercuEmail(emailPropre, analyse, url.trim(), langue); emailEnvoye = !(r && r.error); if (r && r.error) console.log('APERÇU email erreur :', JSON.stringify(r.error)); }
+    catch (e) { console.log('APERÇU email erreur :', e.message); }
+    const pb = (analyse.problemes_connus_modele || []).filter(Boolean);
     res.json({
-      marque: analyse.marque, modele: analyse.modele, annee: analyse.annee,
-      prix: analyse.prix, score_global: analyse.score_global, verdict: analyse.verdict,
-      // Détails publics de l'annonce (déjà visibles sur AutoScout24) pour enrichir l'aperçu
+      marque: analyse.marque, modele: analyse.modele, annee: analyse.annee, prix: analyse.prix,
       kilometrage: analyse.kilometrage, puissance: analyse.puissance, couleur: analyse.couleur,
       carburant: analyse.carburant, boite: analyse.boite, transmission: analyse.transmission,
+      score_global: analyse.score_global, score_prix: analyse.score_prix, score_fiabilite: analyse.score_fiabilite, score_entretien: analyse.score_entretien,
+      // Teasers : le nombre d'éléments trouvés, pas leur contenu (réservé au rapport)
+      nb_problemes: pb.length, nb_annonces_similaires: analyse.marche_source === 'as24' ? (analyse.marche_nb_annonces || 0) : 0,
+      marche: contenuApercu(analyse, langue).marche,
+      email_envoye: emailEnvoye,
       teaser: true
     });
   } catch (err) {
     console.error('APERÇU GRATUIT erreur :', err.message);
-    res.status(500).json({ error: 'Analyse impossible pour cette annonce. Vérifiez le lien et réessayez.' });
+    res.status(422).json({ error: msg('analyse', langue), code: 'analyse' });
   }
 });
 
+// Paiement : rapport à l'unité uniquement (packs pas encore actifs) et seulement pour une annonce lisible
+const tentativesPaiement = new Map(); // ip → [horodatages]
 app.post('/create-checkout', async (req, res) => {
+  const langue = langueValide((req.body || {}).langue);
   try {
-    const { url, email, langue = 'fr', pack = 'single' } = req.body;
-    const prices = { single: 900, pack3: 2700, pack5: 4000 };
+    const { url, email, pack = 'single' } = req.body || {};
+    const emailPropre = String(email || '').trim().toLowerCase();
+    if (pack !== 'single') return res.status(400).json({ error: msg('pack', langue), code: 'pack' });
+    if (!url || !urlAnnonceValide(url)) return res.status(400).json({ error: msg('url', langue), code: 'url' });
+    if (!emailValide(emailPropre)) return res.status(400).json({ error: msg('email', langue), code: 'email' });
+    const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    const maintenant = Date.now();
+    const essais = (tentativesPaiement.get(ip) || []).filter(t => maintenant - t < 3600 * 1000);
+    if (essais.length >= 6) return res.status(429).json({ error: msg('tropDeCommandes', langue), code: 'limite' });
+    essais.push(maintenant); tentativesPaiement.set(ip, essais);
+    if (tentativesPaiement.size > 5000) tentativesPaiement.delete(tentativesPaiement.keys().next().value);
+    // RÈGLE : on ne fait payer que si l'annonce a bien été lue (sinon le client paierait pour rien)
+    try { await obtenirAnalyse(url.trim(), langue); }
+    catch (e) { console.log('PAIEMENT refusé, annonce illisible :', e.message); return res.status(422).json({ error: msg('analyse', langue), code: 'analyse' }); }
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      customer_email: email,
+      customer_email: emailPropre,
+      locale: langue,
       line_items: [{
         price_data: {
           currency: 'chf',
-          product_data: {
-            name: pack === 'single' ? 'Rapport EasyCarCheck' : `Pack ${pack === 'pack3' ? '3' : '5'} rapports EasyCarCheck`,
-            description: 'Analyse IA spécialisée marché suisse'
-          },
-          unit_amount: prices[pack] || 900
+          product_data: { name: 'Rapport EasyCarCheck', description: 'Analyse IA spécialisée marché suisse' },
+          unit_amount: 900
         },
         quantity: 1
       }],
       mode: 'payment',
       success_url: `https://easycarcheck.ch/merci.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `https://easycarcheck.ch`,
-      metadata: { url, email, langue, pack }
+      metadata: { url: url.trim(), email: emailPropre, langue, pack: 'single' }
     });
     res.json({ url: session.url });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error('PAIEMENT erreur :', err.message);
+    res.status(500).json({ error: msg('paiement', langue), code: 'paiement' });
   }
 });
 

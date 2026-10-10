@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EasyCarCheck — Analyse IA de voitures d'occasion en Suisse</title>
-<meta name="description" content="Analysez n'importe quelle voiture d'occasion en Suisse en 30 secondes. Score IA, red flags, prix de négociation suggéré. AutoScout24, Ricardo, Tutti, Anibis. Dès 9 CHF.">
+<meta name="description" content="Analysez n'importe quelle voiture d'occasion en Suisse en environ 1 minute. Score IA, problèmes connus, prix du marché suisse, prix de négociation. Annonces AutoScout24. Dès 9 CHF.">
 <meta name="keywords" content="analyse voiture occasion suisse, rapport voiture occasion, vérification voiture occasion, AutoScout24 analyse, Ricardo analyse, voiture occasion genève, inspection voiture occasion, EasyCarCheck">
 <meta name="author" content="EasyCarCheck">
 <meta name="robots" content="index, follow">
@@ -12,13 +12,13 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://easycarcheck.ch/">
 <meta property="og:title" content="EasyCarCheck — Analyse IA de voitures d'occasion en Suisse">
-<meta property="og:description" content="Analysez n'importe quelle voiture d'occasion en Suisse en 30 secondes. Score IA, red flags, prix de négociation. Dès 9 CHF.">
+<meta property="og:description" content="Analysez n'importe quelle voiture d'occasion en Suisse en environ 1 minute. Score IA, problèmes connus, prix de négociation. Dès 9 CHF.">
 <meta property="og:image" content="https://easycarcheck.ch/og-image.png">
 <meta property="og:locale" content="fr_CH">
 <meta property="og:site_name" content="EasyCarCheck">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="EasyCarCheck — Analyse IA de voitures d'occasion en Suisse">
-<meta name="twitter:description" content="Analysez n'importe quelle voiture d'occasion en Suisse en 30 secondes. Score IA, red flags, prix de négociation. Dès 9 CHF.">
+<meta name="twitter:description" content="Analysez n'importe quelle voiture d'occasion en Suisse en environ 1 minute. Score IA, problèmes connus, prix de négociation. Dès 9 CHF.">
 <meta name="twitter:image" content="https://easycarcheck.ch/og-image.png">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
@@ -109,6 +109,24 @@
   .pack-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
   /* PROMO BANNER */
+  .email-input { width: 100%; padding: 14px 18px; border-radius: 12px; border: 2px solid #d0e4f7; background: #f0f6ff; color: #0d1b35; font-size: 15px; outline: none; margin-bottom: 10px; transition: border-color 0.2s; box-sizing: border-box; }
+  .email-input:focus { border-color: #00B4D8; }
+  .consent { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: #3a5a7a; margin: 0 0 8px; line-height: 1.45; cursor: pointer; text-align: left; }
+  .consent input { margin-top: 2px; flex-shrink: 0; width: 16px; height: 16px; }
+  .consent a { color: #0090B0; }
+  .btn-analyse.full { width: 100%; margin: 6px 0 12px; }
+  .form-error { display: none; background: #fff1f2; border: 1px solid #f5c2c7; color: #8a1020; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.45; margin: 4px 0 10px; text-align: left; }
+  .form-error.show { display: block; }
+  .result-details { color: #3a5a7a; font-size: 13px; margin-top: 2px; line-height: 1.5; }
+  .notes-row { display: flex; gap: 10px; margin: 6px 0 16px; }
+  .note-tile { flex: 1; background: #fff; border: 1px solid #d0e4f7; border-radius: 12px; padding: 12px 8px; text-align: center; }
+  .note-tile .lab { font-size: 10px; letter-spacing: 1px; color: #5a7a9a; font-weight: 700; }
+  .note-tile .val { font-size: 26px; font-weight: 900; color: #1a3a6e; line-height: 1.2; }
+  .note-tile .val small { font-size: 12px; color: #8aa0b8; font-weight: 600; }
+  .teaser-list { margin: 0 0 6px; padding: 0; list-style: none; }
+  .teaser-list li { background: #fff; border: 1px solid #d0e4f7; border-radius: 10px; padding: 11px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #0d1b35; text-align: left; }
+  .teaser-list li .lock { color: #1a3a6e; font-weight: 900; white-space: nowrap; }
+  .email-sent { font-size: 12px; color: #1a7a32; background: #eefaf1; border: 1px solid #bfe6c9; border-radius: 10px; padding: 10px 12px; margin: 8px 0 0; text-align: left; }
   .promo-banner { background: linear-gradient(135deg, #FF8C00, #FFD700); border-radius: 12px; padding: 14px 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(255,180,0,0.2); }
   .promo-banner span { color: #1a0a00; font-weight: 900; font-size: 15px; }
   .promo-banner small { color: rgba(0,0,0,0.7); font-size: 12px; display: block; margin-top: 3px; font-weight: 600; }
@@ -311,18 +329,20 @@
     <h2 id="form-title">🔍 Analysez votre annonce</h2>
     <div class="url-input-wrapper">
       <input type="url" id="urlInput" placeholder="https://www.autoscout24.ch/fr/d/..." />
-      <button class="btn-analyse" onclick="analyserGratuit()" id="btn-analyse">Analyser →</button>
     </div>
-    <div class="form-hint" id="form-hint">⚡ Résultat gratuit en 30 secondes · Sans inscription</div>
+    <input type="email" class="email-input" id="previewEmail" placeholder="votre@email.com" autocomplete="email" />
+    <label class="consent"><input type="checkbox" id="consentBox" /><span id="consent-text">J'accepte la <a href="confidentialite.html" target="_blank">politique de confidentialité</a> et de recevoir mon aperçu détaillé par email.</span></label>
+    <label class="consent"><input type="checkbox" id="newsBox" /><span id="news-text">Recevoir aussi les bons plans et nouveautés EasyCarCheck (facultatif).</span></label>
+    <div class="form-error" id="formError"></div>
+    <button class="btn-analyse full" onclick="analyserGratuit()" id="btn-analyse">Analyser gratuitement →</button>
+    <div class="form-hint" id="form-hint">⚡ Aperçu gratuit en environ 1 minute · Sans inscription</div>
     <div class="sites-logos">
-      <span class="site-pill">AutoScout24.ch</span>
-      <span class="site-pill">Ricardo.ch</span>
-      <span class="site-pill">Tutti.ch</span>
-      <span class="site-pill">Anibis.ch</span>
+      <span class="site-pill" id="site-pill">Annonces AutoScout24.ch</span>
     </div>
     <div class="loading" id="loading">
       <div class="spinner"></div>
-      <div style="color:#3a5a7a;" id="loading-text">Analyse en cours... ~30 secondes</div>
+      <div style="color:#3a5a7a;" id="loading-text">Analyse en cours… environ 1 minute</div>
+      <div style="color:#5a7a9a;font-size:12px;margin-top:6px;" id="loading-step">Lecture de l'annonce…</div>
     </div>
     <div class="result-box" id="resultBox">
       <div class="result-header">
@@ -330,26 +350,25 @@
           <div style="color:#3a5a7a;font-size:11px;letter-spacing:1px;margin-bottom:4px;font-weight:700;" id="result-label">RÉSULTAT GRATUIT</div>
           <div class="result-car" id="resultTitle">—</div>
           <div class="result-price" id="resultPrice">—</div>
+          <div class="result-details" id="resultDetails"></div>
         </div>
         <div class="score-circle" id="scoreCircle">
           <div class="score-num" id="scoreNum">—</div>
           <div class="score-label">/10</div>
         </div>
       </div>
-      <div id="verdictBadge" class="verdict-badge">—</div>
-      <div class="blur-section">
-        <div class="blur-row"><span class="blur-label">SCORE PRIX VS MARCHÉ</span><span class="blur-val">7/10</span></div>
-        <div class="blur-row"><span class="blur-label">RED FLAGS DÉTECTÉS</span><span class="blur-val" style="color:#a01020;">2 problèmes</span></div>
-        <div class="blur-row"><span class="blur-label">PRIX DE NÉGOCIATION</span><span class="blur-val" style="color:#1a3a6e;">— CHF</span></div>
-        <div class="blur-row"><span class="blur-label">FOURCHETTE MARCHÉ</span><span class="blur-val">— CHF</span></div>
+      <div class="notes-row">
+        <div class="note-tile"><div class="lab" id="lab-prix">PRIX</div><div class="val"><span id="noteP">—</span><small>/10</small></div></div>
+        <div class="note-tile"><div class="lab" id="lab-fiab">FIABILITÉ</div><div class="val"><span id="noteF">—</span><small>/10</small></div></div>
+        <div class="note-tile"><div class="lab" id="lab-entr">ENTRETIEN</div><div class="val"><span id="noteE">—</span><small>/10</small></div></div>
       </div>
+      <ul class="teaser-list" id="teaserList"></ul>
+      <div class="email-sent" id="emailSent" style="display:none;"></div>
       <div class="unlock-box">
         <h3 id="unlock-title">🔓 Débloquez le rapport complet</h3>
-        <p id="unlock-desc">Score détaillé, red flags, problèmes connus du modèle, checklist visite, questions vendeur, prix de négociation suggéré — envoyé en PDF par email.</p>
+        <p id="unlock-desc">Verdict, prix de négociation, annonces similaires avec liens, tous les problèmes connus, coûts d'entretien, checklist de visite et questions au vendeur — en PDF par email en environ 1 minute.</p>
         <div class="pack-buttons">
-          <button class="pack-btn primary" onclick="payerRapport('single')" id="btn-single">1 rapport — 9 CHF</button>
-          <button class="pack-btn secondary" onclick="payerRapport('pack3')" id="btn-pack3">Pack 3 — 27 CHF</button>
-          <button class="pack-btn secondary" onclick="payerRapport('pack5')" id="btn-pack5">Pack 5 — 40 CHF</button>
+          <button class="pack-btn primary" onclick="payerRapport('single')" id="btn-single">Rapport complet — 9 CHF</button>
         </div>
       </div>
     </div>
@@ -357,7 +376,7 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-num">30s</div><div class="stat-label" id="stat3">Temps d'analyse</div></div>
+  <div class="stat"><div class="stat-num">~1 min</div><div class="stat-label" id="stat3">Temps d'analyse</div></div>
   <div class="stat"><div class="stat-num">100%</div><div class="stat-label" id="stat5">Marché suisse</div></div>
   <div class="stat"><div class="stat-num">4</div><div class="stat-label" id="stat4">Langues disponibles</div></div>
   <div class="stat"><div class="stat-num">9 CHF</div><div class="stat-label" id="stat6">Rapport complet</div></div>
@@ -387,12 +406,12 @@
     <div class="carousel-card">
       <div class="step-num">1</div>
       <h3>Collez le lien</h3>
-      <p>Copiez l'URL d'une annonce AutoScout24, Ricardo, Tutti ou Anibis.</p>
+      <p>Copiez le lien d'une annonce AutoScout24.ch.</p>
     </div>
     <div class="carousel-card">
       <div class="step-num">2</div>
       <h3>L'IA analyse</h3>
-      <p>Notre IA analyse le prix, la fiabilité et détecte les red flags en 30 secondes.</p>
+      <p>Notre IA compare le prix au marché suisse et vérifie la fiabilité du modèle en environ 1 minute.</p>
     </div>
     <div class="carousel-card">
       <div class="step-num">3</div>
@@ -466,7 +485,7 @@
       </ul>
       <button class="pricing-btn primary" onclick="payerRapport('single')" id="p1-btn">Obtenir le rapport</button>
     </div>
-    <div class="pricing-card">
+    <div class="pricing-card" style="display:none;">
       <h3 id="p2-title">Pack 3 rapports</h3>
       <div class="pricing-price">27 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">30</span></div>
       <div class="pricing-period" id="p2-period">CHF · 9 CHF/rapport</div>
@@ -477,7 +496,7 @@
       </ul>
       <button class="pricing-btn secondary" onclick="payerRapport('pack3')" id="p2-btn">Choisir ce pack</button>
     </div>
-    <div class="pricing-card">
+    <div class="pricing-card" style="display:none;">
       <h3 id="p3-title">Pack 5 rapports</h3>
       <div class="pricing-price">40 <span style="font-size:18px;text-decoration:line-through;color:#4a6a8a;">45</span></div>
       <div class="pricing-period" id="p3-period">CHF · 8 CHF/rapport</div>
@@ -494,12 +513,13 @@
 
 <div class="modal-overlay" id="emailModal">
   <div class="modal">
-    <h3>📧 Recevoir le rapport</h3>
-    <p>Entrez votre adresse email pour recevoir votre rapport PDF complet.</p>
-    <input type="email" id="emailInput" placeholder="votre@email.com" />
+    <h3 id="modal-title">📧 Recevoir le rapport</h3>
+    <p id="modal-desc">Le rapport PDF complet sera envoyé à cette adresse, environ 1 minute après le paiement.</p>
+    <input type="email" id="emailInput" placeholder="votre@email.com" autocomplete="email" />
+    <div class="form-error" id="modalError"></div>
     <div class="modal-buttons">
-      <button class="modal-cancel" onclick="fermerModal()">Annuler</button>
-      <button class="modal-confirm" onclick="confirmerPaiement()">Continuer →</button>
+      <button class="modal-cancel" onclick="fermerModal()" id="modal-cancel">Annuler</button>
+      <button class="modal-confirm" onclick="confirmerPaiement()" id="modal-confirm">Payer 9 CHF →</button>
     </div>
   </div>
 </div>
@@ -673,6 +693,115 @@
       'placeholder': 'https://www.autoscout24.ch/en/d/...'
     }
   };
+  // Textes mis à jour pour le lancement (aperçu par email, AutoScout24 uniquement, environ 1 minute, rapport à l'unité)
+  const maj = {
+    fr: {
+      'hero-badge': '⭐ Analyse IA · Marché Suisse · Aperçu en environ 1 minute',
+      'hero-p': "Collez le lien d'une annonce AutoScout24 et obtenez une analyse complète : prix comparé au marché suisse, problèmes connus du modèle et prix de négociation.",
+      'promo-sub': 'Prix de lancement pendant le premier mois',
+      'btn-analyse': 'Analyser gratuitement →', 'form-hint': '⚡ Aperçu gratuit en environ 1 minute · Sans inscription',
+      'site-pill': 'Annonces AutoScout24.ch', 'email-placeholder': 'votre@email.com',
+      'consent-text': 'J\'accepte la <a href="confidentialite.html" target="_blank">politique de confidentialité</a> et de recevoir mon aperçu détaillé par email.',
+      'news-text': 'Recevoir aussi les bons plans et nouveautés EasyCarCheck (facultatif).',
+      'step1-desc': "Copiez le lien d'une annonce AutoScout24.ch.",
+      'step2-desc': "Notre IA compare le prix à des annonces similaires en Suisse et vérifie la fiabilité du modèle dans des sources réelles, en environ 1 minute.",
+      'faq2-a': "Pour l'instant, les annonces AutoScout24.ch. D'autres sites suisses suivront bientôt.",
+      'faq3-a': "L'aperçu gratuit s'affiche en environ 1 minute, avec un aperçu détaillé envoyé par email. Le rapport PDF complet arrive par email environ 1 minute après le paiement.",
+      'faq4-q': 'Le rapport est-il à moi ?', 'faq4-a': "Oui. Le rapport PDF vous est envoyé par email : vous le gardez et pouvez le consulter quand vous voulez. Les prix et annonces similaires reflètent le marché au moment du rapport.",
+      'faq6-a': "Après le paiement sécurisé (Stripe), votre rapport PDF complet est envoyé à l'adresse email indiquée, en environ 1 minute.",
+      'pricing-sub': 'Un prix clair, sans abonnement',
+      'p0-f1': 'Voiture reconnue + 3 notes', 'p0-f2': 'Aperçu détaillé par email', 'p0-f3': 'Sans inscription',
+      'loading-text': 'Analyse en cours… environ 1 minute',
+      'unlock-desc': "Verdict, prix de négociation, annonces similaires avec liens, tous les problèmes connus, coûts d'entretien, checklist de visite et questions au vendeur — en PDF par email en environ 1 minute.",
+      'btn-single': 'Rapport complet — 9 CHF',
+      'lab-prix': 'PRIX', 'lab-fiab': 'FIABILITÉ', 'lab-entr': 'ENTRETIEN',
+      'modal-title': '📧 Recevoir le rapport', 'modal-desc': "Le rapport PDF complet sera envoyé à cette adresse, environ 1 minute après le paiement.",
+      'modal-cancel': 'Annuler', 'modal-confirm': 'Payer 9 CHF →'
+    },
+    de: {
+      'hero-badge': '⭐ KI-Analyse · Schweizer Markt · Vorschau in etwa 1 Minute',
+      'hero-p': 'Fügen Sie den Link eines AutoScout24-Inserats ein und erhalten Sie eine vollständige Analyse: Preis im Vergleich zum Schweizer Markt, bekannte Probleme des Modells und Verhandlungspreis.',
+      'promo-sub': 'Einführungspreis im ersten Monat',
+      'btn-analyse': 'Gratis analysieren →', 'form-hint': '⚡ Gratis-Vorschau in etwa 1 Minute · Ohne Registrierung',
+      'site-pill': 'Inserate von AutoScout24.ch', 'email-placeholder': 'ihre@email.ch',
+      'consent-text': 'Ich akzeptiere die <a href="confidentialite.html" target="_blank">Datenschutzerklärung</a> und erhalte meine detaillierte Vorschau per E-Mail.',
+      'news-text': 'Auch Angebote und Neuigkeiten von EasyCarCheck erhalten (freiwillig).',
+      'step1-desc': 'Kopieren Sie den Link eines AutoScout24.ch-Inserats.',
+      'step2-desc': 'Unsere KI vergleicht den Preis mit ähnlichen Inseraten in der Schweiz und prüft die Zuverlässigkeit des Modells anhand echter Quellen, in etwa 1 Minute.',
+      'faq2-a': 'Vorerst Inserate von AutoScout24.ch. Weitere Schweizer Seiten folgen bald.',
+      'faq3-a': 'Die Gratis-Vorschau erscheint in etwa 1 Minute, mit einer detaillierten Vorschau per E-Mail. Der vollständige PDF-Bericht kommt etwa 1 Minute nach der Zahlung per E-Mail.',
+      'faq4-q': 'Gehört der Bericht mir?', 'faq4-a': 'Ja. Der PDF-Bericht wird Ihnen per E-Mail gesendet: Sie behalten ihn und können ihn jederzeit ansehen. Preise und ähnliche Inserate entsprechen dem Markt zum Zeitpunkt des Berichts.',
+      'faq6-a': 'Nach der sicheren Zahlung (Stripe) wird Ihr vollständiger PDF-Bericht in etwa 1 Minute an die angegebene E-Mail-Adresse gesendet.',
+      'pricing-sub': 'Ein klarer Preis, ohne Abo',
+      'p0-f1': 'Fahrzeug erkannt + 3 Noten', 'p0-f2': 'Detaillierte Vorschau per E-Mail', 'p0-f3': 'Ohne Registrierung',
+      'loading-text': 'Analyse läuft… etwa 1 Minute',
+      'unlock-desc': 'Urteil, Verhandlungspreis, ähnliche Inserate mit Links, alle bekannten Probleme, Wartungskosten, Besichtigungs-Checkliste und Fragen an den Verkäufer — als PDF per E-Mail in etwa 1 Minute.',
+      'btn-single': 'Vollständiger Bericht — 9 CHF',
+      'lab-prix': 'PREIS', 'lab-fiab': 'ZUVERLÄSSIGKEIT', 'lab-entr': 'WARTUNG',
+      'modal-title': '📧 Bericht erhalten', 'modal-desc': 'Der vollständige PDF-Bericht wird etwa 1 Minute nach der Zahlung an diese Adresse gesendet.',
+      'modal-cancel': 'Abbrechen', 'modal-confirm': '9 CHF bezahlen →'
+    },
+    it: {
+      'hero-badge': '⭐ Analisi IA · Mercato Svizzero · Anteprima in circa 1 minuto',
+      'hero-p': "Incolla il link di un annuncio AutoScout24 e ottieni un'analisi completa: prezzo confrontato con il mercato svizzero, problemi noti del modello e prezzo di trattativa.",
+      'promo-sub': 'Prezzo di lancio per il primo mese',
+      'btn-analyse': 'Analizza gratis →', 'form-hint': '⚡ Anteprima gratuita in circa 1 minuto · Senza registrazione',
+      'site-pill': 'Annunci AutoScout24.ch', 'email-placeholder': 'tua@email.ch',
+      'consent-text': 'Accetto l\'<a href="confidentialite.html" target="_blank">informativa sulla privacy</a> e di ricevere la mia anteprima dettagliata via email.',
+      'news-text': 'Ricevere anche offerte e novità di EasyCarCheck (facoltativo).',
+      'step1-desc': 'Copia il link di un annuncio AutoScout24.ch.',
+      'step2-desc': "La nostra IA confronta il prezzo con annunci simili in Svizzera e verifica l'affidabilità del modello su fonti reali, in circa 1 minuto.",
+      'faq2-a': 'Per ora gli annunci di AutoScout24.ch. Altri siti svizzeri arriveranno presto.',
+      'faq3-a': "L'anteprima gratuita appare in circa 1 minuto, con un'anteprima dettagliata inviata via email. Il rapporto PDF completo arriva via email circa 1 minuto dopo il pagamento.",
+      'faq4-q': 'Il rapporto è mio?', 'faq4-a': 'Sì. Il rapporto PDF ti viene inviato via email: lo conservi e puoi consultarlo quando vuoi. Prezzi e annunci simili riflettono il mercato al momento del rapporto.',
+      'faq6-a': "Dopo il pagamento sicuro (Stripe), il rapporto PDF completo viene inviato all'indirizzo email indicato, in circa 1 minuto.",
+      'pricing-sub': 'Un prezzo chiaro, senza abbonamento',
+      'p0-f1': 'Auto riconosciuta + 3 voti', 'p0-f2': 'Anteprima dettagliata via email', 'p0-f3': 'Senza registrazione',
+      'loading-text': 'Analisi in corso… circa 1 minuto',
+      'unlock-desc': 'Verdetto, prezzo di trattativa, annunci simili con link, tutti i problemi noti, costi di manutenzione, checklist di visita e domande al venditore — in PDF via email in circa 1 minuto.',
+      'btn-single': 'Rapporto completo — 9 CHF',
+      'lab-prix': 'PREZZO', 'lab-fiab': 'AFFIDABILITÀ', 'lab-entr': 'MANUTENZIONE',
+      'modal-title': '📧 Ricevi il rapporto', 'modal-desc': 'Il rapporto PDF completo sarà inviato a questo indirizzo circa 1 minuto dopo il pagamento.',
+      'modal-cancel': 'Annulla', 'modal-confirm': 'Paga 9 CHF →'
+    },
+    en: {
+      'hero-badge': '⭐ AI Analysis · Swiss Market · Preview in about 1 minute',
+      'hero-p': 'Paste the link of an AutoScout24 listing and get a complete analysis: price compared with the Swiss market, known issues of the model and a negotiation price.',
+      'promo-sub': 'Launch price during the first month',
+      'btn-analyse': 'Analyse for free →', 'form-hint': '⚡ Free preview in about 1 minute · No sign-up',
+      'site-pill': 'AutoScout24.ch listings', 'email-placeholder': 'your@email.com',
+      'consent-text': 'I accept the <a href="confidentialite.html" target="_blank">privacy policy</a> and to receive my detailed preview by email.',
+      'news-text': 'Also receive EasyCarCheck deals and news (optional).',
+      'step1-desc': 'Copy the link of an AutoScout24.ch listing.',
+      'step2-desc': 'Our AI compares the price with similar listings in Switzerland and checks the reliability of the model in real sources, in about 1 minute.',
+      'faq2-a': 'For now, AutoScout24.ch listings. Other Swiss sites will follow soon.',
+      'faq3-a': 'The free preview appears in about 1 minute, with a detailed preview sent by email. The full PDF report arrives by email about 1 minute after payment.',
+      'faq4-q': 'Is the report mine?', 'faq4-a': 'Yes. The PDF report is sent to you by email: you keep it and can read it whenever you want. Prices and similar listings reflect the market at the time of the report.',
+      'faq6-a': 'After the secure payment (Stripe), your full PDF report is sent to the email address you entered, in about 1 minute.',
+      'pricing-sub': 'One clear price, no subscription',
+      'p0-f1': 'Car recognised + 3 scores', 'p0-f2': 'Detailed preview by email', 'p0-f3': 'No sign-up',
+      'loading-text': 'Analysing… about 1 minute',
+      'unlock-desc': 'Verdict, negotiation price, similar listings with links, all known issues, maintenance costs, viewing checklist and questions for the seller — as a PDF by email in about 1 minute.',
+      'btn-single': 'Full report — 9 CHF',
+      'lab-prix': 'PRICE', 'lab-fiab': 'RELIABILITY', 'lab-entr': 'MAINTENANCE',
+      'modal-title': '📧 Receive the report', 'modal-desc': 'The full PDF report will be sent to this address about 1 minute after payment.',
+      'modal-cancel': 'Cancel', 'modal-confirm': 'Pay 9 CHF →'
+    }
+  };
+  Object.keys(maj).forEach(l => Object.assign(translations[l], maj[l]));
+
+  // Textes affichés par le script (erreurs, étapes de chargement, aperçu)
+  const UI = {
+    fr: { url: "Collez le lien d'une annonce AutoScout24.ch (ex. https://www.autoscout24.ch/fr/d/...).", email: 'Indiquez une adresse email valide : l\'aperçu détaillé y est envoyé.', consent: 'Merci d\'accepter la politique de confidentialité pour recevoir l\'aperçu.', reseau: 'Connexion au serveur impossible. Vérifiez votre connexion internet et réessayez.', etapes: ["Lecture de l'annonce…", 'Recherche d\'annonces similaires en Suisse…', 'Analyse de la fiabilité du modèle…', 'Calcul des notes…'], pb: (n) => n > 0 ? `${n} problème${n > 1 ? 's' : ''} connu${n > 1 ? 's' : ''} détecté${n > 1 ? 's' : ''} sur ce modèle` : 'Problèmes connus du modèle vérifiés', verdict: 'Verdict : acheter, négocier ou éviter', nego: 'Prix de négociation et économie possible', annonces: (n) => n > 0 ? `${n} annonces similaires en Suisse, avec liens` : 'Annonces similaires et prix du marché', envoye: (e) => `✓ Aperçu détaillé envoyé à ${e} (pensez à vérifier vos spams).`, nonEnvoye: "L'email d'aperçu n'a pas pu être envoyé, mais votre résultat est affiché ci-dessus.", payerSansUrl: "Collez d'abord le lien de l'annonce et lancez l'aperçu gratuit.", paiement: 'Le paiement n\'a pas pu être préparé. Réessayez dans un instant.', preparation: 'Préparation du paiement…' },
+    de: { url: 'Fügen Sie den Link eines AutoScout24.ch-Inserats ein (z. B. https://www.autoscout24.ch/de/d/...).', email: 'Bitte gültige E-Mail-Adresse angeben: Die detaillierte Vorschau wird dorthin gesendet.', consent: 'Bitte akzeptieren Sie die Datenschutzerklärung, um die Vorschau zu erhalten.', reseau: 'Keine Verbindung zum Server. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.', etapes: ['Inserat wird gelesen…', 'Ähnliche Inserate in der Schweiz werden gesucht…', 'Zuverlässigkeit des Modells wird analysiert…', 'Noten werden berechnet…'], pb: (n) => n > 0 ? `${n} bekannte${n > 1 ? '' : 's'} Problem${n > 1 ? 'e' : ''} bei diesem Modell` : 'Bekannte Probleme des Modells geprüft', verdict: 'Urteil: kaufen, verhandeln oder meiden', nego: 'Verhandlungspreis und mögliche Ersparnis', annonces: (n) => n > 0 ? `${n} ähnliche Inserate in der Schweiz, mit Links` : 'Ähnliche Inserate und Marktpreis', envoye: (e) => `✓ Detaillierte Vorschau an ${e} gesendet (bitte auch den Spam-Ordner prüfen).`, nonEnvoye: 'Die Vorschau-E-Mail konnte nicht gesendet werden, Ihr Ergebnis wird aber oben angezeigt.', payerSansUrl: 'Fügen Sie zuerst den Link des Inserats ein und starten Sie die Gratis-Vorschau.', paiement: 'Die Zahlung konnte nicht vorbereitet werden. Bitte gleich nochmals versuchen.', preparation: 'Zahlung wird vorbereitet…' },
+    it: { url: 'Incolla il link di un annuncio AutoScout24.ch (es. https://www.autoscout24.ch/it/d/...).', email: "Inserisci un indirizzo email valido: l'anteprima dettagliata viene inviata lì.", consent: "Accetta l'informativa sulla privacy per ricevere l'anteprima.", reseau: 'Impossibile collegarsi al server. Controlla la connessione e riprova.', etapes: ["Lettura dell'annuncio…", 'Ricerca di annunci simili in Svizzera…', "Analisi dell'affidabilità del modello…", 'Calcolo dei voti…'], pb: (n) => n > 0 ? `${n} problem${n > 1 ? 'i noti rilevati' : 'a noto rilevato'} su questo modello` : 'Problemi noti del modello verificati', verdict: 'Verdetto: acquistare, trattare o evitare', nego: 'Prezzo di trattativa e risparmio possibile', annonces: (n) => n > 0 ? `${n} annunci simili in Svizzera, con link` : 'Annunci simili e prezzo di mercato', envoye: (e) => `✓ Anteprima dettagliata inviata a ${e} (controlla anche lo spam).`, nonEnvoye: "Non è stato possibile inviare l'email di anteprima, ma il risultato è mostrato sopra.", payerSansUrl: "Incolla prima il link dell'annuncio e avvia l'anteprima gratuita.", paiement: 'Non è stato possibile preparare il pagamento. Riprova tra un attimo.', preparation: 'Preparazione del pagamento…' },
+    en: { url: 'Paste the link of an AutoScout24.ch listing (e.g. https://www.autoscout24.ch/en/d/...).', email: 'Please enter a valid email address: the detailed preview is sent there.', consent: 'Please accept the privacy policy to receive the preview.', reseau: 'Could not reach the server. Check your internet connection and try again.', etapes: ['Reading the listing…', 'Looking for similar listings in Switzerland…', 'Analysing the reliability of the model…', 'Calculating the scores…'], pb: (n) => n > 0 ? `${n} known issue${n > 1 ? 's' : ''} found for this model` : 'Known issues of the model checked', verdict: 'Verdict: buy, negotiate or avoid', nego: 'Negotiation price and possible savings', annonces: (n) => n > 0 ? `${n} similar listings in Switzerland, with links` : 'Similar listings and market price', envoye: (e) => `✓ Detailed preview sent to ${e} (please check your spam folder too).`, nonEnvoye: 'The preview email could not be sent, but your result is shown above.', payerSansUrl: 'First paste the listing link and run the free preview.', paiement: 'The payment could not be prepared. Please try again in a moment.', preparation: 'Preparing the payment…' }
+  };
+  const ui = () => UI[selectedLangue] || UI.fr;
+  const URL_VALIDE = /^https?:\/\/([a-z0-9-]+\.)*autoscout24\.ch\/(fr|de|it|en)\/d\/\S+$/i;
+  const EMAIL_VALIDE = /^[^\s@<>"']{1,64}@[^\s@<>"']+\.[a-z]{2,}$/i;
+  let emailApercu = '';
+
 
   function setLangue(langue, btn) {
     selectedLangue = langue;
@@ -684,73 +813,151 @@
       const el = document.getElementById(id);
       if (el) {
         if (id === 'placeholder') { document.getElementById('urlInput').placeholder = t[id]; }
+        else if (id === 'consent-text') { el.innerHTML = t[id]; }
         else { el.textContent = t[id]; }
       }
     });
+    if (t['email-placeholder']) { document.getElementById('previewEmail').placeholder = t['email-placeholder']; document.getElementById('emailInput').placeholder = t['email-placeholder']; }
     document.documentElement.lang = langue;
   }
 
   function toggleFaq(item) { item.classList.toggle('open'); }
 
+  function montrerErreur(id, texte) {
+    const el = document.getElementById(id);
+    if (!texte) { el.classList.remove('show'); el.textContent = ''; return; }
+    el.textContent = texte; el.classList.add('show');
+  }
+  const formatCHF = (n) => Number(String(n || '').replace(/[^\d]/g, '')).toLocaleString('de-CH');
+  // Ajoute un élément de liste sans risque (textContent, jamais de HTML venant du serveur)
+  function ajouterTeaser(liste, texte, verrouille) {
+    const li = document.createElement('li');
+    const span = document.createElement('span'); span.textContent = texte; li.appendChild(span);
+    if (verrouille) { const l = document.createElement('span'); l.className = 'lock'; l.textContent = '🔒'; li.appendChild(l); }
+    liste.appendChild(li);
+  }
+
   async function analyserGratuit() {
     const url = document.getElementById('urlInput').value.trim();
-    if (!url) { alert('Veuillez coller un lien d\'annonce'); return; }
-    currentUrl = url;
+    const email = document.getElementById('previewEmail').value.trim();
+    const consentement = document.getElementById('consentBox').checked;
+    const newsletter = document.getElementById('newsBox').checked;
+    montrerErreur('formError', '');
+    if (!URL_VALIDE.test(url)) return montrerErreur('formError', ui().url);
+    if (!EMAIL_VALIDE.test(email)) return montrerErreur('formError', ui().email);
+    if (!consentement) return montrerErreur('formError', ui().consent);
+    currentUrl = url; emailApercu = email;
+    const bouton = document.getElementById('btn-analyse');
+    bouton.disabled = true; bouton.style.opacity = '0.6';
     document.getElementById('loading').classList.add('show');
     document.getElementById('resultBox').classList.remove('show');
+    // Étapes affichées pendant l'attente (environ 1 minute), pour que le visiteur sache que ça avance
+    let etape = 0;
+    const etapeEl = document.getElementById('loading-step');
+    etapeEl.textContent = ui().etapes[0];
+    const minuteur = setInterval(() => { etape = Math.min(etape + 1, ui().etapes.length - 1); etapeEl.textContent = ui().etapes[etape]; }, 15000);
     try {
-      const response = await fetch(`${BACKEND_URL}/analyse-gratuite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, langue: selectedLangue })
-      });
-      const data = await response.json();
-      document.getElementById('loading').classList.remove('show');
-      document.getElementById('resultTitle').textContent = `${data.marque} ${data.modele} ${data.annee}`;
-      document.getElementById('resultPrice').textContent = data.prix ? `${data.prix} CHF` : '';
-      document.getElementById('scoreNum').textContent = data.score_global;
+      let response, data;
+      try {
+        response = await fetch(`${BACKEND_URL}/analyse-gratuite`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, email, consentement, newsletter, langue: selectedLangue })
+        });
+        data = await response.json().catch(() => ({}));
+      } catch (e) { return montrerErreur('formError', ui().reseau); }
+      if (!response.ok || data.error) return montrerErreur('formError', data.error || ui().reseau);
+
+      document.getElementById('resultTitle').textContent = [data.marque, data.modele, data.annee].filter(Boolean).join(' ');
+      document.getElementById('resultPrice').textContent = data.prix ? `${formatCHF(data.prix)} CHF` : '';
+      document.getElementById('resultDetails').textContent = [
+        data.kilometrage ? `${formatCHF(data.kilometrage)} km` : '', data.puissance, data.carburant, data.boite, data.couleur
+      ].filter(v => v && !/non communiqu|nicht angegeben|non indicato|not specified/i.test(v)).join(' · ');
+      document.getElementById('scoreNum').textContent = data.score_global ?? '—';
       const c = data.score_global >= 8 ? '#1a7a32' : data.score_global >= 5 ? '#8a6000' : '#a01020';
       document.getElementById('scoreCircle').style.borderColor = c;
       document.getElementById('scoreNum').style.color = c;
-      const verdictBadge = document.getElementById('verdictBadge');
-      verdictBadge.textContent = data.verdict;
-      verdictBadge.className = `verdict-badge verdict-${data.verdict}`;
+      document.getElementById('noteP').textContent = data.score_prix ?? '—';
+      document.getElementById('noteF').textContent = data.score_fiabilite ?? '—';
+      document.getElementById('noteE').textContent = data.score_entretien ?? '—';
+      const liste = document.getElementById('teaserList');
+      liste.innerHTML = '';
+      if (data.marche) ajouterTeaser(liste, '📊 ' + data.marche, false);
+      ajouterTeaser(liste, '⚠️ ' + ui().pb(data.nb_problemes || 0), (data.nb_problemes || 0) > 0);
+      ajouterTeaser(liste, ui().annonces(data.nb_annonces_similaires || 0), true);
+      ajouterTeaser(liste, ui().nego, true);
+      ajouterTeaser(liste, ui().verdict, true);
+      const envoye = document.getElementById('emailSent');
+      envoye.textContent = data.email_envoye ? ui().envoye(email) : ui().nonEnvoye;
+      envoye.style.display = 'block';
       document.getElementById('resultBox').classList.add('show');
-      document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (err) {
+      document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } finally {
+      clearInterval(minuteur);
       document.getElementById('loading').classList.remove('show');
-      alert('Erreur lors de l\'analyse. Vérifiez le lien et réessayez.');
+      bouton.disabled = false; bouton.style.opacity = '';
     }
   }
 
   function payerRapport(pack) {
     const url = currentUrl || document.getElementById('urlInput').value.trim();
-    if (!url) { alert('Veuillez d\'abord coller un lien d\'annonce.'); return; }
-    selectedPack = pack;
+    if (!URL_VALIDE.test(url)) {
+      montrerErreur('formError', ui().payerSansUrl);
+      document.getElementById('urlInput').focus();
+      window.scrollTo({ top: document.querySelector('.form-section').offsetTop - 20, behavior: 'smooth' });
+      return;
+    }
+    currentUrl = url;
+    selectedPack = 'single'; // packs pas encore disponibles
+    montrerErreur('modalError', '');
+    document.getElementById('emailInput').value = emailApercu || document.getElementById('previewEmail').value.trim();
     document.getElementById('emailModal').classList.add('show');
     setTimeout(() => document.getElementById('emailInput').focus(), 100);
   }
 
   function fermerModal() {
     document.getElementById('emailModal').classList.remove('show');
-    document.getElementById('emailInput').value = '';
   }
 
   async function confirmerPaiement() {
     const email = document.getElementById('emailInput').value.trim();
     const url = currentUrl || document.getElementById('urlInput').value.trim();
-    if (!email || !email.includes('@')) { alert('Veuillez entrer une adresse email valide.'); return; }
-    fermerModal();
+    montrerErreur('modalError', '');
+    if (!EMAIL_VALIDE.test(email)) return montrerErreur('modalError', ui().email);
+    const bouton = document.getElementById('modal-confirm');
+    const texteBouton = bouton.textContent;
+    bouton.disabled = true; bouton.textContent = ui().preparation;
     try {
       const response = await fetch(`${BACKEND_URL}/create-checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, email, langue: selectedLangue, pack: selectedPack })
+        body: JSON.stringify({ url, email, langue: selectedLangue, pack: 'single' })
       });
-      const data = await response.json();
-      if (data.url) window.location.href = data.url;
-    } catch (err) { alert('Erreur lors du paiement. Réessayez.'); }
+      const data = await response.json().catch(() => ({}));
+      if (data.url) { window.location.href = data.url; return; }
+      montrerErreur('modalError', data.error || ui().paiement);
+    } catch (err) {
+      montrerErreur('modalError', ui().reseau);
+    } finally {
+      bouton.disabled = false; bouton.textContent = texteBouton;
+    }
   }
+
+  // Lien « Débloquer le rapport » depuis l'email d'aperçu : ?url=...&email=...&langue=..&payer=1
+  (function ouvrirDepuisLien() {
+    const q = new URLSearchParams(window.location.search);
+    const l = q.get('langue');
+    // Applique toujours les textes à jour au chargement (langue du lien, sinon français)
+    const langueDepart = (l && translations[l]) ? l : 'fr';
+    setLangue(langueDepart, Array.from(document.querySelectorAll('.lang-btn')).find(b => b.textContent.trim().toLowerCase() === langueDepart));
+    const u = q.get('url'), e = q.get('email');
+    if (u && URL_VALIDE.test(u)) { document.getElementById('urlInput').value = u; currentUrl = u; }
+    if (e && EMAIL_VALIDE.test(e)) { document.getElementById('previewEmail').value = e; emailApercu = e; }
+    if (q.get('payer') === '1' && currentUrl) {
+      document.querySelector('.form-section').scrollIntoView({ block: 'start' });
+      payerRapport('single');
+    }
+  })();
 
   document.getElementById('emailModal').addEventListener('click', function(e) {
     if (e.target === this) fermerModal();
