@@ -198,16 +198,38 @@ function extraireChampsSchema(html) {
   return r;
 }
 
+// Renvoie le HTML d'un élément complet (de sa balise ouvrante à sa balise fermante correspondante)
+function elementComplet(html, marqueur) {
+  const i = html.indexOf(marqueur);
+  if (i === -1) return null;
+  const debut = html.lastIndexOf('<', i);
+  const tag = (html.substring(debut + 1).match(/^([a-zA-Z0-9]+)/) || [])[1];
+  if (!tag) return null;
+  const re = new RegExp(`<(/?)${tag}\\b[^>]*?(/?)>`, 'gi');
+  re.lastIndex = debut;
+  let profondeur = 0, m;
+  while ((m = re.exec(html))) {
+    if (m[2] === '/') continue;            // balise auto-fermante
+    profondeur += m[1] ? -1 : 1;
+    if (profondeur === 0) return html.substring(debut, re.lastIndex);
+    if (re.lastIndex - debut > 300000) break; // sécurité
+  }
+  return null;
+}
+
+// Textes d'AutoScout24 qui ne sont pas des équipements (avertissements, menus)
+const TEXTES_NON_EQUIPEMENT = /peut différer|peuvent différer|may not match|not currently available|translate feature|abweichen|nicht verfügbar|può differire|potrebbe differire|non (?:sono|è) disponibil|Recherche avancée|Advanced search|Erweiterte Suche|Ricerca avanzata/i;
+
 // Lit dans la page déjà récupérée ce que le 2e appel ZenRows (css_extractor) allait chercher
 function extraireCssLocal(html) {
   const texte = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
   const out = { equipments: [], couleur_ext: null, description_vendeur: null };
-  const i = html.indexOf('id="expandable-equipment"');
-  if (i !== -1) {
-    const bloc = html.substring(i, i + 60000);
+  // Uniquement à l'intérieur du bloc équipements (sinon on attrape les liens du menu et du pied de page du site)
+  const bloc = elementComplet(html, 'id="expandable-equipment"');
+  if (bloc) {
     for (const m of bloc.matchAll(/<li[^>]*class="[^"]*chakra-list__item[^"]*"[^>]*>([\s\S]*?)<\/li>/g)) {
       const t = texte(m[1]);
-      if (t && t.length < 200) out.equipments.push(t);
+      if (t && t.length < 200 && !TEXTES_NON_EQUIPEMENT.test(t)) out.equipments.push(t);
       if (out.equipments.length >= 150) break;
     }
   }
@@ -1285,6 +1307,48 @@ function calculerMarche(prixDemande, pm) {
 }
 
 // ─── ANALYSE GPT-4o ─────────────────────────────────────
+// Numéro de rapport unique : date + secondes du jour + chiffre aléatoire (ex. 261010-412305)
+function numeroRapport() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Zurich' }));
+  const p = (n, l = 2) => String(n).padStart(l, '0');
+  const secondes = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+  return `${p(d.getFullYear() % 100)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(secondes, 5)}${Math.floor(Math.random() * 10)}`;
+}
+
+// Phrase de justification du score prix, calculée à partir des vrais chiffres (jamais un pourcentage approximatif)
+function justificationPrixReelle(prix, mediane, n, langue = 'fr') {
+  const pct = Math.round((prix / mediane - 1) * 100);
+  const loc = langue === 'en' ? 'en-US' : langue === 'it' ? 'it-CH' : 'de-CH';
+  const med = mediane.toLocaleString(loc);
+  const T = {
+    fr: { haut: `Prix demandé ${pct} % au-dessus de la médiane de ${n} annonces similaires (${med} CHF).`, bas: `Prix demandé ${-pct} % en dessous de la médiane de ${n} annonces similaires (${med} CHF).`, egal: `Prix dans la médiane de ${n} annonces similaires (${med} CHF).` },
+    de: { haut: `Verlangter Preis ${pct} % über dem Median von ${n} ähnlichen Inseraten (${med} CHF).`, bas: `Verlangter Preis ${-pct} % unter dem Median von ${n} ähnlichen Inseraten (${med} CHF).`, egal: `Preis im Median von ${n} ähnlichen Inseraten (${med} CHF).` },
+    it: { haut: `Prezzo richiesto ${pct} % sopra la mediana di ${n} annunci simili (${med} CHF).`, bas: `Prezzo richiesto ${-pct} % sotto la mediana di ${n} annunci simili (${med} CHF).`, egal: `Prezzo in linea con la mediana di ${n} annunci simili (${med} CHF).` },
+    en: { haut: `Asking price ${pct} % above the median of ${n} similar listings (${med} CHF).`, bas: `Asking price ${-pct} % below the median of ${n} similar listings (${med} CHF).`, egal: `Price in line with the median of ${n} similar listings (${med} CHF).` }
+  }[langue] || null;
+  const t = T || { haut: '', bas: '', egal: '' };
+  return pct > 2 ? t.haut : pct < -2 ? t.bas : t.egal;
+}
+
+// Un problème qui concerne une autre motorisation ou une autre boîte que celle de la voiture n'a rien à faire dans le rapport
+function problemeIncompatible(texte, carburant, boite) {
+  const t = String(texte || ''), c = String(carburant || '').toLowerCase(), b = String(boite || '').toLowerCase();
+  const estDiesel = /diesel/.test(c), estEssence = /essence|benzin|benzina|petrol|gasoline/.test(c) && !/hybrid|électr|elektr|elettr/.test(c);
+  const estElec = /électrique|electric|elektro|elettrica/.test(c);
+  const mentionDiesel = /\bdiesel\b|\bJTDm?\b|\bTDI\b|\bdCi\b|\bCDI\b|\bB?HDi\b|\bCRDi\b|\bEcoBlue\b|\bMultijet\b|\bTDCi\b|\bD-4D\b|\bBlueHDi\b|\bd\b(?= ?\d)|filtre à particules|Partikelfilter|\bFAP\b|\bDPF\b|AdBlue/i.test(t);
+  const mentionEssence = /\bessence\b|\bBenzin(?:er)?\b|\bbenzina\b|\bpetrol\b|\bTSI\b|\bTFSI\b|\bTCe\b|\bPureTech\b|\bEcoBoost\b|\bMultiAir\b|\bT-Jet\b|bougies? d'allumage|Zündkerze|candel[ae]|spark plug/i.test(t);
+  const auto = /auto|dsg|dct|cvt|steptronic|tiptronic|s tronic|edc|robotis|variation/.test(b);
+  const manuelle = /manuel|schalt|manuale|manual/.test(b) && !auto;
+  const mentionManuelle = /boîte manuelle|bv manuelle|Schaltgetriebe|cambio manuale|manual gearbox|manual transmission/i.test(t);
+  const mentionAuto = /boîte automatique|Automatikgetriebe|cambio automatico|automatic gearbox|automatic transmission|\bDSG\b|\bEDC\b|\bDCT\b/i.test(t);
+  if (estEssence && mentionDiesel && !mentionEssence) return 'concerne un moteur diesel';
+  if (estDiesel && mentionEssence && !mentionDiesel) return 'concerne un moteur essence';
+  if (estElec && (mentionDiesel || mentionEssence)) return 'concerne un moteur thermique';
+  if (auto && mentionManuelle && !mentionAuto) return 'concerne la boîte manuelle';
+  if (manuelle && mentionAuto && !mentionManuelle) return 'concerne la boîte automatique';
+  return null;
+}
+
 async function analyserAvecGPT(scrapedData, langue, url) {
   const langues = { fr: 'français', de: 'allemand', it: 'italien', en: 'anglais' };
 
@@ -1506,7 +1570,7 @@ Adapter aux problèmes réels documentés de CE modèle. NE PAS poser des questi
 Adapter au modèle et à ses risques réels. Pour les modèles à risque moteur documenté : compression, consommation huile, traces d'huile. Pour les sportives : freins, pneus, boîte. Pour les diesel : DPF, EGR, turbo.
 
 ━━━ VERDICT ━━━
-- ACHETER : aucun red flag ET [ (fiabilité ≥ 8 ET prix ≤ médiane) OU (fiabilité ≥ 7 ET prix ≥ 3 % sous la médiane) OU (fiabilité ≥ 6 ET prix ≥ 5 % sous la médiane) ]
+- ACHETER : aucun red flag ET [ (fiabilité ≥ 8 ET prix ≤ médiane) OU (fiabilité ≥ 7 ET prix ≤ médiane + 2 %) OU (fiabilité ≥ 6 ET prix ≥ 5 % sous la médiane) ]
 - Un prix simplement égal à la médiane est un prix « correct », pas une bonne affaire.
 - NÉGOCIER : prix au-dessus de la médiane, OU points importants à vérifier, OU fiabilité moyenne
 - ÉVITER : red flag grave (ex : culasse, accident lourd) avec fiabilité faible, OU fiabilité ≤ 3, OU prix > 15 % au-dessus du max
@@ -1715,6 +1779,9 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     parsed.fourchette_marche_max = marche.max;
     console.log(`SCORE PRIX calculé: ${marche.scorePrix} (prix ${prixDemande}, fourchette ${marche.min}–${marche.max}, GPT proposait ${parsed.score_prix})`);
     parsed.score_prix = marche.scorePrix;
+    if (prixMarcheCtx && prixMarcheCtx.source === 'as24' && marche.mediane > 0) {
+      parsed.justification_prix = justificationPrixReelle(prixDemande, marche.mediane, prixMarcheCtx.count || 0, langue);
+    }
     parsed.prix_negocie_suggere = marche.prixNegocie;
     parsed.economie_potentielle_min = marche.ecoMin;
     parsed.economie_potentielle_max = marche.ecoMax;
@@ -1744,7 +1811,10 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     const bonPrix = (fiab >= 8 && prixDemande <= mediane) ||
                     (fiab >= 7 && prixDemande <= mediane * 0.97) ||
                     (fiab >= 6 && prixDemande <= mediane * 0.95);
+    // Prix juste : dans la médiane de vraies annonces similaires (jusqu'à +2 %), bonne fiabilité, aucun signal d'alerte
+    const prixJuste = !bonPrix && fiab >= 7 && prixMarcheCtx && prixMarcheCtx.source === 'as24' && prixDemande <= mediane * 1.02;
     if (bonPrix && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'bon_prix'; }
+    else if (prixJuste && redFlags.length === 0) { verdict = 'ACHETER'; raison = 'prix_juste'; }
     else if (prixDemande > mediane) { verdict = 'NÉGOCIER'; raison = 'prix_au_dessus'; }
     else { verdict = 'NÉGOCIER'; raison = 'a_verifier'; }
   } else {
@@ -1759,16 +1829,19 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     en: fiab >= 8 ? 'very good reliability' : fiab >= 7 ? 'good reliability' : 'decent reliability'
   };
   const resumes = {
-    fr: { prix_trop_eleve: `Prix plus de 25 % au-dessus du marché suisse (médiane ${mediane.toLocaleString('de-CH')} CHF) — déconseillé à ce prix.`, fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr}.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
-    de: { prix_trop_eleve: `Preis über 25 % über dem Schweizer Markt (Median ${mediane.toLocaleString('de-CH')} CHF) — zu diesem Preis nicht empfohlen.`, fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de}.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
-    it: { prix_trop_eleve: `Prezzo oltre il 25 % sopra il mercato svizzero (mediana ${mediane.toLocaleString('it-CH')} CHF) — sconsigliato a questo prezzo.`, fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it}.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
-    en: { prix_trop_eleve: `Price more than 25 % above the Swiss market (median ${mediane.toLocaleString('en-US')} CHF) — not recommended at this price.`, fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en}.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
+    fr: { prix_juste: `Prix dans la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr} — prix juste.`, prix_trop_eleve: `Prix plus de 25 % au-dessus du marché suisse (médiane ${mediane.toLocaleString('de-CH')} CHF) — déconseillé à ce prix.`, fiabilite: 'Fiabilité insuffisante ou problème grave signalé — achat risqué.', bon_prix: `Prix inférieur à la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) et ${niveauFiab.fr}.`, prix_au_dessus: `Prix au-dessus de la médiane du marché (${mediane.toLocaleString('de-CH')} CHF) — négociation recommandée.`, a_verifier: 'Points importants à vérifier avant l\'achat.' },
+    de: { prix_juste: `Preis im Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de} — fairer Preis.`, prix_trop_eleve: `Preis über 25 % über dem Schweizer Markt (Median ${mediane.toLocaleString('de-CH')} CHF) — zu diesem Preis nicht empfohlen.`, fiabilite: 'Ungenügende Zuverlässigkeit oder schwerwiegendes Problem gemeldet — riskanter Kauf.', bon_prix: `Preis unter dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) und ${niveauFiab.de}.`, prix_au_dessus: `Preis über dem Marktmedian (${mediane.toLocaleString('de-CH')} CHF) — Verhandlung empfohlen.`, a_verifier: 'Wichtige Punkte vor dem Kauf prüfen.' },
+    it: { prix_juste: `Prezzo in linea con la mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it} — prezzo giusto.`, prix_trop_eleve: `Prezzo oltre il 25 % sopra il mercato svizzero (mediana ${mediane.toLocaleString('it-CH')} CHF) — sconsigliato a questo prezzo.`, fiabilite: 'Affidabilità insufficiente o problema grave segnalato — acquisto rischioso.', bon_prix: `Prezzo inferiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) e ${niveauFiab.it}.`, prix_au_dessus: `Prezzo superiore alla mediana di mercato (${mediane.toLocaleString('it-CH')} CHF) — trattativa consigliata.`, a_verifier: 'Punti importanti da verificare prima dell\'acquisto.' },
+    en: { prix_juste: `Price in line with the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en} — fair price.`, prix_trop_eleve: `Price more than 25 % above the Swiss market (median ${mediane.toLocaleString('en-US')} CHF) — not recommended at this price.`, fiabilite: 'Insufficient reliability or serious issue reported — risky purchase.', bon_prix: `Price below the market median (${mediane.toLocaleString('en-US')} CHF) with ${niveauFiab.en}.`, prix_au_dessus: `Price above the market median (${mediane.toLocaleString('en-US')} CHF) — negotiation recommended.`, a_verifier: 'Important points to check before buying.' }
   };
   if (raison && (verdict !== verdictGPT || !parsed.resume_verdict)) {
     parsed.resume_verdict = (resumes[langue] || resumes.fr)[raison];
   }
   console.log(`VERDICT: ${verdict} (GPT: ${verdictGPT}, raison: ${raison || 'IA'}, fiabilité ${fiab}, red flags ${redFlags.length}, prix ${prixDemande}, médiane ${mediane || '—'})`);
   parsed.verdict = verdict;
+  parsed.raison_verdict = raison || null;
+  parsed.ecart_mediane_pct = mediane > 0 ? Math.round((prixDemande / mediane - 1) * 100) : null;
+  parsed.valeur_marche = mediane > 0 ? mediane : 0;
 
   parsed.score_global = Math.round((parsed.score_prix + parsed.score_fiabilite + parsed.score_entretien) / 3);
 
@@ -1811,6 +1884,7 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
     const seen = new Set();
     parsed.options = parsed.options.filter(o => {
       if (!o) return false;
+      if (TEXTES_NON_EQUIPEMENT.test(o)) return false; // avertissements / menus du site, pas des équipements
       const key = o.toLowerCase().trim();
       if (seen.has(key)) return false;
       seen.add(key);
@@ -2042,7 +2116,14 @@ IMPORTANT pour resume_verdict : écrire une phrase courte de synthèse (ex: "Ce 
   // ── INJECTION DIRECTE TAVILY : problèmes connus sans passer par GPT ──
   // GPT retourne toujours [] pour ce champ — on injecte ici les données réelles Tavily
   if (Array.isArray(tavilyProblemes) && tavilyProblemes.length > 0) {
-    parsed.problemes_connus_modele = tavilyProblemes.slice(0, 4);
+    const carbu = String((scrapedData.infos && scrapedData.infos.carburant) || parsed.carburant || '');
+    const boiteV = String((scrapedData.infos && scrapedData.infos.boite) || parsed.boite || '');
+    const gardes = tavilyProblemes.filter(p => {
+      const raison = problemeIncompatible(p, carbu, boiteV);
+      if (raison) console.log(`PROBLÈME écarté (${raison}) : ${p}`);
+      return !raison;
+    });
+    parsed.problemes_connus_modele = gardes.slice(0, 4);
     console.log('PROBLÈMES injectés depuis Tavily (bypass GPT):', parsed.problemes_connus_modele.length);
   } else {
     parsed.problemes_connus_modele = [];
@@ -2407,9 +2488,23 @@ async function genererPDF(analyse, reportNumber, url, langue = 'fr') {
         ${analyse.resume_verdict ? `<div class="verdict-desc">${analyse.resume_verdict}</div>` : ''}
       </div>
       <div style="text-align:right;">
-        <div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${langue === "de" ? "EMPF. PREIS" : langue === "it" ? "PREZZO SUGGERITO" : langue === "en" ? "SUGGESTED PRICE" : "PRIX SUGGÉRÉ"}</div>
+        ${(() => {
+          const T = (fr, de, it, en) => langue === 'de' ? de : langue === 'it' ? it : langue === 'en' ? en : fr;
+          const eco = analyse.economie_potentielle_min === analyse.economie_potentielle_max ? '~' + montant(analyse.economie_potentielle_min) : montant(analyse.economie_potentielle_min) + ' – ' + montant(analyse.economie_potentielle_max);
+          // Prix nettement trop élevé : on montre la valeur du marché et l'écart, pas une « économie » irréaliste
+          if (analyse.raison_verdict === 'prix_trop_eleve' && analyse.valeur_marche > 0) {
+            return `<div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${T('VALEUR DU MARCHÉ', 'MARKTWERT', 'VALORE DI MERCATO', 'MARKET VALUE')}</div>
+        <div style="font-size:38px;font-weight:900;color:#fff;">~${montant(analyse.valeur_marche)} CHF</div>
+        <div style="font-size:10px;color:#ff8a8a;margin-top:4px;">${T('Prix demandé', 'Verlangter Preis', 'Prezzo richiesto', 'Asking price')} +${analyse.ecart_mediane_pct} %</div>`;
+          }
+          const ligne = !(analyse.prix_negocie_suggere > 0) ? insuffisant
+            : analyse.verdict === 'ACHETER'
+              ? (analyse.economie_potentielle_min > 0 ? `✓ ${T('Prix juste · marge de négociation', 'Fairer Preis · Verhandlungsspielraum', 'Prezzo giusto · margine di trattativa', 'Fair price · room to negotiate')} ${eco} CHF` : `✓ ${T('Prix dans le marché', 'Preis im Markt', 'Prezzo nel mercato', 'Price within market')}`)
+              : `${T('↓ Économie :', '↓ Ersparnis :', '↓ Risparmio :', '↓ Savings :')} ${eco} CHF`;
+          return `<div style="font-size:10px;color:#b8d0f0;margin-bottom:4px;">${T('PRIX SUGGÉRÉ', 'EMPF. PREIS', 'PREZZO SUGGERITO', 'SUGGESTED PRICE')}</div>
         <div style="font-size:38px;font-weight:900;color:#fff;">${analyse.prix_negocie_suggere > 0 ? montant(analyse.prix_negocie_suggere) + ' CHF' : '—'}</div>
-        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${!(analyse.prix_negocie_suggere > 0) ? insuffisant : analyse.verdict === 'ACHETER' ? (langue === "de" ? "✓ Preis im Markt" : langue === "it" ? "✓ Prezzo nel mercato" : langue === "en" ? "✓ Price within market" : "✓ Prix dans le marché") : `${langue === "de" ? "↓ Ersparnis :" : langue === "it" ? "↓ Risparmio :" : langue === "en" ? "↓ Savings :" : "↓ Économie :"} ${analyse.economie_potentielle_min === analyse.economie_potentielle_max ? '~' + montant(analyse.economie_potentielle_min) : montant(analyse.economie_potentielle_min) + ' – ' + montant(analyse.economie_potentielle_max)} CHF`}</div>
+        <div style="font-size:10px;color:#00B4D8;margin-top:4px;">${ligne}</div>`;
+        })()}
       </div>
     </div>
 
@@ -2630,7 +2725,7 @@ app.post('/test-rapport', exigerCleAdmin, async (req, res) => {
     const { url, email, langue = 'fr' } = req.body;
     if (!url || !email) return res.status(400).json({ error: 'URL et email requis' });
     console.log('1. Démarrage analyse...');
-    const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+    const reportNumber = numeroRapport();
     const analyse = await obtenirAnalyse(url, langue, { forcer: true });
     console.log('2. Analyse OK');
     console.log('3. GPT OK - Verdict:', analyse.verdict, '| Score:', analyse.score_global, '| CO2:', analyse.co2, '| Taxe:', analyse.taxe_cantonale_ge);
@@ -2762,7 +2857,7 @@ const sessionsTraitees = new Set();
 async function traiterCommande(session) {
   const { url, email, langue = 'fr' } = session.metadata || {};
   try {
-    const reportNumber = String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+    const reportNumber = numeroRapport();
     const analyse = await obtenirAnalyse(url, langue);
     const pdf = await genererPDF(analyse, reportNumber, url, langue);
     await envoyerEmail(email, pdf, analyse, reportNumber, langue);
